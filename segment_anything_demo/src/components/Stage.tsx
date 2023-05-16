@@ -15,6 +15,7 @@ const Stage = () => {
     clicks: [, setClicks],
     image: [image],
     maskIdx: [maskIdx, setMaskIdx],
+    maskClass: [, setMaskClass],
   } = useContext(AppContext)!;
   // This is where mosue events are handled.
   const getClick = (x: number, y: number): modelInputProps => {
@@ -50,9 +51,10 @@ const Stage = () => {
   };
 
   const handleKeyPress = _.throttle((e: any) => {
-    if (e.key >= '0' && e.key <= '9') {
+    if (e.key >= '0' && e.key <= '6') {
       // Perform desired actions for number key press
       console.log('Number key pressed:', e.key);
+      setMaskClass(parseInt(e.key))
     }
   }, 15)
 

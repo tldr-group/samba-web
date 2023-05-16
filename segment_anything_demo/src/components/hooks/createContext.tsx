@@ -24,6 +24,10 @@ interface contextProps {
     maskIdx: number,
     setMaskIdx: (e: number) => void
   ];
+  maskClass: [
+    maskClass: number,
+    setMaskClass: (e: number) => void
+  ];
 }
 
 const AppContext = createContext<contextProps | null>(null);

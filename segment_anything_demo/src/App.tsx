@@ -28,6 +28,7 @@ const App = () => {
     image: [, setImage],
     maskImg: [, setMaskImg],
     maskIdx: [maskIdx],
+    maskClass: [maskClass],
   } = useContext(AppContext)!;
   const [model, setModel] = useState<InferenceSession | null>(null); // ONNX model
   const [tensor, setTensor] = useState<Tensor | null>(null); // Image embedding tensor
@@ -121,7 +122,7 @@ const App = () => {
         // output dims are [1, 4, 603, 1072] ?= [b, n_masks, h, w] 
         // The predicted mask returned from the ONNX model is an array which is 
         // rendered as an HTML image using onnxMaskToImage() from maskUtils.tsx.
-        setMaskImg(onnxMaskToImage(output.data, output.dims[2], output.dims[3], maskIdx));
+        setMaskImg(onnxMaskToImage(output.data, output.dims[2], output.dims[3], maskIdx, maskClass));
       }
     } catch (e) {
       console.log(e);

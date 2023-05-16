@@ -3,10 +3,11 @@
 
 // This source code is licensed under the license found in the
 // LICENSE file in the root directory of this source tree.
+const colours: number[][] = [[255, 255, 255, 255], [31, 119, 180, 255], [255, 127, 14, 255], [44, 160, 44, 255], [214, 39, 40, 255], [148, 103, 189, 255], [140, 86, 75, 255]]
 
 // Convert the onnx model mask prediction to ImageData
-function arrayToImageData(input: any, width: number, height: number, mask_idx: number) {
-  const [r, g, b, a] = [0, 114, 189, 255]; // the masks's blue color
+function arrayToImageData(input: any, width: number, height: number, mask_idx: number, mask_colour: number) {
+  const [r, g, b, a] = colours[mask_colour]; // the masks's blue color
   // flat array here that is reshaped implictly in ImageData
   const arr = new Uint8ClampedArray(4 * width * height).fill(0);
   /*The way this worked previously was that the first mask was the 'best' mask by (predicted) IoU, so they looped
@@ -49,6 +50,6 @@ function imageDataToCanvas(imageData: ImageData) {
 }
 
 // Convert the onnx model mask output to an HTMLImageElement
-export function onnxMaskToImage(input: any, width: number, height: number, mask_idx: number) {
-  return imageDataToImage(arrayToImageData(input, width, height, mask_idx));
+export function onnxMaskToImage(input: any, width: number, height: number, mask_idx: number, mask_colour: number) {
+  return imageDataToImage(arrayToImageData(input, width, height, mask_idx, mask_colour));
 }

@@ -42,6 +42,7 @@ const Tool = ({ handleMouseMove }: ToolProps) => {
   }, [image]);
 
   const imageClasses = "";
+  // pointer-events-none means the mask image doesn't respond to canvas events
   const maskImageClasses = `absolute opacity-40 pointer-events-none`;
 
   // Render the image and the predicted mask image on top
@@ -53,17 +54,15 @@ const Tool = ({ handleMouseMove }: ToolProps) => {
           onMouseOut={() => _.defer(() => setMaskImg(null))}
           onTouchStart={handleMouseMove}
           src={image.src}
-          className={`${
-            shouldFitToWidth ? "w-full" : "h-full"
-          } ${imageClasses}`}
+          className={`${shouldFitToWidth ? "w-full" : "h-full"
+            } ${imageClasses}`}
         ></img>
       )}
       {maskImg && (
         <img
           src={maskImg.src}
-          className={`${
-            shouldFitToWidth ? "w-full" : "h-full"
-          } ${maskImageClasses}`}
+          className={`${shouldFitToWidth ? "w-full" : "h-full"
+            } ${maskImageClasses}`}
         ></img>
       )}
     </>

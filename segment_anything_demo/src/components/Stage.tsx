@@ -4,7 +4,7 @@
 // This source code is licensed under the license found in the
 // LICENSE file in the root directory of this source tree.
 
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import * as _ from "underscore";
 import Tool from "./Tool";
 import { modelInputProps } from "./helpers/Interfaces";
@@ -14,6 +14,7 @@ const Stage = () => {
   const {
     clicks: [, setClicks],
     image: [image],
+    maskIdx: [maskIdx, setMaskIdx],
   } = useContext(AppContext)!;
   // This is where mosue events are handled.
   const getClick = (x: number, y: number): modelInputProps => {
@@ -36,11 +37,39 @@ const Stage = () => {
     if (click) setClicks([click]);
   }, 15);
 
+  // onContextMenu = right click. Need to assign it to the 
+  const handleMouseClick = (e: any) => {
+    e.preventDefault(); //stop menu popping up
+    let click_type = e.button;
+    if (click_type == 2) {
+      const newMaskIdx = (maskIdx % 3) + 1
+      setMaskIdx((newMaskIdx));
+      console.log(newMaskIdx);
+      handleMouseMove(e) // reload mask with new MaskIdx
+    }
+  };
+
+  const handleKeyPress = _.throttle((e: any) => {
+    if (e.key >= '0' && e.key <= '9') {
+      // Perform desired actions for number key press
+      console.log('Number key pressed:', e.key);
+    }
+  }, 15)
+
+  // add global event listener for keypress when Stage mounted and remove when unmounted.
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyPress);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, []);
+
 
   const flexCenterClasses = "flex items-center justify-center";
   return (
-    <div className={`${flexCenterClasses} w-full h-full`}>
-      <div className={`${flexCenterClasses} relative w-[90%] h-[90%]`}>
+    <div className={`${flexCenterClasses} w-full h-full`} onContextMenu={handleMouseClick}>
+      <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`}>
         <Tool handleMouseMove={handleMouseMove} />
       </div>
     </div>

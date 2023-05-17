@@ -31,3 +31,11 @@ export interface ToolProps {
 export interface NavProps {
   loadImage: (url: URL) => void;
 }
+
+export interface LabelFrameProps {
+  icon_path: string;
+}
+
+export interface SidebarProps {
+  icon_path: string;
+}

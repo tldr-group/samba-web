@@ -22,6 +22,7 @@ import npyjs from "npyjs";
 const IMAGE_PATH = "/assets/data/dogs.jpg";
 const IMAGE_EMBEDDING = "/assets/data/dogs_embedding.npy";
 const MODEL_DIR = "/model/sam_onnx_quantized_example.onnx";
+const ICON_PATH = "/assets/icons/";
 
 const App = () => {
   const {

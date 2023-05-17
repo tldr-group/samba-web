@@ -7,9 +7,9 @@
 import React, { useContext, useEffect } from "react";
 import * as _ from "underscore";
 import Tool from "./Tool";
-import Topbar from "./Topbar"
-import Sidebar from "./Sidebar"
-import { modelInputProps } from "./helpers/Interfaces";
+import Topbar from "./Topbar";
+import Sidebar from "./Sidebar";
+import { modelInputProps, SidebarProps } from "./helpers/Interfaces";
 import AppContext from "./hooks/createContext";
 
 const Stage = () => {
@@ -48,7 +48,7 @@ const Stage = () => {
       const newMaskIdx = (maskIdx % 3) + 1
       setMaskIdx((newMaskIdx));
       console.log(newMaskIdx);
-      handleMouseMove(e) // reload mask with new MaskIdx
+      handleMouseMove(e); // reload mask with new MaskIdx
     }
   };
 
@@ -56,7 +56,7 @@ const Stage = () => {
     if (e.key >= '0' && e.key <= '6') {
       // Perform desired actions for number key press
       console.log('Number key pressed:', e.key);
-      setMaskClass(parseInt(e.key))
+      setMaskClass(parseInt(e.key));
     }
   }, 15)
 
@@ -73,7 +73,7 @@ const Stage = () => {
   return (
     <div className={`w-full h-full`} >
       <Topbar />
-      <div className={`flex w-full h-full`} style={{ margin: '1.5%' }}> {/*Canvas div on left, sidebar on right*/}
+      <div className={`flex`} style={{ margin: '1.5%' }}> {/*Canvas div on left, sidebar on right*/}
         <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`} onContextMenu={handleMouseClick}>
           <Tool handleMouseMove={handleMouseMove} />
         </div>

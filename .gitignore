@@ -1,0 +1,4 @@
+*data/*
+*.onnx
+*node_modules*
+yarn.lock

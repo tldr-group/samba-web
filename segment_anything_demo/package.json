@@ -52,11 +52,13 @@
     "webpack-merge": "^5.8.0"
   },
   "dependencies": {
+    "bootstrap": "^5.2.3",
     "npyjs": "^0.4.0",
     "onnxruntime-web": "^1.14.0",
     "react": "^18.2.0",
+    "react-bootstrap": "^2.7.4",
     "react-dom": "^18.2.0",
-    "underscore": "^1.13.6",
-    "react-refresh": "^0.14.0"
+    "react-refresh": "^0.14.0",
+    "underscore": "^1.13.6"
   }
 }

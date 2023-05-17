@@ -27,3 +27,7 @@ export interface modeDataProps {
 export interface ToolProps {
   handleMouseMove: (e: any) => void;
 }
+
+export interface NavProps {
+  loadImage: (url: URL) => void;
+}

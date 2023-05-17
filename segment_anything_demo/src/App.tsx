@@ -7,6 +7,7 @@
 import { InferenceSession, Tensor } from "onnxruntime-web";
 import React, { useContext, useEffect, useState } from "react";
 import "./assets/scss/App.scss";
+import 'bootstrap/dist/css/bootstrap.min.css';
 import { handleImageScale } from "./components/helpers/scaleHelper";
 import { modelScaleProps } from "./components/helpers/Interfaces";
 import { onnxMaskToImage } from "./components/helpers/maskUtils";

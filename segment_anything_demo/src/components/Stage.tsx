@@ -7,6 +7,7 @@
 import React, { useContext, useEffect } from "react";
 import * as _ from "underscore";
 import Tool from "./Tool";
+import Navbar from "./Topbar"
 import { modelInputProps } from "./helpers/Interfaces";
 import AppContext from "./hooks/createContext";
 
@@ -61,7 +62,6 @@ const Stage = () => {
   // add global event listener for keypress when Stage mounted and remove when unmounted.
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
-
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
     };
@@ -70,8 +70,9 @@ const Stage = () => {
 
   const flexCenterClasses = "flex items-center justify-center";
   return (
-    <div className={`${flexCenterClasses} w-full h-full`} onContextMenu={handleMouseClick}>
-      <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`}>
+    <div className={`w-full h-full`} >
+      <Navbar />
+      <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`} onContextMenu={handleMouseClick}>
         <Tool handleMouseMove={handleMouseMove} />
       </div>
     </div>

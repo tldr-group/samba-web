@@ -7,7 +7,8 @@
 import React, { useContext, useEffect } from "react";
 import * as _ from "underscore";
 import Tool from "./Tool";
-import Navbar from "./Topbar"
+import Topbar from "./Topbar"
+import Sidebar from "./Sidebar"
 import { modelInputProps } from "./helpers/Interfaces";
 import AppContext from "./hooks/createContext";
 
@@ -71,10 +72,14 @@ const Stage = () => {
   const flexCenterClasses = "flex items-center justify-center";
   return (
     <div className={`w-full h-full`} >
-      <Navbar />
-      <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`} onContextMenu={handleMouseClick}>
-        <Tool handleMouseMove={handleMouseMove} />
+      <Topbar />
+      <div className={`flex w-full h-full`} style={{ margin: '1.5%' }}> {/*Canvas div on left, sidebar on right*/}
+        <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`} onContextMenu={handleMouseClick}>
+          <Tool handleMouseMove={handleMouseMove} />
+        </div>
+        <Sidebar />
       </div>
+
     </div>
   );
 };

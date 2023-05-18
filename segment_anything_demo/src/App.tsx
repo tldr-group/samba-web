@@ -22,7 +22,6 @@ import npyjs from "npyjs";
 const IMAGE_PATH = "/assets/data/dogs.jpg";
 const IMAGE_EMBEDDING = "/assets/data/dogs_embedding.npy";
 const MODEL_DIR = "/model/sam_onnx_quantized_example.onnx";
-const ICON_PATH = "/assets/icons/";
 
 const App = () => {
   const {
@@ -57,7 +56,7 @@ const App = () => {
 
     // Load the image
     const url = new URL(IMAGE_PATH, location.origin);
-    loadImage(url);
+    loadImageURL(url);
 
     // Load the Segment Anything pre-computed embedding
     Promise.resolve(loadNpyTensor(IMAGE_EMBEDDING, "float32")).then(
@@ -65,10 +64,14 @@ const App = () => {
     );
   }, []);
 
-  const loadImage = async (url: URL) => {
+  const loadImageURL = async (url: URL) => {
+    loadImage(url.href)
+  }
+
+  const loadImage = async (href: string) => {
     try {
       const img = new Image();
-      img.src = url.href;
+      img.src = href;
       img.onload = () => {
         const { height, width, samScale } = handleImageScale(img);
         setModelScale({
@@ -131,7 +134,7 @@ const App = () => {
     }
   };
 
-  return <Stage />;
+  return <Stage loadImage={loadImage} />;
 };
 
 export default App;

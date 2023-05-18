@@ -9,10 +9,10 @@ import * as _ from "underscore";
 import Tool from "./Tool";
 import Topbar from "./Topbar";
 import Sidebar from "./Sidebar";
-import { modelInputProps, SidebarProps } from "./helpers/Interfaces";
+import { modelInputProps, TopbarProps } from "./helpers/Interfaces";
 import AppContext from "./hooks/createContext";
 
-const Stage = () => {
+const Stage = ({ loadImage }: TopbarProps) => {
   const {
     clicks: [, setClicks],
     image: [image],
@@ -72,7 +72,7 @@ const Stage = () => {
   const flexCenterClasses = "flex items-center justify-center";
   return (
     <div className={`w-full h-full`} >
-      <Topbar />
+      <Topbar loadImage={loadImage} />
       <div className={`flex`} style={{ margin: '1.5%' }}> {/*Canvas div on left, sidebar on right*/}
         <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`} onContextMenu={handleMouseClick}>
           <Tool handleMouseMove={handleMouseMove} />

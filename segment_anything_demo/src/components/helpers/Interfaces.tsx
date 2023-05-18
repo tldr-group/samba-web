@@ -28,8 +28,8 @@ export interface ToolProps {
   handleMouseMove: (e: any) => void;
 }
 
-export interface NavProps {
-  loadImage: (url: URL) => void;
+export interface TopbarProps {
+  loadImage: (href: string) => void;
 }
 
 export interface LabelFrameProps {

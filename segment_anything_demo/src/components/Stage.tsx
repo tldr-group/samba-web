@@ -9,6 +9,7 @@ import * as _ from "underscore";
 import Tool from "./Tool";
 import Topbar from "./Topbar";
 import Sidebar from "./Sidebar";
+import Canvas from "./Canvas"
 import { modelInputProps, TopbarProps } from "./helpers/Interfaces";
 import AppContext from "./hooks/createContext";
 
@@ -18,6 +19,7 @@ const Stage = ({ loadImage }: TopbarProps) => {
     image: [image],
     maskIdx: [maskIdx, setMaskIdx],
     maskClass: [, setMaskClass],
+    zoom: [zoom, setZoom]
   } = useContext(AppContext)!;
   // This is where mosue events are handled.
   const getClick = (x: number, y: number): modelInputProps => {
@@ -52,6 +54,12 @@ const Stage = ({ loadImage }: TopbarProps) => {
     }
   };
 
+  const handleScroll = (e: any) => {
+    // Adjust the zoom level based on scroll wheel delta
+    const delta = e.deltaY > 0 ? -0.1 : 0.1; // Change the zoom increment as needed
+    setZoom(zoom + delta);
+  };
+
   const handleKeyPress = _.throttle((e: any) => {
     if (e.key >= '0' && e.key <= '6') {
       // Perform desired actions for number key press
@@ -74,13 +82,13 @@ const Stage = ({ loadImage }: TopbarProps) => {
     <div className={`w-full h-full`} >
       <Topbar loadImage={loadImage} />
       <div className={`flex`} style={{ margin: '1.5%' }}> {/*Canvas div on left, sidebar on right*/}
-        <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`} onContextMenu={handleMouseClick}>
-          <Tool handleMouseMove={handleMouseMove} />
+        <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`} onContextMenu={handleMouseClick} onWheel={handleScroll}>
+          <Canvas />{/*<Tool handleMouseMove={handleMouseMove} />*/}
         </div>
         <Sidebar />
       </div>
 
-    </div>
+    </div >
   );
 };
 

@@ -31,25 +31,27 @@ function arrayToImageData(input: any, width: number, height: number, mask_idx: n
 }
 
 // Use a Canvas element to produce an image from ImageData
-function imageDataToImage(imageData: ImageData) {
-  const canvas = imageDataToCanvas(imageData);
+export function imageDataToImage(imageData: ImageData, zoom: number) {
+  const canvas = imageDataToCanvas(imageData, zoom);
   const image = new Image();
   image.src = canvas.toDataURL();
   return image;
 }
 
 // Canvas elements can be created from ImageData
-function imageDataToCanvas(imageData: ImageData) {
+function imageDataToCanvas(imageData: ImageData, zoom: number) {
   // canvas created on demand?
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
-  canvas.width = imageData.width;
-  canvas.height = imageData.height;
-  ctx?.putImageData(imageData, 0, 0);
+  canvas.width = zoom * imageData.width;
+  canvas.height = zoom * imageData.height;
+  // put image data in form: imageData, dx, dy, xoffset, yoffset, widthToDraw, heightToDraw
+  ctx?.putImageData(imageData, 0, 0, 0, 0, canvas.width, canvas.height); //was putImageData
+  //ctx?.fillRect(0, 0, 100, 100)
   return canvas;
 }
 
 // Convert the onnx model mask output to an HTMLImageElement
-export function onnxMaskToImage(input: any, width: number, height: number, mask_idx: number, mask_colour: number) {
-  return imageDataToImage(arrayToImageData(input, width, height, mask_idx, mask_colour));
+export function onnxMaskToImage(input: any, width: number, height: number, mask_idx: number, mask_colour: number, zoom: number) {
+  return imageDataToImage(arrayToImageData(input, width, height, mask_idx, mask_colour), zoom);
 }

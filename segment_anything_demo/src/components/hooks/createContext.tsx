@@ -28,6 +28,10 @@ interface contextProps {
     maskClass: number,
     setMaskClass: (e: number) => void
   ];
+  zoom: [
+    zoom: number,
+    setZoom: (e: any) => void
+  ]
 }
 
 const AppContext = createContext<contextProps | null>(null);

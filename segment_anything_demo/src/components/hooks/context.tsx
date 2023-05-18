@@ -16,6 +16,7 @@ const AppContextProvider = (props: {
   const [maskImg, setMaskImg] = useState<HTMLImageElement | null>(null);
   const [maskIdx, setMaskIdx] = useState<number>(1);
   const [maskClass, setMaskClass] = useState<number>(1);
+  const [zoom, setZoom] = useState<number>(1);
 
   return (
     <AppContext.Provider
@@ -24,7 +25,8 @@ const AppContextProvider = (props: {
         image: [image, setImage],
         maskImg: [maskImg, setMaskImg],
         maskIdx: [maskIdx, setMaskIdx],
-        maskClass: [maskClass, setMaskClass]
+        maskClass: [maskClass, setMaskClass],
+        zoom: [zoom, setZoom],
       }}
     >
       {props.children}

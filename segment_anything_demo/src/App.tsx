@@ -10,7 +10,7 @@ import "./assets/scss/App.scss";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { handleImageScale } from "./components/helpers/scaleHelper";
 import { modelScaleProps } from "./components/helpers/Interfaces";
-import { onnxMaskToImage } from "./components/helpers/maskUtils";
+import { onnxMaskToImage, imageDataToImage } from "./components/helpers/maskUtils";
 import { modelData } from "./components/helpers/onnxModelAPI";
 import Stage from "./components/Stage";
 import AppContext from "./components/hooks/createContext";
@@ -26,10 +26,11 @@ const MODEL_DIR = "/model/sam_onnx_quantized_example.onnx";
 const App = () => {
   const {
     clicks: [clicks],
-    image: [, setImage],
+    image: [image, setImage],
     maskImg: [, setMaskImg],
     maskIdx: [maskIdx],
     maskClass: [maskClass],
+    zoom: [zoom]
   } = useContext(AppContext)!;
   const [model, setModel] = useState<InferenceSession | null>(null); // ONNX model
   const [tensor, setTensor] = useState<Tensor | null>(null); // Image embedding tensor
@@ -96,7 +97,7 @@ const App = () => {
     return tensor;
   };
 
-  // Run the ONNX model every time clicks has changed
+  // Run the ONNX model every time clicks has changed i.e monitors state of clicks - useful for zooming!
   useEffect(() => {
     runONNX();
   }, [clicks]);
@@ -127,7 +128,7 @@ const App = () => {
         // output dims are [1, 4, 603, 1072] ?= [b, n_masks, h, w] 
         // The predicted mask returned from the ONNX model is an array which is 
         // rendered as an HTML image using onnxMaskToImage() from maskUtils.tsx.
-        setMaskImg(onnxMaskToImage(output.data, output.dims[2], output.dims[3], maskIdx, maskClass));
+        setMaskImg(onnxMaskToImage(output.data, output.dims[2], output.dims[3], maskIdx, maskClass, zoom));
       }
     } catch (e) {
       console.log(e);

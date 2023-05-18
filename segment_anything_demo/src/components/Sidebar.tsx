@@ -51,7 +51,7 @@ const LabelFrame = () => {
             <Card.Body>
                 Class
                 <ButtonGroup>
-                    {classes.map(i => <Button variant="dark">{i}</Button>)}
+                    {classes.map(i => <Button key={i} variant="dark">{i}</Button>)}
                 </ButtonGroup>
             </Card.Body>
         </Card>

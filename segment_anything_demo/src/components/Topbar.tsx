@@ -29,7 +29,7 @@ const Topbar = ({ loadImage }: TopbarProps) => {
     }
 
     return (
-        <Navbar bg="dark" variant="dark" expand="lg">
+        <Navbar bg="dark" variant="dark" expand="lg" style={{ boxShadow: "1px 1px  1px grey" }}>
             <Container>
                 <Navbar.Brand>SAMBA</Navbar.Brand>
                 <Navbar.Toggle aria-controls="basic-navbar-nav" />

@@ -44,7 +44,8 @@ const Tool = ({ handleMouseMove }: ToolProps) => {
   const imageClasses = "";
   // pointer-events-none means the mask image doesn't respond to canvas events
   const maskImageClasses = `absolute opacity-40 pointer-events-none`;
-
+  /* having foo.src or foo in return of compnent and making foo a state means component 
+  will automatically update when foo is updated */
   // Render the image and the predicted mask image on top
   return (
     <>

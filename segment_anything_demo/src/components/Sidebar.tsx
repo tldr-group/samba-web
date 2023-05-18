@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
-import { LabelFrameProps, SidebarProps } from "./helpers/Interfaces";
+import AppContext from "./hooks/createContext";
+import { LabelFrameProps, SidebarProps, Label } from "./helpers/Interfaces";
 
 
 import Card from 'react-bootstrap/Card';
@@ -22,14 +23,21 @@ const Sidebar = () => {
 }
 
 const LabelFrame = () => {
+    const {
+        labelType: [, setLabelType],
+        brushWidth: [, setBrushWidth],
+    } = useContext(AppContext)!;
+
     const prefix = "../assets/icons/"
     const sam = { "path": "smart.png", "name": "SAM", "fn": "foo" }
-    const poly = { "path": "polygon.png", "name": "Polygon", "fn": "foo" }
+    const poly = { "path": "polygon.png", "name": "Poly", "fn": "foo" }
     const brush = { "path": "brush.png", "name": "Brush", "fn": "foo" }
     const erase = { "path": "erase.png", "name": "Erase", "fn": "foo" }
     const labels = [sam, poly, brush, erase]
 
     const classes: number[] = [1, 2, 3, 4, 5, 6]
+    const _setLabel = (e: any, name: string) => { setLabelType(name as Label) }
+    const _setWidth = (e: any) => { setBrushWidth(e.target.value) }
 
     return (
         <Card className="bg-dark text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }}>
@@ -41,12 +49,14 @@ const LabelFrame = () => {
                             backgroundColor: "white", borderRadius: "8px",
                             marginLeft: '7%', width: "40px", boxShadow: "2px 2px 2px black"
                         }
-                    }></img>)}
+                    }
+                        onClick={(e) => _setLabel(e, l.name)}
+                    ></img>)}
                 </>
             </Card.Body>
             <Card.Body>
                 Brush Width
-                <Form.Range />
+                <Form.Range onChange={(e) => _setWidth(e)} min="1" max="100" />
             </Card.Body>
             <Card.Body>
                 Class
@@ -54,7 +64,7 @@ const LabelFrame = () => {
                     {classes.map(i => <Button key={i} variant="dark">{i}</Button>)}
                 </ButtonGroup>
             </Card.Body>
-        </Card>
+        </Card >
     );
 }
 

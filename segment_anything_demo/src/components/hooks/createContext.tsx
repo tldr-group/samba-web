@@ -5,7 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import { createContext } from "react";
-import { modelInputProps } from "../helpers/Interfaces";
+import { modelInputProps, Label } from "../helpers/Interfaces";
 
 interface contextProps {
   clicks: [
@@ -24,10 +24,22 @@ interface contextProps {
     maskIdx: number,
     setMaskIdx: (e: number) => void
   ];
-  maskClass: [
-    maskClass: number,
-    setMaskClass: (e: number) => void
+  labelClass: [
+    labelClass: number,
+    setlabelClass: (e: number) => void
   ];
+  labelType: [
+    labelType: Label,
+    setLabelType: (e: Label) => void
+  ];
+  labelOpacity: [
+    labelOpacity: number,
+    setLabelOpacity: (e: number) => void
+  ]
+  brushWidth: [
+    brushWidth: number,
+    setBrushWidth: (e: number) => void
+  ]
   zoom: [
     zoom: number,
     setZoom: (e: any) => void

@@ -3,7 +3,17 @@
 
 // This source code is licensed under the license found in the
 // LICENSE file in the root directory of this source tree.
-const colours: number[][] = [[255, 255, 255, 255], [31, 119, 180, 255], [255, 127, 14, 255], [44, 160, 44, 255], [214, 39, 40, 255], [148, 103, 189, 255], [140, 86, 75, 255]]
+
+export function rgbaToHex(r: number, g: number, b: number, a: number) {
+  // from user 'Sotos' https://stackoverflow.com/questions/49974145/how-to-convert-rgba-to-hex-color-code-using-javascript
+  const red = r.toString(16).padStart(2, '0');
+  const green = g.toString(16).padStart(2, '0');
+  const blue = b.toString(16).padStart(2, '0');
+  const alpha = Math.round(a).toString(16).padStart(2, '0');
+  return `#${red}${green}${blue}${alpha}`;
+}
+
+export const colours: number[][] = [[255, 255, 255, 255], [31, 119, 180, 255], [255, 127, 14, 255], [44, 160, 44, 255], [214, 39, 40, 255], [148, 103, 189, 255], [140, 86, 75, 255]]
 
 // Convert the onnx model mask prediction to ImageData
 function arrayToImageData(input: any, width: number, height: number, mask_idx: number, mask_colour: number) {
@@ -24,7 +34,7 @@ function arrayToImageData(input: any, width: number, height: number, mask_idx: n
       arr[4 * i + 0] = r;
       arr[4 * i + 1] = g;
       arr[4 * i + 2] = b;
-      arr[4 * i + 3] = a;
+      arr[4 * i + 3] = 0.4 * 255;
     }
   }
   return new ImageData(arr, height, width);
@@ -47,7 +57,6 @@ function imageDataToCanvas(imageData: ImageData, zoom: number) {
   canvas.height = zoom * imageData.height;
   // put image data in form: imageData, dx, dy, xoffset, yoffset, widthToDraw, heightToDraw
   ctx?.putImageData(imageData, 0, 0, 0, 0, canvas.width, canvas.height); //was putImageData
-  //ctx?.fillRect(0, 0, 100, 100)
   return canvas;
 }
 

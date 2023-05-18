@@ -4,13 +4,13 @@
 // This source code is licensed under the license found in the
 // LICENSE file in the root directory of this source tree.
 
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useRef } from "react";
 import * as _ from "underscore";
 import Tool from "./Tool";
 import Topbar from "./Topbar";
 import Sidebar from "./Sidebar";
 import Canvas from "./Canvas"
-import { modelInputProps, TopbarProps } from "./helpers/Interfaces";
+import { modelInputProps, TopbarProps, Label } from "./helpers/Interfaces";
 import AppContext from "./hooks/createContext";
 
 const Stage = ({ loadImage }: TopbarProps) => {
@@ -18,9 +18,11 @@ const Stage = ({ loadImage }: TopbarProps) => {
     clicks: [, setClicks],
     image: [image],
     maskIdx: [maskIdx, setMaskIdx],
-    maskClass: [, setMaskClass],
+    labelClass: [, setLabelClass],
     zoom: [zoom, setZoom]
   } = useContext(AppContext)!;
+  const labelType = useRef<Label>("Brush");
+
   // This is where mosue events are handled.
   const getClick = (x: number, y: number): modelInputProps => {
     const clickType = 1;
@@ -35,9 +37,11 @@ const Stage = ({ loadImage }: TopbarProps) => {
     const rect = el.getBoundingClientRect();
     let x = e.clientX - rect.left;
     let y = e.clientY - rect.top;
+    /* commented this out - was in original demo but caused offset.
     const imageScale = image ? image.width / el.offsetWidth : 1;
     x *= imageScale;
     y *= imageScale;
+    */
     const click = getClick(x, y);
     if (click) setClicks([click]);
   }, 15);
@@ -64,7 +68,7 @@ const Stage = ({ loadImage }: TopbarProps) => {
     if (e.key >= '0' && e.key <= '6') {
       // Perform desired actions for number key press
       console.log('Number key pressed:', e.key);
-      setMaskClass(parseInt(e.key));
+      setLabelClass(parseInt(e.key));
     }
   }, 15)
 
@@ -83,7 +87,7 @@ const Stage = ({ loadImage }: TopbarProps) => {
       <Topbar loadImage={loadImage} />
       <div className={`flex`} style={{ margin: '1.5%' }}> {/*Canvas div on left, sidebar on right*/}
         <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`} onContextMenu={handleMouseClick} onWheel={handleScroll}>
-          <Canvas />{/*<Tool handleMouseMove={handleMouseMove} />*/}
+          <Canvas handleMouseMove={handleMouseMove} />{/*<Tool handleMouseMove={handleMouseMove} />*/}
         </div>
         <Sidebar />
       </div>

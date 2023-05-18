@@ -6,6 +6,8 @@
 
 import { Tensor } from "onnxruntime-web";
 
+export type Label = "SAM" | "Poly" | "Brush" | "Erase"
+
 export interface modelScaleProps {
   samScale: number;
   height: number;
@@ -38,4 +40,11 @@ export interface LabelFrameProps {
 
 export interface SidebarProps {
   icon_path: string;
+}
+
+export interface MultiCanvasProps {
+  label: Label;
+  class: number;
+  labelOpacity: number;
+  brushWidth: number;
 }

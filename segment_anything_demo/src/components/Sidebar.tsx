@@ -10,6 +10,8 @@ import Form from 'react-bootstrap/Form';
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import ToggleButton from "react-bootstrap/ToggleButton";
 
+const OPACITY_MIN: number = 25; //really hacky - if opacity gets too low then can't recover the data on label canvas - need better fix (hidden canvas?)
+
 
 const Sidebar = () => {
     return (
@@ -74,7 +76,7 @@ const LabelFrame = () => {
             </Card.Body>
             <Card.Body>
                 Brush Width
-                <Form.Range onChange={(e) => _setWidth(e)} min="1" max="100" value={brushWidth} />
+                <Form.Range onChange={(e) => _setWidth(e)} min={OPACITY_MIN} max="100" value={brushWidth} />
             </Card.Body>
             <Card.Body>
                 Class
@@ -87,19 +89,37 @@ const LabelFrame = () => {
 }
 
 const OverlaysFrame = () => {
+    const {
+        overlayType: [overlayType, setOverlayType],
+        labelOpacity: [, setLabelOpacity]
+    } = useContext(AppContext)!;
+    const changeOpacity = (e: any) => {
+        console.log(overlayType, e.target.value)
+        if (overlayType == "Label") {
+            setLabelOpacity(e.target.value)
+        }
+    }
+    const _setOverlayType = (val: string) => {
+        if (val == "Segmentation") {
+            setOverlayType("Segmentation")
+        } else if (val == "Label") {
+            setOverlayType("Label")
+        }
+    }
+
     return (
         <Card className="bg-dark text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }}>
             <Card.Header>Overlay</Card.Header>
             <Card.Body className="flex">
-                <Form.Select>
-                    <option>Overlay type</option>
-                    <option value="0">Segmentation</option>
-                    <option value="1">Labels</option>
+                <Form.Select onChange={e => _setOverlayType(e.target.value)}>
+                    <option >Overlay type</option>
+                    <option value="Segmentation">Segmentation</option>
+                    <option value="Label">Labels</option>
                 </Form.Select>
             </Card.Body>
             <Card.Body>
                 Opacity
-                <Form.Range />
+                <Form.Range onChange={e => changeOpacity(e)} min="25" max="255" />
             </Card.Body>
         </Card>
     );

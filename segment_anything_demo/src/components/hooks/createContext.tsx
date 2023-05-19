@@ -32,6 +32,10 @@ interface contextProps {
     labelType: Label,
     setLabelType: (e: Label) => void
   ];
+  overlayType: [
+    overlayType: "Segmentation" | "Label",
+    setOverlayType: (e: "Segmentation" | "Label") => void
+  ]
   labelOpacity: [
     labelOpacity: number,
     setLabelOpacity: (e: number) => void

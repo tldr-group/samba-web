@@ -48,3 +48,5 @@ export interface MultiCanvasProps {
   labelOpacity: number;
   brushWidth: number;
 }
+
+export type Offset = { x: number, y: number }

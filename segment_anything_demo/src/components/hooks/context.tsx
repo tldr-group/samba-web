@@ -7,6 +7,7 @@
 import React, { useState } from "react";
 import { modelInputProps, Label } from "../helpers/Interfaces";
 import AppContext from "./createContext";
+import { Overlay } from "react-bootstrap";
 
 const AppContextProvider = (props: {
   children: React.ReactElement<any, string | React.JSXElementConstructor<any>>;
@@ -22,6 +23,7 @@ const AppContextProvider = (props: {
 
   const [brushWidth, setBrushWidth] = useState<number>(1);
 
+  const [overlayType, setOverlayType] = useState<"Segmentation" | "Label">("Segmentation")
   const [labelOpacity, setLabelOpacity] = useState<number>(0.6 * 255);
   const [zoom, setZoom] = useState<number>(1);
 
@@ -35,6 +37,7 @@ const AppContextProvider = (props: {
         labelClass: [labelClass, setLabelClass],
         labelType: [labelType, setLabelType],
         brushWidth: [brushWidth, setBrushWidth],
+        overlayType: [overlayType, setOverlayType],
         labelOpacity: [labelOpacity, setLabelOpacity],
         zoom: [zoom, setZoom],
       }}

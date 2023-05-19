@@ -1,9 +1,14 @@
-import React, { RefObject, useRef, useContext, useEffect } from "react";
+import React, { RefObject, useRef, useContext, useEffect, useState } from "react";
 import AppContext from "./hooks/createContext";
-import { ToolProps, modelInputProps } from "./helpers/Interfaces";
+import { modelInputProps, Offset } from "./helpers/Interfaces";
 import { rgbaToHex, colours } from "./helpers/maskUtils"
-import { get } from "underscore";
 
+
+const MAX_ZOOM = 5
+const MIN_ZOOM = 0.1
+const SCROLL_SENSITIVITY = 0.0005
+
+//let cameraOffset = { x: 0, y: 0 }
 
 const draw = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, colour: string) => {
     ctx.fillStyle = colour; //"#43ff641a"
@@ -16,13 +21,13 @@ const erase = (ctx: CanvasRenderingContext2D, x: number, y: number, width: numbe
     ctx.clearRect(x - width / 2, y - width / 2, width, width)
 }
 
-const getctx = (ref: RefObject<HTMLCanvasElement>) => { return ref.current!.getContext("2d", { willReadFrequently: true }) }
+const getctx = (ref: RefObject<HTMLCanvasElement>): CanvasRenderingContext2D | null => { return ref.current!.getContext("2d", { willReadFrequently: true }) }
 const clearctx = (ref: RefObject<HTMLCanvasElement>) => {
     const ctx = getctx(ref)
     ctx?.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 }
 
-const filled = (p: number[]) => { return (p[0] > 0 && p[1] > 0 && p[2] > 0 && p[3] > 0) }
+const filled = (p: number[]) => { return (p[0] > 0 && p[1] > 0 && p[2] > 0) }
 
 const getxy = (e: any): [number, number] => {
     let el = e.nativeEvent.target;
@@ -31,7 +36,6 @@ const getxy = (e: any): [number, number] => {
     let y = e.clientY - rect.top;
     return [x, y]
 }
-
 
 
 const MultiCanvas = () => {
@@ -51,6 +55,9 @@ const MultiCanvas = () => {
     const segCanvasRef = useRef<HTMLCanvasElement>(null);
     const labelCanvasRef = useRef<HTMLCanvasElement>(null);
     const animatedCanvasRef = useRef<HTMLCanvasElement>(null);
+
+    const init_offset = { x: window.innerWidth / 2, y: window.innerHeight / 2, clickType: 1 }
+    const [cameraOffset, setCameraOffset] = useState<Offset>(init_offset);
 
     const refs = [imgCanvasRef, segCanvasRef, labelCanvasRef, animatedCanvasRef]
     const clicking = useRef<boolean>(false);
@@ -75,8 +82,8 @@ const MultiCanvas = () => {
             console.log(labelOpacity);
             drawCanv1onCanv2(animatedCanvasRef, labelCanvasRef, labelOpacity); // TODO: change this to make label canv ref right opacity
             clearctx(animatedCanvasRef);
-        } else if (labelType == "SAM" && rightClick) {
 
+        } else if (labelType == "SAM" && rightClick) {
             const newMaskIdx = (maskIdx % 3) + 1;
             setMaskIdx((newMaskIdx));
             console.log(newMaskIdx);
@@ -85,6 +92,7 @@ const MultiCanvas = () => {
             const y = res[1]
             const click = getClick(x, y);
             if (click) setClicks([click]); // reload mask with new MaskIdx
+
         }
     }
 
@@ -116,8 +124,12 @@ const MultiCanvas = () => {
 
     const handleScroll = (e: any) => {
         // Adjust the zoom level based on scroll wheel delta
-        const delta = e.deltaY > 0 ? -0.1 : 0.1; // Change the zoom increment as needed
-        setZoom(zoom + delta);
+        const delta = e.deltaY * SCROLL_SENSITIVITY > 0 ? -0.1 : 0.1; // Change the zoom increment as needed
+        let newZoom = zoom + delta
+        newZoom = Math.min(newZoom, MAX_ZOOM)
+        newZoom = Math.max(newZoom, MIN_ZOOM)
+        console.log(newZoom)
+        setZoom(newZoom);
     };
 
     const drawCanv1onCanv2 = (ref1: RefObject<HTMLCanvasElement>, ref2: RefObject<HTMLCanvasElement>, draw_opacity: number = 255) => {
@@ -141,6 +153,20 @@ const MultiCanvas = () => {
         }
     };
 
+    const zoomCanvas = (ctx: CanvasRenderingContext2D, newZoom: number) => {
+        /*
+        console.log("zooming")
+        ctx?.translate(window.innerWidth / 2, window.innerHeight / 2)
+        ctx?.scale(newZoom, newZoom)
+        ctx?.translate(-window.innerWidth / 2 + cameraOffset.x, -window.innerHeight / 2 + cameraOffset.y)
+        const afterTranslate = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx?.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+        ctx?.putImageData(afterTranslate, 0, 0)
+        */
+
+    }
+
+    // is the reason the image stays the sane bc we have a listener here (i.e is this called every render?)
     useEffect(() => {
         let ctx = getctx(imgCanvasRef);
         if (image === null) {
@@ -148,6 +174,7 @@ const MultiCanvas = () => {
         }
         ctx?.drawImage(image, 0, 0);
     }, [image])
+
 
     useEffect(() => {
         let ctx = getctx(animatedCanvasRef);
@@ -158,9 +185,23 @@ const MultiCanvas = () => {
         ctx?.drawImage(maskImg, 0, 0);
     }, [maskImg])
 
-    // Fixed canvas width will cause errors later i.e lack of resizing
+    useEffect(() => { clearctx(animatedCanvasRef) }, [labelType]) // clear animated canvas when switching
+
+    useEffect(() => { drawCanv1onCanv2(labelCanvasRef, labelCanvasRef, labelOpacity) }, [labelOpacity])
+
+    useEffect(() => {
+        const ctxs = refs.map(ref => getctx(ref))
+        for (let i = 0; i < ctxs.length; i++) {
+            const ctx = ctxs[i]
+            if (ctx != null) {
+                zoomCanvas(ctx, zoom)
+            }
+        }
+    }, [zoom])
+
+    // Fixed canvas width will cause errors later i.e lack of resizing //onWheel={handleScroll}
     return (
-        <div onMouseDown={handleClick} onMouseMove={handleClickMove} onMouseUp={handleClickEnd} onWheel={handleScroll} onContextMenu={(e) => e.preventDefault()}>
+        <div onMouseDown={handleClick} onMouseMove={handleClickMove} onMouseUp={handleClickEnd} onContextMenu={(e) => e.preventDefault()} onMouseLeave={e => clearctx(animatedCanvasRef)}>
             {refs.map((r, i) => <canvas key={i} ref={r} height={1024} width={1024} style={{ position: 'absolute', left: '0', top: '0' }}></canvas>)}
         </div>)
 }

@@ -16,7 +16,8 @@ import AppContext from "./hooks/createContext";
 const Stage = ({ loadImage }: TopbarProps) => {
   const {
     labelClass: [, setLabelClass],
-    zoom: [zoom, setZoom]
+    zoom: [zoom, setZoom],
+    clicks: [clicks, setClicks],
   } = useContext(AppContext)!;
 
 
@@ -25,6 +26,8 @@ const Stage = ({ loadImage }: TopbarProps) => {
       // Perform desired actions for number key press
       console.log('Number key pressed:', e.key);
       setLabelClass(parseInt(e.key));
+      const newClicks = clicks
+      setClicks(newClicks);
     }
   }, 15)
 

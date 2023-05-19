@@ -15,53 +15,10 @@ import AppContext from "./hooks/createContext";
 
 const Stage = ({ loadImage }: TopbarProps) => {
   const {
-    clicks: [, setClicks],
-    image: [image],
-    maskIdx: [maskIdx, setMaskIdx],
     labelClass: [, setLabelClass],
     zoom: [zoom, setZoom]
   } = useContext(AppContext)!;
 
-  // This is where mosue events are handled.
-  const getClick = (x: number, y: number): modelInputProps => {
-    const clickType = 1;
-    return { x, y, clickType };
-  };
-
-  // Get mouse position and scale the (x, y) coordinates back to the natural
-  // scale of the image. Update the state of clicks with setClicks to trigger
-  // the ONNX model to run and generate a new mask via a useEffect in App.tsx
-  const handleMouseMove = _.throttle((e: any) => {
-    let el = e.nativeEvent.target;
-    const rect = el.getBoundingClientRect();
-    let x = e.clientX - rect.left;
-    let y = e.clientY - rect.top;
-    /* commented this out - was in original demo but caused offset.
-    const imageScale = image ? image.width / el.offsetWidth : 1;
-    x *= imageScale;
-    y *= imageScale;
-    */
-    const click = getClick(x, y);
-    if (click) setClicks([click]);
-  }, 15);
-
-  // onContextMenu = right click. Need to assign it to the 
-  const handleMouseClick = (e: any) => {
-    e.preventDefault(); //stop menu popping up
-    let click_type = e.button;
-    if (click_type == 2) {
-      const newMaskIdx = (maskIdx % 3) + 1
-      setMaskIdx((newMaskIdx));
-      console.log(newMaskIdx);
-      handleMouseMove(e); // reload mask with new MaskIdx
-    }
-  };
-
-  const handleScroll = (e: any) => {
-    // Adjust the zoom level based on scroll wheel delta
-    const delta = e.deltaY > 0 ? -0.1 : 0.1; // Change the zoom increment as needed
-    setZoom(zoom + delta);
-  };
 
   const handleKeyPress = _.throttle((e: any) => {
     if (e.key >= '0' && e.key <= '6') {
@@ -79,14 +36,13 @@ const Stage = ({ loadImage }: TopbarProps) => {
     };
   }, []);
 
-
   const flexCenterClasses = "flex items-center justify-center";
   return (
     <div className={`w-full h-full`} >
       <Topbar loadImage={loadImage} />
       <div className={`flex`} style={{ margin: '1.5%' }}> {/*Canvas div on left, sidebar on right*/}
-        <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`} onContextMenu={handleMouseClick} onWheel={handleScroll}>
-          <Canvas />{/*<Tool handleMouseMove={handleMouseMove} />*/}
+        <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`}>
+          <Canvas />
         </div>
         <Sidebar />
       </div>

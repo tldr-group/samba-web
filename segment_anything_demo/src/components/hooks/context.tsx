@@ -22,7 +22,7 @@ const AppContextProvider = (props: {
 
   const [brushWidth, setBrushWidth] = useState<number>(1);
 
-  const [labelOpacity, setLabelOpacity] = useState<number>(255);
+  const [labelOpacity, setLabelOpacity] = useState<number>(0.6 * 255);
   const [zoom, setZoom] = useState<number>(1);
 
   return (

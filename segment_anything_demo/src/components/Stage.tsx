@@ -21,7 +21,6 @@ const Stage = ({ loadImage }: TopbarProps) => {
     labelClass: [, setLabelClass],
     zoom: [zoom, setZoom]
   } = useContext(AppContext)!;
-  const labelType = useRef<Label>("Brush");
 
   // This is where mosue events are handled.
   const getClick = (x: number, y: number): modelInputProps => {
@@ -87,7 +86,7 @@ const Stage = ({ loadImage }: TopbarProps) => {
       <Topbar loadImage={loadImage} />
       <div className={`flex`} style={{ margin: '1.5%' }}> {/*Canvas div on left, sidebar on right*/}
         <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`} onContextMenu={handleMouseClick} onWheel={handleScroll}>
-          <Canvas handleMouseMove={handleMouseMove} />{/*<Tool handleMouseMove={handleMouseMove} />*/}
+          <Canvas />{/*<Tool handleMouseMove={handleMouseMove} />*/}
         </div>
         <Sidebar />
       </div>

@@ -90,20 +90,6 @@ const MultiCanvas = () => {
             const arr = addImageDataToArray(labelImageData, labelArr, labelClass)
             setLabelArr(arr)
             clearctx(animatedCanvasRef);
-            const ctx2 = getctx(labelCanvasRef)
-            ctx?.clearRect(0, 0, ctx?.canvas.width, ctx?.canvas.height)
-            if (image === null) {
-                return;
-            }
-            console.log("label arr updated")
-            const newImageData = arrayToImageData(arr, image.height, image.width, 0, labelClass)
-            const newImage = imageDataToImage(newImageData, zoom)
-            setLabelImg(newImage)
-
-            ctx?.drawImage(newImage, 0, 0, image.width, image.height, cameraOffset.x, cameraOffset.y, image.width, image.height);
-            //drawCanv1onCanv2(animatedCanvasRef, labelCanvasRef, labelOpacity); // TODO: change this to make label canv ref right opacity
-
-
         } else if (labelType == "SAM" && rightClick) {
             const newMaskIdx = (maskIdx % 3) + 1;
             setMaskIdx((newMaskIdx));
@@ -206,11 +192,11 @@ const MultiCanvas = () => {
         } else if (e.key == "a") {
             console.log("Pan up")
             const c = cameraOffset
-            setCameraOffset({ x: c.x + 10, y: c.y })
+            setCameraOffset({ x: c.x - 10, y: c.y })
         } else if (e.key == "d") {
             console.log("Pan up")
             const c = cameraOffset
-            setCameraOffset({ x: c.x - 10, y: c.y })
+            setCameraOffset({ x: c.x + 10, y: c.y })
         }
     }
 
@@ -224,8 +210,23 @@ const MultiCanvas = () => {
     }, [maskImg])
 
     useEffect(() => {
-        null
+        if (image === null) {
+            return;
+        }
+        console.log("label arr updated")
+        const newImageData = arrayToImageData(labelArr, image.height, image.width, 0, labelClass)
+        const newImage = imageDataToImage(newImageData, zoom)
+        setLabelImg(newImage)
     }, [labelArr])
+
+    useEffect(() => {
+        const ctx = getctx(labelCanvasRef)
+        ctx?.clearRect(0, 0, ctx?.canvas.width, ctx?.canvas.height)
+        if (labelImg === null) {
+            return;
+        }
+        ctx?.drawImage(labelImg, 0, 0, labelImg.width, labelImg.height, cameraOffset.x, cameraOffset.y, labelImg.width, labelImg.height);
+    }, [labelImg])
 
     useEffect(() => { clearctx(animatedCanvasRef) }, [labelType]) // clear animated canvas when switching
 

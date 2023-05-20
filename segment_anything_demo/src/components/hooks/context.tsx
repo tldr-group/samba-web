@@ -5,7 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import React, { useState } from "react";
-import { modelInputProps, Label } from "../helpers/Interfaces";
+import { modelInputProps, Label, Offset } from "../helpers/Interfaces";
 import AppContext from "./createContext";
 import { Overlay } from "react-bootstrap";
 
@@ -15,6 +15,9 @@ const AppContextProvider = (props: {
   const [clicks, setClicks] = useState<Array<modelInputProps> | null>(null);
 
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [labelArr, setLabelArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(1));
+  const [segArr, setSegArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(1));
+
   const [maskImg, setMaskImg] = useState<HTMLImageElement | null>(null);
 
   const [maskIdx, setMaskIdx] = useState<number>(1);
@@ -25,6 +28,7 @@ const AppContextProvider = (props: {
 
   const [overlayType, setOverlayType] = useState<"Segmentation" | "Label">("Segmentation")
   const [labelOpacity, setLabelOpacity] = useState<number>(0.6 * 255);
+  const [cameraOffset, setCameraOffset] = useState<Offset>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState<number>(1);
 
   return (
@@ -32,6 +36,8 @@ const AppContextProvider = (props: {
       value={{
         clicks: [clicks, setClicks],
         image: [image, setImage],
+        labelArr: [labelArr, setLabelArr],
+        segArr: [segArr, setSegArr],
         maskImg: [maskImg, setMaskImg],
         maskIdx: [maskIdx, setMaskIdx],
         labelClass: [labelClass, setLabelClass],
@@ -39,6 +45,7 @@ const AppContextProvider = (props: {
         brushWidth: [brushWidth, setBrushWidth],
         overlayType: [overlayType, setOverlayType],
         labelOpacity: [labelOpacity, setLabelOpacity],
+        cameraOffset: [cameraOffset, setCameraOffset],
         zoom: [zoom, setZoom],
       }}
     >

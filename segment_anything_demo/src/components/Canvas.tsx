@@ -1,14 +1,14 @@
 import React, { RefObject, useRef, useContext, useEffect, useState } from "react";
 import AppContext from "./hooks/createContext";
 import { modelInputProps, Offset } from "./helpers/Interfaces";
-import { rgbaToHex, colours } from "./helpers/maskUtils"
+import { rgbaToHex, colours, addImageDataToArray, arrayToImageData, imageDataToImage } from "./helpers/maskUtils"
+import * as _ from "underscore";
 
 
 const MAX_ZOOM = 5
 const MIN_ZOOM = 0.1
 const SCROLL_SENSITIVITY = 0.0005
 
-//let cameraOffset = { x: 0, y: 0 }
 
 const draw = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, colour: string) => {
     ctx.fillStyle = colour; //"#43ff641a"
@@ -44,10 +44,12 @@ const MultiCanvas = () => {
         maskImg: [maskImg],
         clicks: [, setClicks],
         labelType: [labelType],
-        labelClass: [labelClass],
+        labelClass: [labelClass, setLabelClass],
+        labelArr: [labelArr, setLabelArr],
         brushWidth: [brushWidth],
         labelOpacity: [labelOpacity],
         maskIdx: [maskIdx, setMaskIdx],
+        cameraOffset: [cameraOffset, setCameraOffset],
         zoom: [zoom, setZoom],
     } = useContext(AppContext)!;
 
@@ -56,10 +58,10 @@ const MultiCanvas = () => {
     const labelCanvasRef = useRef<HTMLCanvasElement>(null);
     const animatedCanvasRef = useRef<HTMLCanvasElement>(null);
 
-    const init_offset = { x: window.innerWidth / 2, y: window.innerHeight / 2, clickType: 1 }
-    const [cameraOffset, setCameraOffset] = useState<Offset>(init_offset);
+    const [labelImg, setLabelImg] = useState<HTMLImageElement | null>(null);
 
-    const refs = [imgCanvasRef, segCanvasRef, labelCanvasRef, animatedCanvasRef]
+    const groundTruths = [image, labelImg, maskImg]
+    const refs = [imgCanvasRef, labelCanvasRef, animatedCanvasRef]
     const clicking = useRef<boolean>(false);
 
     const getClick = (x: number, y: number): modelInputProps => {
@@ -72,7 +74,7 @@ const MultiCanvas = () => {
         if (drawing) { clicking.current = true; }
     }
 
-    const handleClickEnd = (e: any) => {
+    const handleClickEnd = _.throttle((e: any) => {
         const drawing = (labelType == "Brush" || labelType == "Erase");
         const leftClick = (e.button == 0);
         const rightClick = (e.button == 2);
@@ -80,8 +82,27 @@ const MultiCanvas = () => {
         if (drawing && leftClick) { clicking.current = false; };
         if ((labelType == "Brush" || labelType == "SAM") && leftClick) {
             console.log(labelOpacity);
-            drawCanv1onCanv2(animatedCanvasRef, labelCanvasRef, labelOpacity); // TODO: change this to make label canv ref right opacity
+            const ctx = getctx(animatedCanvasRef)
+            if (ctx === null || image === null) {
+                return
+            }
+            const labelImageData = ctx?.getImageData(cameraOffset.x, cameraOffset.y, image?.width, image?.height)
+            const arr = addImageDataToArray(labelImageData, labelArr, labelClass)
+            setLabelArr(arr)
             clearctx(animatedCanvasRef);
+            const ctx2 = getctx(labelCanvasRef)
+            ctx?.clearRect(0, 0, ctx?.canvas.width, ctx?.canvas.height)
+            if (image === null) {
+                return;
+            }
+            console.log("label arr updated")
+            const newImageData = arrayToImageData(arr, image.height, image.width, 0, labelClass)
+            const newImage = imageDataToImage(newImageData, zoom)
+            setLabelImg(newImage)
+
+            ctx?.drawImage(newImage, 0, 0, image.width, image.height, cameraOffset.x, cameraOffset.y, image.width, image.height);
+            //drawCanv1onCanv2(animatedCanvasRef, labelCanvasRef, labelOpacity); // TODO: change this to make label canv ref right opacity
+
 
         } else if (labelType == "SAM" && rightClick) {
             const newMaskIdx = (maskIdx % 3) + 1;
@@ -90,11 +111,10 @@ const MultiCanvas = () => {
             const res = getxy(e)
             const x = res[0]
             const y = res[1]
-            const click = getClick(x, y);
+            const click = getClick(x - cameraOffset.x, y - cameraOffset.y);
             if (click) setClicks([click]); // reload mask with new MaskIdx
-
         }
-    }
+    }, 15)
 
     const handleClickMove = (e: any) => {
         const res = getxy(e)
@@ -112,7 +132,7 @@ const MultiCanvas = () => {
             // Get mouse position and scale the (x, y) coordinates back to the natural
             // scale of the image. Update the state of clicks with setClicks to trigger
             // the ONNX model to run and generate a new mask via a useEffect in App.tsx
-            const click = getClick(x, y);
+            const click = getClick(x - cameraOffset.x, y - cameraOffset.y);
             if (click) setClicks([click]);
         } else if ((clicking.current) && (labelType == "Erase")) {
             let ctx = getctx(labelCanvasRef);
@@ -153,28 +173,46 @@ const MultiCanvas = () => {
         }
     };
 
-    const zoomCanvas = (ctx: CanvasRenderingContext2D, newZoom: number) => {
-        /*
-        console.log("zooming")
-        ctx?.translate(window.innerWidth / 2, window.innerHeight / 2)
-        ctx?.scale(newZoom, newZoom)
-        ctx?.translate(-window.innerWidth / 2 + cameraOffset.x, -window.innerHeight / 2 + cameraOffset.y)
-        const afterTranslate = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
-        ctx?.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-        ctx?.putImageData(afterTranslate, 0, 0)
-        */
-
-    }
-
-    // is the reason the image stays the sane bc we have a listener here (i.e is this called every render?)
     useEffect(() => {
+        console.log('Image changed')
         let ctx = getctx(imgCanvasRef);
-        if (image === null) {
+        if (image === null || ctx?.canvas == undefined) {
             return;
         }
-        ctx?.drawImage(image, 0, 0);
+        const dx = (ctx?.canvas.width - image.width) / 2;
+        const dy = (ctx?.canvas.height - image.height) / 2;
+        setCameraOffset({ x: dx, y: dy });
+        const newLabelImg = new Image(image.width, image.height)
+        setLabelImg(newLabelImg)
+
+        // if i work with sx, sy, sw and sh properly i can do zooming like this
+        ctx?.drawImage(image, 0, 0, image.width, image.height, dx, dy, image.width, image.height);
     }, [image])
 
+    const handleKeyPress = (e: any) => {
+        if (e.key >= '0' && e.key <= '6') {
+            // Perform desired actions for number key press
+            console.log('Number key pressed:', e.key);
+            setLabelClass(parseInt(e.key));
+        } else if (e.key == "w") {
+            console.log("Pan up")
+            const c = cameraOffset
+            setCameraOffset({ x: c.x, y: c.y - 10 })
+        }
+        else if (e.key == "s") {
+            console.log("Pan up")
+            const c = cameraOffset
+            setCameraOffset({ x: c.x, y: c.y + 10 })
+        } else if (e.key == "a") {
+            console.log("Pan up")
+            const c = cameraOffset
+            setCameraOffset({ x: c.x + 10, y: c.y })
+        } else if (e.key == "d") {
+            console.log("Pan up")
+            const c = cameraOffset
+            setCameraOffset({ x: c.x - 10, y: c.y })
+        }
+    }
 
     useEffect(() => {
         let ctx = getctx(animatedCanvasRef);
@@ -182,26 +220,35 @@ const MultiCanvas = () => {
         if (maskImg === null) {
             return;
         }
-        ctx?.drawImage(maskImg, 0, 0);
+        ctx?.drawImage(maskImg, 0, 0, maskImg.width, maskImg.height, cameraOffset.x, cameraOffset.y, maskImg.width, maskImg.height);
     }, [maskImg])
+
+    useEffect(() => {
+        null
+    }, [labelArr])
 
     useEffect(() => { clearctx(animatedCanvasRef) }, [labelType]) // clear animated canvas when switching
 
     useEffect(() => { drawCanv1onCanv2(labelCanvasRef, labelCanvasRef, labelOpacity) }, [labelOpacity])
 
     useEffect(() => {
-        const ctxs = refs.map(ref => getctx(ref))
-        for (let i = 0; i < ctxs.length; i++) {
-            const ctx = ctxs[i]
-            if (ctx != null) {
-                zoomCanvas(ctx, zoom)
+        console.log(cameraOffset);
+        for (let i = 0; i < refs.length; i++) {
+            const ctx = getctx(refs[i])
+            const gt = groundTruths[i]
+            if (gt === null || ctx?.canvas == undefined) {
+                return;
             }
-        }
-    }, [zoom])
+            ctx?.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            if (i < 2) {
+                ctx?.drawImage(gt, 0, 0, gt.width, gt.height, cameraOffset.x, cameraOffset.y, gt.width, gt.height);
+            };
+        };
+    }, [cameraOffset])
 
     // Fixed canvas width will cause errors later i.e lack of resizing //onWheel={handleScroll}
     return (
-        <div onMouseDown={handleClick} onMouseMove={handleClickMove} onMouseUp={handleClickEnd} onContextMenu={(e) => e.preventDefault()} onMouseLeave={e => clearctx(animatedCanvasRef)}>
+        <div onMouseDown={handleClick} onMouseMove={handleClickMove} onMouseUp={handleClickEnd} onContextMenu={(e) => e.preventDefault()} onMouseLeave={e => clearctx(animatedCanvasRef)} onKeyDown={e => handleKeyPress(e)} tabIndex={0}>
             {refs.map((r, i) => <canvas key={i} ref={r} height={1024} width={1024} style={{ position: 'absolute', left: '0', top: '0' }}></canvas>)}
         </div>)
 }

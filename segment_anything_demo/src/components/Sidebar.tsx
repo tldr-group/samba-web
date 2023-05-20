@@ -94,7 +94,6 @@ const OverlaysFrame = () => {
         labelOpacity: [, setLabelOpacity]
     } = useContext(AppContext)!;
     const changeOpacity = (e: any) => {
-        console.log(overlayType, e.target.value)
         if (overlayType == "Label") {
             setLabelOpacity(e.target.value)
         }

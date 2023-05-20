@@ -16,28 +16,10 @@ import AppContext from "./hooks/createContext";
 const Stage = ({ loadImage }: TopbarProps) => {
   const {
     labelClass: [, setLabelClass],
-    zoom: [zoom, setZoom],
-    clicks: [clicks, setClicks],
   } = useContext(AppContext)!;
 
 
-  const handleKeyPress = _.throttle((e: any) => {
-    if (e.key >= '0' && e.key <= '6') {
-      // Perform desired actions for number key press
-      console.log('Number key pressed:', e.key);
-      setLabelClass(parseInt(e.key));
-      const newClicks = clicks
-      setClicks(newClicks);
-    }
-  }, 15)
 
-  // add global event listener for keypress when Stage mounted and remove when unmounted.
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyPress);
-    return () => {
-      window.removeEventListener('keydown', handleKeyPress);
-    };
-  }, []);
 
   const flexCenterClasses = "flex items-center justify-center";
   return (

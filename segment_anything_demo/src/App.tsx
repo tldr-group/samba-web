@@ -27,6 +27,7 @@ const App = () => {
   const {
     clicks: [clicks],
     image: [image, setImage],
+    labelArr: [labelArr, setLabelArr],
     maskImg: [, setMaskImg],
     maskIdx: [maskIdx],
     labelClass: [labelClass],
@@ -34,6 +35,9 @@ const App = () => {
   } = useContext(AppContext)!;
   const [model, setModel] = useState<InferenceSession | null>(null); // ONNX model
   const [tensor, setTensor] = useState<Tensor | null>(null); // Image embedding tensor
+  // maybe I want label and segs arrays (0-6) as states that when updated uodate their respective canvases. will let you check against it when getting sam mask
+  // a decoupling of data and canvas representations could be useful for image as well 
+  // update labelData by looping through every pixel in the animated canvas != 0 & set to currentClass! 
 
   // The ONNX model expects the input to be rescaled to 1024. 
   // The modelScale state variable keeps track of the scale values.
@@ -83,6 +87,7 @@ const App = () => {
         img.width = width;
         img.height = height;
         setImage(img);
+        setLabelArr(new Uint8ClampedArray(width * height).fill(0));
       };
     } catch (error) {
       console.log(error);

@@ -16,7 +16,7 @@ export function rgbaToHex(r: number, g: number, b: number, a: number) {
 export const colours: number[][] = [[255, 255, 255, 255], [31, 119, 180, 255], [255, 127, 14, 255], [44, 160, 44, 255], [214, 39, 40, 255], [148, 103, 189, 255], [140, 86, 75, 255]]
 
 // Convert the onnx model mask prediction to ImageData
-function arrayToImageData(input: any, width: number, height: number, mask_idx: number, mask_colour: number) {
+export function arrayToImageData(input: any, width: number, height: number, mask_idx: number, mask_colour: number): ImageData {
   const [r, g, b, a] = colours[mask_colour]; // the masks's blue color
   // flat array here that is reshaped implictly in ImageData
   const arr = new Uint8ClampedArray(4 * width * height).fill(0);
@@ -37,8 +37,30 @@ function arrayToImageData(input: any, width: number, height: number, mask_idx: n
       arr[4 * i + 3] = 0.4 * 255;
     }
   }
+  // their tensor is the wrong way round 
   return new ImageData(arr, height, width);
 }
+
+function isPixelSet(p: number[]) { return (p[0] > 0 || p[1] > 0 || p[2] > 0) }
+
+export function addImageDataToArray(imageData: ImageData, arr: Uint8ClampedArray, classVal: number): Uint8ClampedArray {
+  const newArr = new Uint8ClampedArray(arr.length)
+  const data = imageData.data
+  console.log(data.length)
+  console.log(arr.length)
+  console.log(classVal)
+  for (let i = 0; i < arr.length; i++) {
+    // check if this pixel is set in the image and not set in the arr
+    if (isPixelSet([data[4 * i], data[4 * i + 1], data[4 * i + 2]]) && arr[i] == 0) {
+      newArr[i] = classVal
+    } else {
+      newArr[i] = arr[i]
+    }
+  }
+  //newArr.fill(3)
+  return newArr
+}
+
 
 // Use a Canvas element to produce an image from ImageData
 export function imageDataToImage(imageData: ImageData, zoom: number) {

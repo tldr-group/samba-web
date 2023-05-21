@@ -9,7 +9,7 @@ import React, { useContext, useEffect, useState } from "react";
 import "./assets/scss/App.scss";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { handleImageScale } from "./components/helpers/scaleHelper";
-import { modelScaleProps } from "./components/helpers/Interfaces";
+import { modelScaleProps, sendHTTPRequest } from "./components/helpers/Interfaces";
 import { onnxMaskToImage, imageDataToImage } from "./components/helpers/maskUtils";
 import { modelData } from "./components/helpers/onnxModelAPI";
 import Stage from "./components/Stage";
@@ -64,9 +64,11 @@ const App = () => {
     loadImageURL(url);
 
     // Load the Segment Anything pre-computed embedding
+    /*
     Promise.resolve(loadNpyTensor(IMAGE_EMBEDDING, "float32")).then(
       (embedding) => setTensor(embedding)
     );
+    */
   }, []);
 
   const loadImageURL = async (url: URL) => {
@@ -94,6 +96,20 @@ const App = () => {
     }
   };
 
+  const requestEmbedding = () => {
+    // early return if we already have one
+    if (tensor != null || image === null) {
+      return;
+    }
+    //console.log("foo")
+    const tempCanvas = document.createElement("canvas");
+    const ctx = tempCanvas.getContext("2d");
+    ctx?.drawImage(image, 0, 0)
+    const b64image = tempCanvas.toDataURL("image/jpeg")
+    console.log(b64image)
+    sendHTTPRequest("http://127.0.0.1:5000/encoding", b64image)
+
+  }
   // Decode a Numpy file into a tensor. 
   const loadNpyTensor = async (tensorFile: string, dType: string) => {
     let npLoader = new npyjs();
@@ -140,7 +156,7 @@ const App = () => {
     }
   };
 
-  return <Stage loadImage={loadImage} />;
+  return <Stage loadImage={loadImage} requestEmbedding={requestEmbedding} />;
 };
 
 export default App;

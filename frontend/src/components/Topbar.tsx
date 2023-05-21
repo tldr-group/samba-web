@@ -43,7 +43,7 @@ const Topbar = ({ loadImage }: TopbarProps) => {
                                 ref={fileInputRef}
                                 style={{ display: 'none' }}
                                 onChange={handleFileUpload} />
-                            <NavDropdown.Item href="#action/3.2">Remove</NavDropdown.Item>
+                            <NavDropdown.Item>Remove</NavDropdown.Item>
                         </NavDropdown>
                         <NavDropdown title="Classifier" id="data-dropdown">
                             <NavDropdown.Item href="#action/3.1">New</NavDropdown.Item>

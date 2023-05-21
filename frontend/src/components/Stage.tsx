@@ -10,15 +10,13 @@ import Tool from "./Tool";
 import Topbar from "./Topbar";
 import Sidebar from "./Sidebar";
 import Canvas from "./Canvas"
-import { modelInputProps, TopbarProps, Label } from "./helpers/Interfaces";
+import { modelInputProps, TopbarProps, Label, StageProps } from "./helpers/Interfaces";
 import AppContext from "./hooks/createContext";
 
-const Stage = ({ loadImage }: TopbarProps) => {
+const Stage = ({ loadImage, requestEmbedding }: StageProps) => {
   const {
     labelClass: [, setLabelClass],
   } = useContext(AppContext)!;
-
-
 
 
   const flexCenterClasses = "flex items-center justify-center";
@@ -29,7 +27,7 @@ const Stage = ({ loadImage }: TopbarProps) => {
         <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`}>
           <Canvas />
         </div>
-        <Sidebar />
+        <Sidebar requestEmbedding={requestEmbedding} />
       </div>
 
     </div >

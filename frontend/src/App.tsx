@@ -9,7 +9,7 @@ import React, { useContext, useEffect, useState } from "react";
 import "./assets/scss/App.scss";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { handleImageScale } from "./components/helpers/scaleHelper";
-import { modelScaleProps, sendHTTPRequest } from "./components/helpers/Interfaces";
+import { modelScaleProps, getHTTPRequest } from "./components/helpers/Interfaces";
 import { onnxMaskToImage, imageDataToImage } from "./components/helpers/maskUtils";
 import { modelData } from "./components/helpers/onnxModelAPI";
 import Stage from "./components/Stage";
@@ -106,10 +106,24 @@ const App = () => {
     const ctx = tempCanvas.getContext("2d");
     ctx?.drawImage(image, 0, 0)
     const b64image = tempCanvas.toDataURL("image/jpeg")
-    console.log(b64image)
-    sendHTTPRequest("http://127.0.0.1:5000/encoding", b64image)
+    //console.log(b64image)
+    // change this to use fetch later. still need a way to convert the returned data to a file that can/should be read
+    const http = getHTTPRequest("http://127.0.0.1:5000/encoding")
+    http.onreadystatechange = () => {
+      console.log('Return')
+      // early returns for errors
+      if (http.readyState !== 4) { return }
+      if (http.status !== 200) { return }
+      const returnData = http.responseText
+      let npLoader = new npyjs();
+      const npArray = npLoader.parse(returnData)
+      const tensor = new ort.Tensor("float32", npArray.data, npArray.shape);
+      setTensor(tensor)
 
-  }
+      console.log(returnData)
+    }
+    http.send(JSON.stringify({ "message": b64image }))
+  };
   // Decode a Numpy file into a tensor. 
   const loadNpyTensor = async (tensorFile: string, dType: string) => {
     let npLoader = new npyjs();

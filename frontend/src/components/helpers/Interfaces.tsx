@@ -59,17 +59,9 @@ export interface MultiCanvasProps {
 
 export type Offset = { x: number, y: number }
 
-export const sendHTTPRequest = (url: string, data: any) => {
+export const getHTTPRequest = (url: string) => {
   const http = new XMLHttpRequest()
   http.open("POST", url, true)
   http.setRequestHeader("Content-type", "application/json;charset=utf-8")
-  http.onreadystatechange = () => {
-    console.log('Return from ' + url)
-    // early returns for errors
-    if (http.readyState !== 4) { return }
-    if (http.status !== 200) { return }
-    let returnData = http.responseText
-    console.log(returnData)
-  }
-  http.send(JSON.stringify({ "message": data }))
+  return http
 }

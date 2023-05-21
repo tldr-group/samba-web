@@ -96,34 +96,29 @@ const App = () => {
     }
   };
 
-  const requestEmbedding = () => {
+  const requestEmbedding = async () => {
     // early return if we already have one
     if (tensor != null || image === null) {
       return;
     }
-    //console.log("foo")
     const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = image.width
+    tempCanvas.height = image.height
     const ctx = tempCanvas.getContext("2d");
-    ctx?.drawImage(image, 0, 0)
+    ctx?.drawImage(image, 0, 0, image.width, image.height)
     const b64image = tempCanvas.toDataURL("image/jpeg")
-    //console.log(b64image)
-    // change this to use fetch later. still need a way to convert the returned data to a file that can/should be read
-    const http = getHTTPRequest("http://127.0.0.1:5000/encoding")
-    http.onreadystatechange = () => {
-      console.log('Return')
-      // early returns for errors
-      if (http.readyState !== 4) { return }
-      if (http.status !== 200) { return }
-      const returnData = http.responseText
-      let npLoader = new npyjs();
-      const npArray = npLoader.parse(returnData)
-      const tensor = new ort.Tensor("float32", npArray.data, npArray.shape);
-      setTensor(tensor)
 
-      console.log(returnData)
-    }
-    http.send(JSON.stringify({ "message": b64image }))
+    let npLoader = new npyjs();
+    const headers = new Headers()
+    headers.append('Content-Type', 'application/json;charset=utf-8')
+    // this works and I am so smart - basically took the parsing code that npyjs uses behind the scenes for files and applied it to my server (which returs in the right format)
+    const resp = await fetch("http://127.0.0.1:5000/encoding", { method: 'POST', headers: headers, body: JSON.stringify({ "message": b64image }) })
+    const arrayBuf = await resp.arrayBuffer();
+    const result = await npLoader.parse(arrayBuf);
+    const embedding = new ort.Tensor("float32", result.data, result.shape);
+    setTensor(embedding)
   };
+
   // Decode a Numpy file into a tensor. 
   const loadNpyTensor = async (tensorFile: string, dType: string) => {
     let npLoader = new npyjs();

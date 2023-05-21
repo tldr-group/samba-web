@@ -9,6 +9,7 @@ from encode import encode
 app = Flask(__name__)
 
 
+# these 2 functions from user Niels B on stack overflow: https://stackoverflow.com/questions/25594893/how-to-enable-cors-in-flask
 def _build_cors_preflight_response():
     response = make_response()
     response.headers.add("Access-Control-Allow-Origin", "*")
@@ -28,6 +29,7 @@ def encode_respond():
         return _build_cors_preflight_response()
     elif "POST" in request.method:  # The actual request following the preflight
         image = _get_image_from_b64(request.json["message"])
+        image.save("image.jpeg")
         encoded = encode(image)
         response = send_file("encoding.npy")
         # order = {"message": b64_image}

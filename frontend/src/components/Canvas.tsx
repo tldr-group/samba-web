@@ -99,6 +99,14 @@ const MultiCanvas = () => {
             const y = res[1]
             const click = getClick(x - cameraOffset.x, y - cameraOffset.y);
             if (click) setClicks([click]); // reload mask with new MaskIdx
+        } else if (labelType == "Erase") {
+            const ctx = getctx(labelCanvasRef)
+            if (image === null || ctx === null) {
+                return
+            }
+            const labelImageData = ctx?.getImageData(cameraOffset.x, cameraOffset.y, image?.width, image?.height)
+            const arr = addImageDataToArray(labelImageData, labelArr, 0, true)
+            setLabelArr(arr)
         }
     }, 15)
 
@@ -138,43 +146,6 @@ const MultiCanvas = () => {
         setZoom(newZoom);
     };
 
-    const drawCanv1onCanv2 = (ref1: RefObject<HTMLCanvasElement>, ref2: RefObject<HTMLCanvasElement>, draw_opacity: number = 255) => {
-        const ctx1 = getctx(ref1)
-        const ctx2 = getctx(ref2)
-        const imageData1 = ctx1?.getImageData(0, 0, ctx1.canvas.width, ctx1.canvas.height);
-        const imageData2 = ctx2?.getImageData(0, 0, ctx2.canvas.width, ctx2.canvas.height);
-
-        if (imageData1 != undefined && imageData2 != undefined) {
-            const data1 = imageData1.data;
-            const data2 = imageData2.data;
-            for (let i = 0; i < data1.length; i += 4) {
-                if (filled([data1[i], data1[i + 1], data1[i + 2], data1[i + 3]])) {
-                    data2[i] = data1[i];
-                    data2[i + 1] = data1[i + 1];
-                    data2[i + 2] = data1[i + 2];
-                    data2[i + 3] = draw_opacity;
-                }
-            };
-            ctx2?.putImageData(imageData2, 0, 0);
-        }
-    };
-
-    useEffect(() => {
-        console.log('Image changed')
-        let ctx = getctx(imgCanvasRef);
-        if (image === null || ctx?.canvas == undefined) {
-            return;
-        }
-        const dx = (ctx?.canvas.width - image.width) / 2;
-        const dy = (ctx?.canvas.height - image.height) / 2;
-        setCameraOffset({ x: dx, y: dy });
-        const newLabelImg = new Image(image.width, image.height)
-        setLabelImg(newLabelImg)
-
-        // if i work with sx, sy, sw and sh properly i can do zooming like this
-        ctx?.drawImage(image, 0, 0, image.width, image.height, dx, dy, image.width, image.height);
-    }, [image])
-
     const handleKeyPress = (e: any) => {
         if (e.key >= '0' && e.key <= '6') {
             // Perform desired actions for number key press
@@ -201,6 +172,22 @@ const MultiCanvas = () => {
     }
 
     useEffect(() => {
+        console.log('Image changed')
+        let ctx = getctx(imgCanvasRef);
+        if (image === null || ctx?.canvas == undefined) {
+            return;
+        }
+        const dx = (ctx?.canvas.width - image.width) / 2;
+        const dy = (ctx?.canvas.height - image.height) / 2;
+        setCameraOffset({ x: dx, y: dy });
+        const newLabelImg = new Image(image.width, image.height)
+        setLabelImg(newLabelImg)
+
+        // if i work with sx, sy, sw and sh properly i can do zooming like this
+        ctx?.drawImage(image, 0, 0, image.width, image.height, dx, dy, image.width, image.height);
+    }, [image])
+
+    useEffect(() => {
         let ctx = getctx(animatedCanvasRef);
         clearctx(animatedCanvasRef)
         if (maskImg === null) {
@@ -213,11 +200,10 @@ const MultiCanvas = () => {
         if (image === null) {
             return;
         }
-        console.log("label arr updated")
-        const newImageData = arrayToImageData(labelArr, image.height, image.width, 0, labelClass)
+        const newImageData = arrayToImageData(labelArr, image.height, image.width, 0, null, labelOpacity)
         const newImage = imageDataToImage(newImageData, zoom)
         setLabelImg(newImage)
-    }, [labelArr])
+    }, [labelArr, labelOpacity])
 
     useEffect(() => {
         const ctx = getctx(labelCanvasRef)
@@ -229,8 +215,6 @@ const MultiCanvas = () => {
     }, [labelImg])
 
     useEffect(() => { clearctx(animatedCanvasRef) }, [labelType]) // clear animated canvas when switching
-
-    useEffect(() => { drawCanv1onCanv2(labelCanvasRef, labelCanvasRef, labelOpacity) }, [labelOpacity])
 
     useEffect(() => {
         console.log(cameraOffset);

@@ -16,8 +16,9 @@ export function rgbaToHex(r: number, g: number, b: number, a: number) {
 export const colours: number[][] = [[255, 255, 255, 255], [31, 119, 180, 255], [255, 127, 14, 255], [44, 160, 44, 255], [214, 39, 40, 255], [148, 103, 189, 255], [140, 86, 75, 255]]
 
 // Convert the onnx model mask prediction to ImageData
-export function arrayToImageData(input: any, width: number, height: number, mask_idx: number, mask_colour: number): ImageData {
-  const [r, g, b, a] = colours[mask_colour]; // the masks's blue color
+export function arrayToImageData(input: any, width: number, height: number,
+  mask_idx: number, mask_colour: number | null = null, opacity: number = 0.4 * 255): ImageData {
+
   // flat array here that is reshaped implictly in ImageData
   const arr = new Uint8ClampedArray(4 * width * height).fill(0);
   /*The way this worked previously was that the first mask was the 'best' mask by (predicted) IoU, so they looped
@@ -26,15 +27,21 @@ export function arrayToImageData(input: any, width: number, height: number, mask
   so didn't do anything. Mad. */
   const offset = mask_idx * width * height;
   for (let i = 0; i < width * height; i++) {
-
     // Threshold the onnx model mask prediction at 0.0
     // This is equivalent to thresholding the mask using predictor.model.mask_threshold
     // in python
-    if (input[i + offset] > 0.0) {
+    const arrVal = input[i + offset]
+    if (arrVal > 0.0) {
+      let [r, g, b, a] = [0, 0, 0, 0]
+      if (mask_colour == null) {
+        [r, g, b, a] = colours[arrVal];
+      } else {
+        [r, g, b, a] = colours[mask_colour];
+      }
       arr[4 * i + 0] = r;
       arr[4 * i + 1] = g;
       arr[4 * i + 2] = b;
-      arr[4 * i + 3] = 0.4 * 255;
+      arr[4 * i + 3] = opacity;
     }
   }
   // their tensor is the wrong way round 
@@ -43,7 +50,7 @@ export function arrayToImageData(input: any, width: number, height: number, mask
 
 function isPixelSet(p: number[]) { return (p[0] > 0 || p[1] > 0 || p[2] > 0) }
 
-export function addImageDataToArray(imageData: ImageData, arr: Uint8ClampedArray, classVal: number): Uint8ClampedArray {
+export function addImageDataToArray(imageData: ImageData, arr: Uint8ClampedArray, classVal: number, erase: boolean = false): Uint8ClampedArray {
   const newArr = new Uint8ClampedArray(arr.length)
   const data = imageData.data
   console.log(data.length)
@@ -53,6 +60,8 @@ export function addImageDataToArray(imageData: ImageData, arr: Uint8ClampedArray
     // check if this pixel is set in the image and not set in the arr
     if (isPixelSet([data[4 * i], data[4 * i + 1], data[4 * i + 2]]) && arr[i] == 0) {
       newArr[i] = classVal
+    } else if (erase && !isPixelSet([data[4 * i], data[4 * i + 1], data[4 * i + 2]]) && arr[i] != 0) {
+      newArr[i] = 0
     } else {
       newArr[i] = arr[i]
     }

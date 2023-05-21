@@ -118,7 +118,7 @@ const OverlaysFrame = () => {
             </Card.Body>
             <Card.Body>
                 Opacity
-                <Form.Range onChange={e => changeOpacity(e)} min="25" max="255" />
+                <Form.Range onChange={e => changeOpacity(e)} min="0" max="255" />
             </Card.Body>
         </Card>
     );

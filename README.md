@@ -1,4 +1,4 @@
-## Segment Anything Model Based App
+## Segment Anything Model Based App (SAMBA) - web demo
 
 Web-based trainable segmentation with Segment Anything Model (SAM) based labelling for materials science.
 This is a local version of INSERT_URL_LATER which contains the frontend for the website (React + TSX) and the backend (Python + Django).
@@ -11,7 +11,7 @@ Download one of the ViT checkpoints for the SAM model - I choose the smallest, `
 pip install git+https://github.com/facebookresearch/segment-anything.git
 ```
 
-and followinh that the ONNX runtme libraries in python (conda is also available)
+and following that the ONNX runtme libraries in python (conda is also available)
 ```
 pip install onnxruntime onnx
 ```

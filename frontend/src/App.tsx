@@ -17,6 +17,7 @@ import AppContext from "./components/hooks/createContext";
 const ort = require("onnxruntime-web");
 /* @ts-ignore */
 import npyjs from "npyjs";
+import { List } from "underscore";
 
 // Define image, embedding and model paths
 //const IMAGE_PATH = "/assets/data/dogs.jpg";
@@ -41,6 +42,7 @@ const App = () => {
     clicks: [clicks],
     image: [image, setImage],
     labelArr: [labelArr, setLabelArr],
+    segArr: [, setSegArr],
     maskImg: [, setMaskImg],
     maskIdx: [maskIdx],
     labelClass: [labelClass],
@@ -103,6 +105,7 @@ const App = () => {
         img.height = height;
         setImage(img);
         setLabelArr(new Uint8ClampedArray(width * height).fill(0));
+        setSegArr(new Uint8ClampedArray(width * height).fill(0));
       };
     } catch (error) {
       console.log(error);
@@ -133,8 +136,35 @@ const App = () => {
     const b64image = getb64Image(image)
     const headers = new Headers()
     headers.append('Content-Type', 'application/json;charset=utf-8')
-    const resp = await fetch(SEGMENT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "image": b64image, "labels": labelArr }) })
-    console.log(resp.json())
+    console.log("Started Segementing")
+    let resp = await fetch(SEGMENT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "image": b64image, "labels": labelArr }) })
+    const buffer = await resp.arrayBuffer();
+    const dataView = new DataView(buffer);
+    const arrayLength = buffer.byteLength;
+    const arr = new Uint8ClampedArray(image.width * image.height).fill(0);
+    for (let i = 0; i < arrayLength; i++) {
+      arr[i] = dataView.getUint8(i);
+    }
+
+    /*
+    const json = await resp.json()
+    const seg = json["message"]
+    const arr = new Uint8ClampedArray(image.width * image.height).fill(1)
+    console.log(seg.length)
+    let i = 0
+    // this is really slow
+    /*
+    for (let r = 0; r < seg.length; i++) {
+      const column = seg[r]
+      for (let c = 0; c < column.length; c++) {
+        arr[i] = column[c] as unknown as number;
+        i++;
+      };
+    };
+    */
+    console.log("Finished segmenting")
+    //console.log(seg)
+    setSegArr(arr)
   }
 
   // Decode a Numpy file into a tensor. 

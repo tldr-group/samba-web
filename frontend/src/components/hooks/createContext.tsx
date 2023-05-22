@@ -48,6 +48,10 @@ interface contextProps {
     labelOpacity: number,
     setLabelOpacity: (e: number) => void
   ];
+  segOpacity: [
+    segOpacity: number,
+    setSegOpacity: (e: number) => void
+  ];
   brushWidth: [
     brushWidth: number,
     setBrushWidth: (e: number) => void

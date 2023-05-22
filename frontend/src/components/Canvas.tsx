@@ -46,8 +46,10 @@ const MultiCanvas = () => {
         labelType: [labelType],
         labelClass: [labelClass, setLabelClass],
         labelArr: [labelArr, setLabelArr],
+        segArr: [segArr,],
         brushWidth: [brushWidth],
         labelOpacity: [labelOpacity],
+        segOpacity: [segOpacity,],
         maskIdx: [maskIdx, setMaskIdx],
         cameraOffset: [cameraOffset, setCameraOffset],
         zoom: [zoom, setZoom],
@@ -59,9 +61,10 @@ const MultiCanvas = () => {
     const animatedCanvasRef = useRef<HTMLCanvasElement>(null);
 
     const [labelImg, setLabelImg] = useState<HTMLImageElement | null>(null);
+    const [segImg, setSegImg] = useState<HTMLImageElement | null>(null);
 
-    const groundTruths = [image, labelImg, maskImg]
-    const refs = [imgCanvasRef, labelCanvasRef, animatedCanvasRef]
+    const groundTruths = [image, segImg, labelImg, maskImg]
+    const refs = [imgCanvasRef, segCanvasRef, labelCanvasRef, animatedCanvasRef]
     const clicking = useRef<boolean>(false);
 
     const getClick = (x: number, y: number): modelInputProps => {
@@ -181,7 +184,9 @@ const MultiCanvas = () => {
         const dy = (ctx?.canvas.height - image.height) / 2;
         setCameraOffset({ x: dx, y: dy });
         const newLabelImg = new Image(image.width, image.height)
+        const newSegImg = new Image(image.width, image.height)
         setLabelImg(newLabelImg)
+        setSegImg(newSegImg)
 
         // if i work with sx, sy, sw and sh properly i can do zooming like this
         ctx?.drawImage(image, 0, 0, image.width, image.height, dx, dy, image.width, image.height);
@@ -204,6 +209,16 @@ const MultiCanvas = () => {
         const newImage = imageDataToImage(newImageData, zoom)
         setLabelImg(newImage)
     }, [labelArr, labelOpacity])
+    // bit of a dupe of this one: need a cleanup to stop me repeating myself
+    useEffect(() => {
+        if (image === null) {
+            return;
+        }
+        console.log("Seg array updated")
+        const newImageData = arrayToImageData(segArr, image.height, image.width, 0, null, segOpacity)
+        const newImage = imageDataToImage(newImageData, zoom)
+        setSegImg(newImage)
+    }, [segArr, segOpacity])
 
     useEffect(() => {
         const ctx = getctx(labelCanvasRef)
@@ -213,6 +228,16 @@ const MultiCanvas = () => {
         }
         ctx?.drawImage(labelImg, 0, 0, labelImg.width, labelImg.height, cameraOffset.x, cameraOffset.y, labelImg.width, labelImg.height);
     }, [labelImg])
+
+    useEffect(() => {
+        const ctx = getctx(segCanvasRef)
+        ctx?.clearRect(0, 0, ctx?.canvas.width, ctx?.canvas.height)
+        if (segImg === null) {
+            return;
+        }
+        console.log("Seg img updated")
+        ctx?.drawImage(segImg, 0, 0, segImg.width, segImg.height, cameraOffset.x, cameraOffset.y, segImg.width, segImg.height);
+    }, [segImg])
 
     useEffect(() => { clearctx(animatedCanvasRef) }, [labelType]) // clear animated canvas when switching
 
@@ -225,7 +250,7 @@ const MultiCanvas = () => {
                 return;
             }
             ctx?.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-            if (i < 2) {
+            if (i < 3) {
                 ctx?.drawImage(gt, 0, 0, gt.width, gt.height, cameraOffset.x, cameraOffset.y, gt.width, gt.height);
             };
         };

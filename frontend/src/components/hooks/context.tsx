@@ -28,6 +28,7 @@ const AppContextProvider = (props: {
 
   const [overlayType, setOverlayType] = useState<"Segmentation" | "Label">("Segmentation")
   const [labelOpacity, setLabelOpacity] = useState<number>(0.6 * 255);
+  const [segOpacity, setSegOpacity] = useState<number>(0.9 * 255);
   const [cameraOffset, setCameraOffset] = useState<Offset>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState<number>(1);
 
@@ -45,6 +46,7 @@ const AppContextProvider = (props: {
         brushWidth: [brushWidth, setBrushWidth],
         overlayType: [overlayType, setOverlayType],
         labelOpacity: [labelOpacity, setLabelOpacity],
+        segOpacity: [segOpacity, setSegOpacity],
         cameraOffset: [cameraOffset, setCameraOffset],
         zoom: [zoom, setZoom],
       }}

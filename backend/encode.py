@@ -10,5 +10,5 @@ def encode(image: Image.Image):
     sam = sam_model_registry["vit_b"](checkpoint="sam_vit_b_01ec64.pth")
     sam_predictor = SamPredictor(sam)
     sam_predictor.set_image(rgb_arr)
-    # np.save("encoding.npy", sam_predictor.features)
+    np.save("encoding.npy", sam_predictor.features)
     # imwrite("encoding.tif", sam_predictor.features.numpy())

@@ -51,23 +51,19 @@ export function arrayToImageData(input: any, width: number, height: number,
 function isPixelSet(p: number[]) { return (p[0] > 0 || p[1] > 0 || p[2] > 0) }
 
 export function addImageDataToArray(imageData: ImageData, arr: Uint8ClampedArray, classVal: number, erase: boolean = false): Uint8ClampedArray {
-  const newArr = new Uint8ClampedArray(arr.length)
-  const data = imageData.data
-  console.log(data.length)
-  console.log(arr.length)
-  console.log(classVal)
+  const newArr = new Uint8ClampedArray(arr.length);
+  const data = imageData.data;
   for (let i = 0; i < arr.length; i++) {
     // check if this pixel is set in the image and not set in the arr
     if (isPixelSet([data[4 * i], data[4 * i + 1], data[4 * i + 2]]) && arr[i] == 0) {
-      newArr[i] = classVal
+      newArr[i] = classVal;
     } else if (erase && !isPixelSet([data[4 * i], data[4 * i + 1], data[4 * i + 2]]) && arr[i] != 0) {
-      newArr[i] = 0
+      newArr[i] = 0;
     } else {
-      newArr[i] = arr[i]
+      newArr[i] = arr[i];
     }
   }
-  //newArr.fill(3)
-  return newArr
+  return newArr;
 }
 
 

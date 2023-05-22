@@ -8,7 +8,7 @@ import Card from 'react-bootstrap/Card';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import ButtonGroup from "react-bootstrap/ButtonGroup";
-import ToggleButton from "react-bootstrap/ToggleButton";
+import * as _ from "underscore";
 
 const OPACITY_MIN: number = 25; //really hacky - if opacity gets too low then can't recover the data on label canvas - need better fix (hidden canvas?)
 
@@ -96,13 +96,16 @@ const LabelFrame = ({ requestEmbedding }: SidebarProps) => {
 const OverlaysFrame = () => {
     const {
         overlayType: [overlayType, setOverlayType],
-        labelOpacity: [, setLabelOpacity]
+        segOpacity: [, setSegOpacity],
+        labelOpacity: [, setLabelOpacity],
     } = useContext(AppContext)!;
-    const changeOpacity = (e: any) => {
+    const changeOpacity = _.throttle((e: any) => {
         if (overlayType == "Label") {
             setLabelOpacity(e.target.value)
+        } else if (overlayType == "Segmentation") {
+            setSegOpacity(e.target.value)
         }
-    }
+    }, 15)
     const _setOverlayType = (val: string) => {
         if (val == "Segmentation") {
             setOverlayType("Segmentation")

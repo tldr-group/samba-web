@@ -1,5 +1,5 @@
 """Backend flask server. Has 2 endpoints: encoding and segmenting, both handled in different scripts."""
-from flask import Flask, request, make_response, jsonify, send_file
+from flask import Flask, request, make_response, jsonify, send_file, Response
 import base64
 from io import BytesIO
 from PIL import Image
@@ -31,7 +31,7 @@ def encode_respond():
         return _build_cors_preflight_response()
     elif "POST" in request.method:  # The actual request following the preflight
         image = _get_image_from_b64(request.json["message"])
-        image.save("image.jpeg")
+        # image.save("image.jpeg")
         encoded = encode(image)
         response = send_file("encoding.npy")
         # order = {"message": b64_image}
@@ -48,7 +48,11 @@ def segment_respond():
         image = _get_image_from_b64(request.json["image"])
         labels_dict = request.json["labels"]
         segmentation = segment(image, labels_dict)
-        return _corsify_actual_response(jsonify({"message": f"{np.sum(segmentation)}"}))
+        response = Response(
+            segmentation.tobytes()
+        )  # jsonify({"message": segmentation.tolist()})
+        response.headers.add("Content-Type", "application/octet-stream")
+        return _corsify_actual_response(response)
     else:
         raise RuntimeError("Wrong HTTP method {}".format(request.method))
 

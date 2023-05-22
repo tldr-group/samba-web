@@ -3,8 +3,10 @@ from flask import Flask, request, make_response, jsonify, send_file
 import base64
 from io import BytesIO
 from PIL import Image
+import numpy as np
 
 from encode import encode
+from segment import segment
 
 app = Flask(__name__)
 
@@ -35,9 +37,20 @@ def encode_respond():
         # order = {"message": b64_image}
         return _corsify_actual_response(response)
     else:
-        raise RuntimeError(
-            "Weird - don't know how to handle method {}".format(request.method)
-        )
+        raise RuntimeError("Wrong HTTP method {}".format(request.method))
+
+
+@app.route("/segmenting", methods=["POST", "GET", "OPTIONS"])
+def segment_respond():
+    if "OPTIONS" in request.method:  # CORS preflight
+        return _build_cors_preflight_response()
+    elif "POST" in request.method:  # The actual request following the preflight
+        image = _get_image_from_b64(request.json["image"])
+        labels_dict = request.json["labels"]
+        segmentation = segment(image, labels_dict)
+        return _corsify_actual_response(jsonify({"message": f"{np.sum(segmentation)}"}))
+    else:
+        raise RuntimeError("Wrong HTTP method {}".format(request.method))
 
 
 def _get_image_from_b64(b64_with_prefix: str):

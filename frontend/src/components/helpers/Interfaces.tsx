@@ -33,6 +33,7 @@ export interface ToolProps {
 export interface StageProps {
   loadImage: (href: string) => void;
   requestEmbedding: () => void;
+  trainClassifier: () => void;
 }
 
 export interface TopbarProps {
@@ -41,6 +42,7 @@ export interface TopbarProps {
 
 export interface SidebarProps {
   requestEmbedding: () => void;
+  trainClassifier: () => void;
 }
 
 

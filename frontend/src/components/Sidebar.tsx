@@ -13,12 +13,12 @@ import ToggleButton from "react-bootstrap/ToggleButton";
 const OPACITY_MIN: number = 25; //really hacky - if opacity gets too low then can't recover the data on label canvas - need better fix (hidden canvas?)
 
 
-const Sidebar = ({ requestEmbedding }: SidebarProps) => {
+const Sidebar = ({ requestEmbedding, trainClassifier }: SidebarProps) => {
     return (
         <div className="items-center" style={{ padding: '10px 10px', alignItems: 'center' }}>
-            <Button variant="dark" style={{ marginLeft: '28%', boxShadow: "1px 1px  1px grey" }}>Train Classifier!</Button>{' '}
+            <Button onClick={trainClassifier} variant="dark" style={{ marginLeft: '28%', boxShadow: "1px 1px  1px grey" }}>Train Classifier!</Button>{' '}
             <div className={`h-full w-[20%]`}>
-                <LabelFrame requestEmbedding={requestEmbedding} />
+                <LabelFrame requestEmbedding={requestEmbedding} trainClassifier={trainClassifier} />
                 <OverlaysFrame />
             </div>
         </div>

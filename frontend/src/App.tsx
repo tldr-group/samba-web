@@ -19,9 +19,22 @@ const ort = require("onnxruntime-web");
 import npyjs from "npyjs";
 
 // Define image, embedding and model paths
-const IMAGE_PATH = "/assets/data/dogs.jpg";
+//const IMAGE_PATH = "/assets/data/dogs.jpg";
 const IMAGE_EMBEDDING = "/assets/data/dogs_embedding.npy";
 const MODEL_DIR = "/model/sam_onnx_quantized_example.onnx";
+
+const ENCODE_ENDPOINT = "http://127.0.0.1:5000/encoding"
+const SEGMENT_ENDPOINT = "http://127.0.0.1:5000/segmenting"
+
+const getb64Image = (img: HTMLImageElement): string => {
+  const tempCanvas = document.createElement("canvas");
+  tempCanvas.width = img.width
+  tempCanvas.height = img.height
+  const ctx = tempCanvas.getContext("2d");
+  ctx?.drawImage(img, 0, 0, img.width, img.height)
+  const b64image = tempCanvas.toDataURL("image/jpeg")
+  return b64image
+}
 
 const App = () => {
   const {
@@ -60,8 +73,8 @@ const App = () => {
     initModel();
 
     // Load the image
-    const url = new URL(IMAGE_PATH, location.origin);
-    loadImageURL(url);
+    //const url = new URL(IMAGE_PATH, location.origin);
+    //loadImageURL(url);
 
     // Load the Segment Anything pre-computed embedding
     /*
@@ -101,23 +114,28 @@ const App = () => {
     if (tensor != null || image === null) {
       return;
     }
-    const tempCanvas = document.createElement("canvas");
-    tempCanvas.width = image.width
-    tempCanvas.height = image.height
-    const ctx = tempCanvas.getContext("2d");
-    ctx?.drawImage(image, 0, 0, image.width, image.height)
-    const b64image = tempCanvas.toDataURL("image/jpeg")
-
+    const b64image = getb64Image(image)
     let npLoader = new npyjs();
     const headers = new Headers()
     headers.append('Content-Type', 'application/json;charset=utf-8')
     // this works and I am so smart - basically took the parsing code that npyjs uses behind the scenes for files and applied it to my server (which returs in the right format)
-    const resp = await fetch("http://127.0.0.1:5000/encoding", { method: 'POST', headers: headers, body: JSON.stringify({ "message": b64image }) })
+    const resp = await fetch(ENCODE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "message": b64image }) })
     const arrayBuf = await resp.arrayBuffer();
     const result = await npLoader.parse(arrayBuf);
     const embedding = new ort.Tensor("float32", result.data, result.shape);
     setTensor(embedding)
   };
+
+  const trainClassifier = async () => {
+    if (image === null || labelArr === null) {
+      return;
+    }
+    const b64image = getb64Image(image)
+    const headers = new Headers()
+    headers.append('Content-Type', 'application/json;charset=utf-8')
+    const resp = await fetch(SEGMENT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "image": b64image, "labels": labelArr }) })
+    console.log(resp.json())
+  }
 
   // Decode a Numpy file into a tensor. 
   const loadNpyTensor = async (tensorFile: string, dType: string) => {
@@ -165,7 +183,7 @@ const App = () => {
     }
   };
 
-  return <Stage loadImage={loadImage} requestEmbedding={requestEmbedding} />;
+  return <Stage loadImage={loadImage} requestEmbedding={requestEmbedding} trainClassifier={trainClassifier} />;
 };
 
 export default App;

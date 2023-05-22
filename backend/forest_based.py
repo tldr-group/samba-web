@@ -150,7 +150,7 @@ def featurise_then_segment(
     img: np.ndarray,
     selected_features: dict,
     labels: np.ndarray,
-    model_name: EnsembleMethodName = "XGB",
+    model_name: EnsembleMethodName = "FRF",
     balance_classes: bool = True,
 ) -> np.ndarray:
     """Perform each step of classification: featurising, get data, get model, git, apply."""
@@ -161,6 +161,6 @@ def featurise_then_segment(
         weights = get_class_weights(target_data)
     else:
         weights = None
-    fit(model, fit_data, target_data, weights)
+    model = fit(model, fit_data, target_data, weights)
     out_data = apply(model, [feature_stack])
     return out_data[0]

@@ -7,7 +7,6 @@
 import React, { useState } from "react";
 import { modelInputProps, Label, Offset } from "../helpers/Interfaces";
 import AppContext from "./createContext";
-import { Overlay } from "react-bootstrap";
 
 const AppContextProvider = (props: {
   children: React.ReactElement<any, string | React.JSXElementConstructor<any>>;

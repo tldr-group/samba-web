@@ -55,6 +55,7 @@ const MultiCanvas = () => {
         zoom: [zoom, setZoom],
     } = useContext(AppContext)!;
 
+    // We use references here because we don't want to re-render every time these change (they do that already as they're canvases!)
     const imgCanvasRef = useRef<HTMLCanvasElement>(null);
     const segCanvasRef = useRef<HTMLCanvasElement>(null);
     const labelCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -63,8 +64,11 @@ const MultiCanvas = () => {
     const [labelImg, setLabelImg] = useState<HTMLImageElement | null>(null);
     const [segImg, setSegImg] = useState<HTMLImageElement | null>(null);
 
+    // Our images - when we update them their corresponding canvas changes. 
     const groundTruths = [image, segImg, labelImg, maskImg]
+    // Our canvases - updated when our images update but also can update them (i.e when drawing labels.)
     const refs = [imgCanvasRef, segCanvasRef, labelCanvasRef, animatedCanvasRef]
+    // Track mouse state (for drag drawing)
     const clicking = useRef<boolean>(false);
 
     const getClick = (x: number, y: number): modelInputProps => {
@@ -77,41 +81,44 @@ const MultiCanvas = () => {
         if (drawing) { clicking.current = true; }
     }
 
+    // Throttled to avoid over rendering the canvases (or over-requesting SAM model)
     const handleClickEnd = _.throttle((e: any) => {
+        // Once a click finishes, get current labelling state and apply correct action
         const drawing = (labelType == "Brush" || labelType == "Erase");
         const leftClick = (e.button == 0);
         const rightClick = (e.button == 2);
 
         if (drawing && leftClick) { clicking.current = false; };
         if ((labelType == "Brush" || labelType == "SAM") && leftClick) {
-            console.log(labelOpacity);
-            const ctx = getctx(animatedCanvasRef)
+            // Draw onto our animated canvas, accounting for offsets
+            const ctx = getctx(animatedCanvasRef);
             if (ctx === null || image === null) {
-                return
+                return;
             }
-            const labelImageData = ctx?.getImageData(cameraOffset.x, cameraOffset.y, image?.width, image?.height)
-            const arr = addImageDataToArray(labelImageData, labelArr, labelClass)
-            setLabelArr(arr)
+            const labelImageData = ctx?.getImageData(cameraOffset.x, cameraOffset.y, image?.width, image?.height);
+            const arr = addImageDataToArray(labelImageData, labelArr, labelClass);
+            setLabelArr(arr);
             clearctx(animatedCanvasRef);
         } else if (labelType == "SAM" && rightClick) {
+            // Update SAM type when right clicking
             const newMaskIdx = (maskIdx % 3) + 1;
             setMaskIdx((newMaskIdx));
-            console.log(newMaskIdx);
-            const res = getxy(e)
-            const x = res[0]
-            const y = res[1]
+            const res = getxy(e);
+            const x = res[0];
+            const y = res[1];
             const click = getClick(x - cameraOffset.x, y - cameraOffset.y);
             if (click) setClicks([click]); // reload mask with new MaskIdx
         } else if (labelType == "Erase") {
-            const ctx = getctx(labelCanvasRef)
+            // Erase directly on labels (so get real time preview)
+            const ctx = getctx(labelCanvasRef);
             if (image === null || ctx === null) {
-                return
+                return;
             }
-            const labelImageData = ctx?.getImageData(cameraOffset.x, cameraOffset.y, image?.width, image?.height)
-            const arr = addImageDataToArray(labelImageData, labelArr, 0, true)
-            setLabelArr(arr)
+            const labelImageData = ctx?.getImageData(cameraOffset.x, cameraOffset.y, image?.width, image?.height);
+            const arr = addImageDataToArray(labelImageData, labelArr, 0, true);
+            setLabelArr(arr);
         }
-    }, 15)
+    }, 15);
 
     const handleClickMove = (e: any) => {
         const res = getxy(e)
@@ -150,27 +157,24 @@ const MultiCanvas = () => {
     };
 
     const handleKeyPress = (e: any) => {
+        console.log(e.key)
         if (e.key >= '0' && e.key <= '6') {
             // Perform desired actions for number key press
             console.log('Number key pressed:', e.key);
             setLabelClass(parseInt(e.key));
-        } else if (e.key == "w") {
-            console.log("Pan up")
-            const c = cameraOffset
-            setCameraOffset({ x: c.x, y: c.y - 10 })
+        } else if (e.key == "w" || e.key == "ArrowUp") {
+            const c = cameraOffset;
+            setCameraOffset({ x: c.x, y: c.y - 10 });
         }
-        else if (e.key == "s") {
-            console.log("Pan up")
-            const c = cameraOffset
+        else if (e.key == "s" || e.key == "ArrowDown") {
+            const c = cameraOffset;
             setCameraOffset({ x: c.x, y: c.y + 10 })
-        } else if (e.key == "a") {
-            console.log("Pan up")
-            const c = cameraOffset
-            setCameraOffset({ x: c.x - 10, y: c.y })
-        } else if (e.key == "d") {
-            console.log("Pan up")
-            const c = cameraOffset
-            setCameraOffset({ x: c.x + 10, y: c.y })
+        } else if (e.key == "a" || e.key == "ArrowLeft") {
+            const c = cameraOffset;
+            setCameraOffset({ x: c.x - 10, y: c.y });
+        } else if (e.key == "d" || e.key == "ArrowRight") {
+            const c = cameraOffset;
+            setCameraOffset({ x: c.x + 10, y: c.y });
         }
     }
 

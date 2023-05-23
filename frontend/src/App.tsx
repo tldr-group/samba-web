@@ -74,22 +74,7 @@ const App = () => {
       }
     };
     initModel();
-
-    // Load the image
-    //const url = new URL(IMAGE_PATH, location.origin);
-    //loadImageURL(url);
-
-    // Load the Segment Anything pre-computed embedding
-    /*
-    Promise.resolve(loadNpyTensor(IMAGE_EMBEDDING, "float32")).then(
-      (embedding) => setTensor(embedding)
-    );
-    */
   }, []);
-
-  const loadImageURL = async (url: URL) => {
-    loadImage(url.href)
-  }
 
   const loadImage = async (href: string) => {
     try {
@@ -104,6 +89,7 @@ const App = () => {
         });
         img.width = width;
         img.height = height;
+        // set all our ground truth arrays. labelArr and segArr are set to null
         setImage(img);
         setLabelArr(new Uint8ClampedArray(width * height).fill(0));
         setSegArr(new Uint8ClampedArray(width * height).fill(0));
@@ -114,34 +100,36 @@ const App = () => {
   };
 
   const requestEmbedding = async () => {
-    // early return if we already have one
-    if (tensor != null || image === null) {
+    // Ping our encode enpoint, request and await an embedding, then set it.
+    if (tensor != null || image === null) { // Early return if we already have one
       return;
     }
     setProcessing("Encoding")
-    const b64image = getb64Image(image)
+    const b64image = getb64Image(image);
     let npLoader = new npyjs();
-    const headers = new Headers()
-    headers.append('Content-Type', 'application/json;charset=utf-8')
-    // this works and I am so smart - basically took the parsing code that npyjs uses behind the scenes for files and applied it to my server (which returs in the right format)
+    const headers = new Headers();
+    headers.append('Content-Type', 'application/json;charset=utf-8');
+    // this works and I am so smart - basically took the parsing code that npyjs uses behind the scenes for files and applied it to my server (which returns a file in the right format)
     const resp = await fetch(ENCODE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "message": b64image }) })
     const arrayBuf = await resp.arrayBuffer();
     const result = await npLoader.parse(arrayBuf);
     const embedding = new ort.Tensor("float32", result.data, result.shape);
-    setProcessing("None")
-    setTensor(embedding)
+    setProcessing("None");
+    setTensor(embedding);
   };
 
   const trainClassifier = async () => {
+    // Ping our segment endpoint, send it our image and labels then await the array.
     if (image === null || labelArr === null) {
       return;
     }
     setProcessing("Segmenting")
-    const b64image = getb64Image(image)
-    const headers = new Headers()
+    const b64image = getb64Image(image);
+    const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8')
     console.log("Started Segementing")
     let resp = await fetch(SEGMENT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "image": b64image, "labels": labelArr }) })
+    // buffer + dataView > JSON for arrays.
     const buffer = await resp.arrayBuffer();
     const dataView = new DataView(buffer);
     const arrayLength = buffer.byteLength;
@@ -149,18 +137,10 @@ const App = () => {
     for (let i = 0; i < arrayLength; i++) {
       arr[i] = dataView.getUint8(i);
     }
-    console.log("Finished segmenting")
-    setProcessing("None")
-    setSegArr(arr)
+    console.log("Finished segmenting");
+    setProcessing("None");
+    setSegArr(arr);
   }
-
-  // Decode a Numpy file into a tensor. 
-  const loadNpyTensor = async (tensorFile: string, dType: string) => {
-    let npLoader = new npyjs();
-    const npArray = await npLoader.load(tensorFile);
-    const tensor = new ort.Tensor(dType, npArray.data, npArray.shape);
-    return tensor;
-  };
 
   // Run the ONNX model every time clicks has changed i.e monitors state of clicks - useful for zooming!
   useEffect(() => {
@@ -188,9 +168,7 @@ const App = () => {
         if (feeds === undefined) return;
         // Run the SAM ONNX model with the feeds returned from modelData()
         const results = await model.run(feeds);
-        // outputNames = ['masks', 'iou', 'low res']
         const output = results[model.outputNames[0]];
-        // output dims are [1, 4, 603, 1072] ?= [b, n_masks, h, w] 
         // The predicted mask returned from the ONNX model is an array which is 
         // rendered as an HTML image using onnxMaskToImage() from maskUtils.tsx.
         setMaskImg(onnxMaskToImage(output.data, output.dims[2], output.dims[3], maskIdx, labelClass, zoom, labelArr));

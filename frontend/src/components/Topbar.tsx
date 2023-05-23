@@ -5,7 +5,6 @@ import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import NavDropdown from 'react-bootstrap/NavDropdown';
-import { NavbarBrand } from "react-bootstrap";
 
 const Topbar = ({ loadImage }: TopbarProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -18,6 +17,7 @@ const Topbar = ({ loadImage }: TopbarProps) => {
     }
 
     const handleFileUpload = (e: any) => {
+        // Open file dialog and load file. TODO: add in .tiff loading (parse as image?)
         const file: File | null = e.target.files?.[0] || null;
         const reader = new FileReader();
 
@@ -48,7 +48,6 @@ const Topbar = ({ loadImage }: TopbarProps) => {
                             <NavDropdown.Item>Remove</NavDropdown.Item>
                         </NavDropdown>
                         <NavDropdown title="Classifier" id="data-dropdown">
-                            <NavDropdown.Item href="#action/3.1">New</NavDropdown.Item>
                             <NavDropdown.Item href="#action/3.2">Save</NavDropdown.Item>
                             <NavDropdown.Item href="#action/3.2">Load</NavDropdown.Item>
                             <NavDropdown.Divider />

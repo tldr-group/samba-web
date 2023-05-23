@@ -64,6 +64,10 @@ interface contextProps {
     zoom: number,
     setZoom: (e: any) => void
   ];
+  processing: [
+    processing: "None" | "Encoding" | "Segmenting",
+    setProcessing: (e: "None" | "Encoding" | "Segmenting") => void
+  ];
 }
 
 const AppContext = createContext<contextProps | null>(null);

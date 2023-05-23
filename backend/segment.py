@@ -14,5 +14,6 @@ def segment(image: Image.Image, labels_dict):
 
     probs = featurise_then_segment(img_arr, DEAFAULT_FEATURES, labels_arr)
     classes = np.argmax(probs, axis=0).astype(np.uint8) + 1
+    remasked = np.where(labels_arr == 0, classes, labels_arr).astype(np.uint8)
     # maybe overwrite classes where labels is > 0 ?
-    return classes.flatten()
+    return remasked.flatten()

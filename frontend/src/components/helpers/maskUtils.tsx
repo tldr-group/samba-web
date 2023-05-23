@@ -17,7 +17,7 @@ export const colours: number[][] = [[255, 255, 255, 255], [31, 119, 180, 255], [
 
 // Convert the onnx model mask prediction to ImageData
 export function arrayToImageData(input: any, width: number, height: number,
-  mask_idx: number, mask_colour: number | null = null, opacity: number = 0.4 * 255): ImageData {
+  mask_idx: number, mask_colour: number | null = null, opacity: number = 0.4 * 255, refArr: Uint8ClampedArray | null = null): ImageData {
 
   // flat array here that is reshaped implictly in ImageData
   const arr = new Uint8ClampedArray(4 * width * height).fill(0);
@@ -31,7 +31,14 @@ export function arrayToImageData(input: any, width: number, height: number,
     // This is equivalent to thresholding the mask using predictor.model.mask_threshold
     // in python
     const arrVal = input[i + offset]
-    if (arrVal > 0.0) {
+    let valid: boolean = true
+    if (refArr === null) {
+      valid = (arrVal > 0.0)
+    } else {
+      valid = (arrVal > 0.0 && refArr[i] == 0)
+    }
+
+    if (valid) {
       let [r, g, b, a] = [0, 0, 0, 0]
       if (mask_colour == null) {
         [r, g, b, a] = colours[arrVal];
@@ -88,6 +95,6 @@ function imageDataToCanvas(imageData: ImageData, zoom: number) {
 }
 
 // Convert the onnx model mask output to an HTMLImageElement
-export function onnxMaskToImage(input: any, width: number, height: number, mask_idx: number, mask_colour: number, zoom: number) {
-  return imageDataToImage(arrayToImageData(input, width, height, mask_idx, mask_colour), zoom);
+export function onnxMaskToImage(input: any, width: number, height: number, mask_idx: number, mask_colour: number, zoom: number, refArr: Uint8ClampedArray) {
+  return imageDataToImage(arrayToImageData(input, width, height, mask_idx, mask_colour, 0.4 * 255, refArr), zoom);
 }

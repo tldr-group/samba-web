@@ -6,3 +6,5 @@ yarn.lock
 *data*
 *.pth
 *.npy
+*backend/*.jpeg
+*backend/*.tif

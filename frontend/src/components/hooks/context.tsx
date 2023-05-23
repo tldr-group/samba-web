@@ -31,6 +31,7 @@ const AppContextProvider = (props: {
   const [segOpacity, setSegOpacity] = useState<number>(0.9 * 255);
   const [cameraOffset, setCameraOffset] = useState<Offset>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState<number>(1);
+  const [processing, setProcessing] = useState<"None" | "Encoding" | "Segmenting">("None")
 
   return (
     <AppContext.Provider
@@ -49,6 +50,7 @@ const AppContextProvider = (props: {
         segOpacity: [segOpacity, setSegOpacity],
         cameraOffset: [cameraOffset, setCameraOffset],
         zoom: [zoom, setZoom],
+        processing: [processing, setProcessing]
       }}
     >
       {props.children}

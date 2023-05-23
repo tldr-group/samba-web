@@ -8,6 +8,7 @@ import Card from 'react-bootstrap/Card';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import ButtonGroup from "react-bootstrap/ButtonGroup";
+import Spinner from "react-bootstrap/Spinner";
 import * as _ from "underscore";
 
 const OPACITY_MIN: number = 25; //really hacky - if opacity gets too low then can't recover the data on label canvas - need better fix (hidden canvas?)
@@ -22,6 +23,7 @@ const Sidebar = ({ requestEmbedding, trainClassifier }: SidebarProps) => {
             <div className={`h-full w-[20%]`}>
                 <LabelFrame requestEmbedding={requestEmbedding} trainClassifier={trainClassifier} />
                 <OverlaysFrame />
+                <SpinWheel></SpinWheel>
             </div>
         </div>
     );
@@ -155,6 +157,32 @@ const OverlaysFrame = () => {
             </Card.Body>
         </Card>
     );
+}
+
+const SpinWheel = () => {
+    const {
+        processing: [processing,],
+        labelClass: [labelClass,],
+    } = useContext(AppContext)!;
+
+    const c = colours[labelClass];
+    const hex = rgbaToHex(c[0], c[1], c[2], 255);
+
+    if (processing !== "None") {
+        return (<div>
+            <Button disabled style={{
+                backgroundColor: hex, borderColor: hex, width: '18rem', margin: '15%'
+            }}>
+                < Spinner as='span' animation="border" />
+                <p style={{ marginBottom: '-4px' }}>{processing}</p>
+            </Button>
+        </div >)
+    }
+
+    return (
+        <div>
+        </div >
+    )
 }
 
 

@@ -5,6 +5,7 @@ import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import NavDropdown from 'react-bootstrap/NavDropdown';
+import { NavbarBrand } from "react-bootstrap";
 
 const Topbar = ({ loadImage }: TopbarProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -31,6 +32,7 @@ const Topbar = ({ loadImage }: TopbarProps) => {
     return (
         <Navbar bg="dark" variant="dark" expand="lg" style={{ boxShadow: "1px 1px  1px grey" }}>
             <Container>
+                <Navbar.Brand style={{ fontSize: "2em", padding: "0px", marginRight: "5px" }}>&#128378;</Navbar.Brand>
                 <Navbar.Brand>SAMBA</Navbar.Brand>
                 <Navbar.Toggle aria-controls="basic-navbar-nav" />
                 <Navbar.Collapse id="basic-navbar-nav">

@@ -46,7 +46,8 @@ const App = () => {
     maskImg: [, setMaskImg],
     maskIdx: [maskIdx],
     labelClass: [labelClass],
-    zoom: [zoom]
+    zoom: [zoom],
+    processing: [, setProcessing]
   } = useContext(AppContext)!;
   const [model, setModel] = useState<InferenceSession | null>(null); // ONNX model
   const [tensor, setTensor] = useState<Tensor | null>(null); // Image embedding tensor
@@ -117,6 +118,7 @@ const App = () => {
     if (tensor != null || image === null) {
       return;
     }
+    setProcessing("Encoding")
     const b64image = getb64Image(image)
     let npLoader = new npyjs();
     const headers = new Headers()
@@ -126,6 +128,7 @@ const App = () => {
     const arrayBuf = await resp.arrayBuffer();
     const result = await npLoader.parse(arrayBuf);
     const embedding = new ort.Tensor("float32", result.data, result.shape);
+    setProcessing("None")
     setTensor(embedding)
   };
 
@@ -133,6 +136,7 @@ const App = () => {
     if (image === null || labelArr === null) {
       return;
     }
+    setProcessing("Segmenting")
     const b64image = getb64Image(image)
     const headers = new Headers()
     headers.append('Content-Type', 'application/json;charset=utf-8')
@@ -145,25 +149,8 @@ const App = () => {
     for (let i = 0; i < arrayLength; i++) {
       arr[i] = dataView.getUint8(i);
     }
-
-    /*
-    const json = await resp.json()
-    const seg = json["message"]
-    const arr = new Uint8ClampedArray(image.width * image.height).fill(1)
-    console.log(seg.length)
-    let i = 0
-    // this is really slow
-    /*
-    for (let r = 0; r < seg.length; i++) {
-      const column = seg[r]
-      for (let c = 0; c < column.length; c++) {
-        arr[i] = column[c] as unknown as number;
-        i++;
-      };
-    };
-    */
     console.log("Finished segmenting")
-    //console.log(seg)
+    setProcessing("None")
     setSegArr(arr)
   }
 
@@ -206,7 +193,7 @@ const App = () => {
         // output dims are [1, 4, 603, 1072] ?= [b, n_masks, h, w] 
         // The predicted mask returned from the ONNX model is an array which is 
         // rendered as an HTML image using onnxMaskToImage() from maskUtils.tsx.
-        setMaskImg(onnxMaskToImage(output.data, output.dims[2], output.dims[3], maskIdx, labelClass, zoom));
+        setMaskImg(onnxMaskToImage(output.data, output.dims[2], output.dims[3], maskIdx, labelClass, zoom, labelArr));
       }
     } catch (e) {
       console.log(e);

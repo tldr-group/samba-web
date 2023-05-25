@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import AppContext from "./hooks/createContext";
-import { colours, rgbaToHex } from "./helpers/maskUtils";
+import { colours, rgbaToHex } from "./helpers/canvasUtils";
 import { Label, SidebarProps } from "./helpers/Interfaces";
 
 

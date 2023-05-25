@@ -10,7 +10,7 @@ import "./assets/scss/App.scss";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { handleImageScale } from "./components/helpers/scaleHelper";
 import { modelScaleProps, getHTTPRequest } from "./components/helpers/Interfaces";
-import { onnxMaskToImage, imageDataToImage } from "./components/helpers/maskUtils";
+import { onnxMaskToImage, imageDataToImage } from "./components/helpers/canvasUtils";
 import { modelData } from "./components/helpers/onnxModelAPI";
 import Stage from "./components/Stage";
 import AppContext from "./components/hooks/createContext";
@@ -171,7 +171,7 @@ const App = () => {
         const output = results[model.outputNames[0]];
         // The predicted mask returned from the ONNX model is an array which is 
         // rendered as an HTML image using onnxMaskToImage() from maskUtils.tsx.
-        setMaskImg(onnxMaskToImage(output.data, output.dims[2], output.dims[3], maskIdx, labelClass, zoom, labelArr));
+        setMaskImg(onnxMaskToImage(output.data, output.dims[2], output.dims[3], maskIdx, labelClass, labelArr));
       }
     } catch (e) {
       console.log(e);

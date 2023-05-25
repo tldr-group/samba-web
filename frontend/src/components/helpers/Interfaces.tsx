@@ -51,7 +51,6 @@ export interface LabelFrameProps {
 }
 
 
-
 export interface MultiCanvasProps {
   label: Label;
   class: number;
@@ -60,6 +59,7 @@ export interface MultiCanvasProps {
 }
 
 export type Offset = { x: number, y: number }
+export type Pan = { x0: number, y0: number, cx0: number, cy0: number }
 
 export const getHTTPRequest = (url: string) => {
   const http = new XMLHttpRequest()

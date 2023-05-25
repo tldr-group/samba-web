@@ -4,6 +4,9 @@
 // This source code is licensed under the license found in the
 // LICENSE file in the root directory of this source tree.
 
+import { Offset } from "./Interfaces"
+import { RefObject } from "react";
+
 export function rgbaToHex(r: number, g: number, b: number, a: number) {
   // from user 'Sotos' https://stackoverflow.com/questions/49974145/how-to-convert-rgba-to-hex-color-code-using-javascript
   const red = r.toString(16).padStart(2, '0');
@@ -97,4 +100,97 @@ function imageDataToCanvas(imageData: ImageData) {
 // Convert the onnx model mask output to an HTMLImageElement
 export function onnxMaskToImage(input: any, width: number, height: number, mask_idx: number, mask_colour: number, refArr: Uint8ClampedArray) {
   return imageDataToImage(arrayToImageData(input, width, height, mask_idx, mask_colour, 0.4 * 255, refArr));
+}
+
+
+export const draw = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, colour: string) => {
+  ctx.fillStyle = colour; //"#43ff641a"
+  ctx.beginPath();
+  ctx.ellipse(x, y, width, width, 0, 0, 2 * Math.PI);
+  ctx.fill();
+}
+
+export const erase = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number) => {
+  ctx.clearRect(x - width / 2, y - width / 2, width, width)
+}
+
+export const getctx = (ref: RefObject<HTMLCanvasElement>): CanvasRenderingContext2D | null => { return ref.current!.getContext("2d", { willReadFrequently: true }) }
+export const clearctx = (ref: RefObject<HTMLCanvasElement>) => {
+  const ctx = getctx(ref)
+  ctx?.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+}
+
+const filled = (p: number[]) => { return (p[0] > 0 && p[1] > 0 && p[2] > 0) }
+
+export const getxy = (e: any): [number, number] => {
+  // if i make this work with zoom will everything just work?
+  let el = e.nativeEvent.target;
+  const rect = el.getBoundingClientRect();
+  let x = e.clientX - rect.left;
+  let y = e.clientY - rect.top;
+  return [x, y]
+}
+
+export const transferLabels = (animCanv: HTMLCanvasElement, labelImage: HTMLImageElement, offset: Offset, zoom: number, drawOriginal: boolean = true) => {
+  const [sx0, sy0, sw, sh, dx, dy, dw, dh] = getZoomPanCoords(animCanv.width, animCanv.height, labelImage, offset, zoom)
+  const transferCanvas = document.createElement("canvas");
+  const transferCtx = transferCanvas.getContext("2d");
+  if (transferCtx === null) { return; };
+  transferCanvas.width = labelImage.width;
+  transferCanvas.height = labelImage.height;
+  if (drawOriginal === true) { transferCtx.drawImage(labelImage, 0, 0) };
+  transferCtx.clearRect(sx0, sy0, sw, sh)
+  transferCtx.drawImage(animCanv, dx, dy, dw, dh, sx0, sy0, sw, sh);
+  return transferCtx;
+}
+/*Given a (potnetially zoomed) animated canvas* with labels on it, create a transfer canvas, draw LabelImg onto it (full size),
+then draw correct bit of animCanv onto it in the right position on transfer canvas(inverse of my drawImg - maybe generalise that) 
+then just get all of transfer canvas and convert it to label array as before. */
+
+export const getZoomPanCoords = (cw: number, ch: number, image: HTMLImageElement, offset: Offset, zoom: number) => {
+  const [w, h] = [image.width, image.height]
+  const [zw, zh] = [w * zoom, h * zoom]
+  let [sx0, sx1, sy0, sy1] = [0, 0, 0, 0]
+  let [dx, dy, dw, dh] = [0, 0, 0, 0]
+  if (zw <= cw) {
+    console.log("smaller width")
+    sx0 = 0
+    sx1 = w
+    dx = offset.x
+    dw = zw
+  } else {
+    sx0 = offset.x
+    sx1 = cw / zoom
+    dx = 0
+    dw = cw
+  }
+
+  if (zh <= ch) {
+    sy0 = 0
+    sy1 = h
+    dy = offset.y
+    dh = zh
+  } else {
+    sy0 = offset.y
+    sy1 = ch / zoom
+    dy = 0
+    dh = ch
+  }
+  return [sx0, sy0, sx1, sy1, dx, dy, dw, dh]
+}
+
+export const getZoomPanXY = (canvX: number, canvY: number, ctx: CanvasRenderingContext2D, image: HTMLImageElement, offset: Offset, zoom: number) => {
+  const [sx0, sy0, sw, sh, dx, dy, dw, dh] = getZoomPanCoords(ctx.canvas.width, ctx.canvas.height, image, offset, zoom)
+  const fracX = (canvX - dx) / dw
+  const fracY = (canvY - dy) / dh
+  const naturalX = (fracX * sw) + sx0
+  const naturalY = (fracY * sh) + sy0
+  return [naturalX, naturalY]
+}
+
+export const drawImage = (ctx: CanvasRenderingContext2D, image: HTMLImageElement, offset: Offset, zoom: number) => {
+  // split into 2 funcitons - one to get coords and one to draw, then reverse the coords for transfert.
+  const [sx0, sy0, sx1, sy1, dx, dy, dw, dh] = getZoomPanCoords(ctx.canvas.width, ctx.canvas.height, image, offset, zoom)
+  console.log(sx0, sy0, sx1, sy1, dx, dy, dw, dh)
+  ctx.drawImage(image, sx0, sy0, sx1, sy1, dx, dy, dw, dh)
 }

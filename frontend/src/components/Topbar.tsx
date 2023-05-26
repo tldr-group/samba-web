@@ -1,4 +1,6 @@
-import React, { useRef } from "react";
+import React, { useRef, useContext } from "react";
+import AppContext from "./hooks/createContext";
+import { imageDataToImage } from "./helpers/canvasUtils";
 import { TopbarProps } from "./helpers/Interfaces";
 
 import Container from 'react-bootstrap/Container';
@@ -6,7 +8,14 @@ import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import NavDropdown from 'react-bootstrap/NavDropdown';
 
+const UTIF = require("./UTIF.js")
+
+
 const Topbar = ({ loadImage }: TopbarProps) => {
+    const {
+        segArr: [segArr,],
+        image: [image,],
+    } = useContext(AppContext)!;
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Common pattern for opening file dialog w/ button: hidden <input> who is clicked when button is clicked.
@@ -16,16 +25,66 @@ const Topbar = ({ loadImage }: TopbarProps) => {
         }
     }
 
+    const loadTIFF = (result: ArrayBuffer) => {
+        const tifs = UTIF.decode(result)
+        const tif0 = tifs[0]
+        UTIF.decodeImage(result, tif0)
+        const imgDataArr = new Uint8ClampedArray(UTIF.toRGBA8(tif0))
+        const imgData = new ImageData(imgDataArr, tif0.width, tif0.height)
+        return imageDataToImage(imgData).src
+    }
+
+    const saveAsTIFF = (arr: Uint8ClampedArray, width: number, height: number) => {
+        const tiffImgDataArr = new Uint8ClampedArray(4 * arr.length);
+        const maxClass = arr.reduce((a: any, b: any) => Math.max(a, b), -Infinity);
+        const delta = Math.floor(255 / (maxClass - 1)); // -1 to get full dynamic range (i.e class 1 -> 0, class N -> 255)
+        console.log(delta, maxClass)
+        for (let i = 0; i < arr.length; i++) {
+            const fill = (arr[i] - 1) * delta; // need to add -1 offset here
+            tiffImgDataArr[4 * i] = fill;
+            tiffImgDataArr[4 * i + 1] = fill;
+            tiffImgDataArr[4 * i + 2] = fill;
+            tiffImgDataArr[4 * i + 3] = 255;
+        }
+        const arrayBuffer = UTIF.encodeImage(tiffImgDataArr, width, height)
+        const blob = new Blob([arrayBuffer], { type: 'image/tiff' });
+        const blobURL = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = blobURL;
+        link.download = "seg.tiff";
+        link.click();
+        URL.revokeObjectURL(blobURL);
+    }
+
+    const onSaveClick = () => {
+        if (image === null || segArr === null) { return; }
+        saveAsTIFF(segArr, image.width, image.height)
+    }
+
+
     const handleFileUpload = (e: any) => {
         // Open file dialog and load file. TODO: add in .tiff loading (parse as image?)
         const file: File | null = e.target.files?.[0] || null;
         const reader = new FileReader();
 
         if (file != null) {
+            const extension = file.name.split('.').pop()?.toLowerCase()
+            const isTIF = (extension === "tif" || extension === "tiff")
             reader.onload = () => {
-                loadImage(reader.result as string);
+                let href = "foo";
+                if (isTIF) {
+                    href = loadTIFF(reader.result as ArrayBuffer);
+                } else {
+                    href = reader.result as string;
+                }
+                loadImage(href);
             };
-            reader.readAsDataURL(file);
+            if (isTIF) {
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.readAsDataURL(file);
+            };
         }
     }
 
@@ -55,7 +114,7 @@ const Topbar = ({ loadImage }: TopbarProps) => {
                                 Features
                             </NavDropdown.Item>
                         </NavDropdown>
-                        <Nav.Link>Save Segmentation</Nav.Link>
+                        <Nav.Link onClick={onSaveClick}>Save Segmentation</Nav.Link>
                     </Nav>
                 </Navbar.Collapse>
             </Container>

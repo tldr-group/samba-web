@@ -89,6 +89,7 @@ const App = () => {
         });
         img.width = width;
         img.height = height;
+        // TODO: split here
         // set all our ground truth arrays. labelArr and segArr are set to null
         setImage(img);
         setLabelArr(new Uint8ClampedArray(width * height).fill(0));

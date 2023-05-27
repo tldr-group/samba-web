@@ -14,6 +14,7 @@ const AppContextProvider = (props: {
   const [clicks, setClicks] = useState<Array<modelInputProps> | null>(null);
 
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [imgIdx, setImgIdx] = useState<number>(0);
   const [labelArr, setLabelArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(1));
   const [segArr, setSegArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(1));
 
@@ -37,6 +38,7 @@ const AppContextProvider = (props: {
       value={{
         clicks: [clicks, setClicks],
         image: [image, setImage],
+        imgIdx: [imgIdx, setImgIdx],
         labelArr: [labelArr, setLabelArr],
         segArr: [segArr, setSegArr],
         maskImg: [maskImg, setMaskImg],

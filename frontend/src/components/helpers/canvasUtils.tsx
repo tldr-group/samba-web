@@ -194,3 +194,15 @@ export const drawImage = (ctx: CanvasRenderingContext2D, image: HTMLImageElement
   console.log(sx0, sy0, sx1, sy1, dx, dy, dw, dh)
   ctx.drawImage(image, sx0, sy0, sx1, sy1, dx, dy, dw, dh)
 }
+
+
+export const getSplitInds = (image: HTMLImageElement) => {
+  const nW = Math.ceil(image.width / 1024);
+  const nH = Math.ceil(image.height / 1024);
+  const dx = image.width / nW;
+  const dy = image.height / nH;
+  const wInds = Array.from({ length: nW }, (x, i) => dx * i)
+  const hInds = Array.from({ length: nH }, (x, i) => dy * i)
+  const inds = { 'w': wInds, 'h': hInds, 'dx': dx, 'dy': dy, 'nW': nW, 'nH': nH }
+  return inds
+}

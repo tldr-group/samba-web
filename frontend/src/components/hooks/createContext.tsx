@@ -16,6 +16,10 @@ interface contextProps {
     image: HTMLImageElement | null,
     setImage: (e: HTMLImageElement | null) => void
   ];
+  imgIdx: [
+    imgIdX: number,
+    setImgIdx: (e: number) => void
+  ]
   labelArr: [
     labelArr: Uint8ClampedArray,
     setLabelArr: (e: Uint8ClampedArray) => void

@@ -1,6 +1,6 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import AppContext from "./hooks/createContext";
-import { colours, rgbaToHex } from "./helpers/canvasUtils";
+import { colours, rgbaToHex, getSplitInds, getctx, getxy } from "./helpers/canvasUtils";
 import { Label, SidebarProps } from "./helpers/Interfaces";
 
 
@@ -20,6 +20,7 @@ const Sidebar = ({ requestEmbedding, trainClassifier }: SidebarProps) => {
             <div className={`h-full w-[20%]`}>
                 <LabelFrame requestEmbedding={requestEmbedding} trainClassifier={trainClassifier} />
                 <OverlaysFrame />
+                <NavigationFrame />
                 <SpinWheel></SpinWheel>
             </div>
         </div>
@@ -173,9 +174,138 @@ const SpinWheel = () => {
     }
 
     return (
-        <div>
-        </div >
+        <div></div >
     )
+}
+
+const NavigationFrame = () => {
+    const nImages = 2
+
+    if (nImages > 1) {
+        return (
+            <Card className="bg-dark text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }}>
+                <Card.Header as="h5">Navigation</Card.Header>
+                <Card.Body>
+                    <ImgSelect />
+                </Card.Body>
+            </Card>
+        )
+    } else {
+        return (
+            <div></div >
+        )
+    }
+}
+
+const ImgSelect = () => {
+    const {
+        image: [image,],
+        labelClass: [labelClass,],
+        imgIdx: [imgIdx, setImgIdx],
+    } = useContext(AppContext)!;
+    const imgsType = "large"
+    const nImages = 2
+    const canvRef = useRef<HTMLCanvasElement>(null);
+
+    const canvClick = (e: any) => { console.log("canvas clicked") }
+
+    const drawCanvas = (ctx: CanvasRenderingContext2D, selectedImg: number, largeImg: HTMLImageElement, x: number | null, y: number | null) => {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+        const c = colours[labelClass];
+        const hex = rgbaToHex(c[0], c[1], c[2], 255);
+        ctx.strokeStyle = hex;
+        const splitInds = getSplitInds(largeImg);
+        const [dx, dy, nW] = [splitInds['dx'], splitInds['dy'], splitInds['nW']]
+        drawLines(ctx, splitInds['h'], largeImg.width, largeImg.height, 'h');
+        drawLines(ctx, splitInds['w'], largeImg.width, largeImg.height, 'w');
+        const selectedBox = rgbaToHex(c[0], c[1], c[2], 0.55 * 255);
+        const sqX = Math.round(selectedImg % nW);
+        const sqY = Math.floor(selectedImg / nW);
+        drawSquare(ctx, sqX, sqY, splitInds, largeImg.width, largeImg.height, selectedBox)
+        if (x != null && y != null) {
+            const hoverBox = rgbaToHex(182, 182, 182, 0.8 * 255);
+            const sqX = Math.round((x / ctx.canvas.width) * largeImg.width / dx) //n
+            const sqY = Math.floor((y / ctx.canvas.height) * largeImg.height / dy)
+            console.log(x, y)
+            drawSquare(ctx, sqX, sqY, splitInds, largeImg.width, largeImg.height, hoverBox)
+        }
+    }
+
+    const drawLines = (ctx: CanvasRenderingContext2D, endpoints: number[], iw: number, ih: number, mode: 'h' | 'w') => {
+        let sf: number;
+        if (mode == 'w') {
+            sf = ctx.canvas.width / iw;
+        } else {
+            sf = ctx.canvas.height / ih;
+        }
+        for (let i of endpoints.slice(1)) {
+            const ri = i * sf;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            (mode === 'w') ? ctx.moveTo(ri, 0) : ctx.moveTo(0, ri);
+            (mode === 'w') ? ctx.lineTo(ri, ctx.canvas.height) : ctx.lineTo(ctx.canvas.width, ri);
+            ctx.stroke();
+        };
+    }
+
+    const drawSquare = (ctx: CanvasRenderingContext2D, sqX: number, sqY: number, inds: any,
+        iw: number, ih: number, color: string) => {
+        const [dx, dy] = [inds['dx'], inds['dy']]
+        ctx.fillStyle = color;
+        const sfW = ctx.canvas.width / iw;
+        const sfH = ctx.canvas.height / ih;
+        ctx.fillRect(sqX * sfW * dx, sqY * sfH * dy, dx * sfW, dy * sfH);
+    }
+
+    const drawOnHover = _.throttle((e: any) => {
+        const res = getxy(e)
+        if (image === null) { return; }
+        const ctx = getctx(canvRef);
+        if (ctx === null) { return; }
+        drawCanvas(ctx, imgIdx, image, res[0], res[1]);
+    }, 4)
+
+    const onClick = (e: any) => {
+        const ctx = getctx(canvRef);
+        if (image === null || ctx === null) { return; }
+        const res = getxy(e)
+        const [x, y] = res
+        const splitInds = getSplitInds(image);
+        const [dx, dy, nW] = [splitInds['dx'], splitInds['dy'], splitInds['nW']]
+        const sqX = Math.round((x / ctx.canvas.width) * image.width / dx)
+        const sqY = Math.floor((y / ctx.canvas.height) * image.height / dy)
+        const sq = sqX + nW * sqY
+        setImgIdx(sq)
+    }
+
+    useEffect(() => {
+        if (image === null) { return; }
+        const ctx = getctx(canvRef);
+        if (ctx === null) { return; }
+        drawCanvas(ctx, imgIdx, image, null, null);
+    }, [image, labelClass, imgIdx])
+
+    if (imgsType === "large") {
+        return (
+            <div>
+                <div className={`flex`}>Piece: <input type="number" min={1} max={nImages} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px' }} /></div>
+                <div style={{ display: 'grid' }}>
+                    {(image !== null) ? <img src={image.src} style={{ gridColumn: 1, gridRow: 1, width: "100%", height: "100%" }}></img> : <></>}
+                    {(image !== null) ? <canvas onClick={canvClick}
+                        onMouseMove={drawOnHover}
+                        onMouseDown={onClick}
+                        ref={canvRef}
+                        style={{ gridColumn: 1, gridRow: 1, width: "100%", height: "100%" }}
+                    ></canvas> : <></>}
+                </div>
+            </div>
+
+        )
+    } else {
+        return (
+            <div>Image: <input type="number" min={1} max={nImages} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px' }} /></div>
+        )
+    }
 }
 
 

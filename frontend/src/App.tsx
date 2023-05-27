@@ -46,7 +46,6 @@ const App = () => {
     maskImg: [, setMaskImg],
     maskIdx: [maskIdx],
     labelClass: [labelClass],
-    zoom: [zoom],
     processing: [, setProcessing]
   } = useContext(AppContext)!;
   const [model, setModel] = useState<InferenceSession | null>(null); // ONNX model

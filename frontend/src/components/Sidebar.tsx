@@ -90,7 +90,7 @@ const LabelFrame = ({ requestEmbedding }: SidebarProps) => {
                 <ButtonGroup style={{ paddingLeft: "4%", marginLeft: '5%' }}>
                     {classes.map(i => <Button key={i} variant="light" onClick={(e) => setLabelClass(i)} style={{
                         backgroundColor: _getCSSColour(i, labelClass, "", labelClass),
-                        borderColor: _getCSSColour(i, labelClass, "", labelClass),
+                        border: _getCSSColour(i, labelClass, "2px solid", labelClass),
                     }}>{i}</Button>)}
                 </ButtonGroup>
             </Card.Body>
@@ -125,7 +125,7 @@ const OverlaysFrame = () => {
         } else if (overlayType == "Segmentation") {
             setSegOpacity(e.target.value);
         }
-    }, 15);
+    }, 13);
     const _setOverlayType = (val: string) => {
         if (val == "Segmentation") {
             setOverlayType("Segmentation");
@@ -179,9 +179,10 @@ const SpinWheel = () => {
 }
 
 const NavigationFrame = () => {
+    const { imgType: [imgType,] } = useContext(AppContext)!;
     const nImages = 2
 
-    if (nImages > 1) {
+    if (nImages > 1 && imgType != "single") {
         return (
             <Card className="bg-dark text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }}>
                 <Card.Header as="h5">Navigation</Card.Header>
@@ -202,9 +203,9 @@ const ImgSelect = () => {
         image: [image,],
         labelClass: [labelClass,],
         imgIdx: [imgIdx, setImgIdx],
+        imgType: [imgType,],
     } = useContext(AppContext)!;
-    const imgsType = "large"
-    const nImages = 2
+    const nImages = 12
     const canvRef = useRef<HTMLCanvasElement>(null);
 
     const canvClick = (e: any) => { console.log("canvas clicked") }
@@ -262,7 +263,7 @@ const ImgSelect = () => {
         if (image === null) { return; }
         const ctx = getctx(canvRef);
         if (ctx === null) { return; }
-        drawCanvas(ctx, imgIdx, image, res[0], res[1]);
+        drawCanvas(ctx, imgIdx - 1, image, res[0], res[1]);
     }, 4)
 
     const onClick = (e: any) => {
@@ -275,20 +276,28 @@ const ImgSelect = () => {
         const sqX = Math.round((x / ctx.canvas.width) * image.width / dx)
         const sqY = Math.floor((y / ctx.canvas.height) * image.height / dy)
         const sq = sqX + nW * sqY
-        setImgIdx(sq)
+        setImgIdx(sq + 1)
+    }
+
+    const changeImageIdx = (e: any) => {
+        // TODO: pass down the change image function from app to here and call it - means we can access new idx and prev idx to do saving laoding
+        setImgIdx(e.target.value)
     }
 
     useEffect(() => {
         if (image === null) { return; }
         const ctx = getctx(canvRef);
         if (ctx === null) { return; }
-        drawCanvas(ctx, imgIdx, image, null, null);
+        drawCanvas(ctx, imgIdx - 1, image, null, null);
     }, [image, labelClass, imgIdx])
 
-    if (imgsType === "large") {
+    if (imgType === "large") {
         return (
             <div>
-                <div className={`flex`}>Piece: <input type="number" min={1} max={nImages} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px' }} /></div>
+                <div className={`flex`}>Piece: <input type="number" min={1} max={nImages}
+                    value={imgIdx} onChange={e => changeImageIdx(e)}
+                    style={{ marginLeft: '8px', color: 'black', borderRadius: '4px', marginBottom: '10px' }} />
+                </div>
                 <div style={{ display: 'grid' }}>
                     {(image !== null) ? <img src={image.src} style={{ gridColumn: 1, gridRow: 1, width: "100%", height: "100%" }}></img> : <></>}
                     {(image !== null) ? <canvas onClick={canvClick}
@@ -301,10 +310,15 @@ const ImgSelect = () => {
             </div>
 
         )
-    } else {
+    } else if (imgType === "stack") {
         return (
-            <div>Image: <input type="number" min={1} max={nImages} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px' }} /></div>
+            <div>
+                Image: <input type="number" min={1} max={nImages} value={imgIdx} onChange={e => changeImageIdx(e)} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px' }} />
+                <Form.Range min={1} value={imgIdx} max={nImages} onChange={e => changeImageIdx(e)} />
+            </div>
         )
+    } else {
+        return (<></>)
     }
 }
 

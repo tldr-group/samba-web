@@ -37,9 +37,24 @@ const getb64Image = (img: HTMLImageElement): string => {
   return b64image
 }
 
+
+const updateArr = (oldArr: Array<any>, idx: number, setVal: any) => {
+  const newArr = oldArr.map((v, i) => (i === idx) ? setVal : v);
+  return newArr;
+};
+
+const appendArr = (oldArr: Array<any>, newVal: any) => {
+  return [...oldArr, newVal];
+};
+
+
+
 const App = () => {
   const {
     clicks: [clicks],
+    imgArrs: [imgArrs, setImgArrs],
+    segArrs: [segArrs, setSegArrs],
+    labelArrs: [labelArrs, setLabelArrs],
     image: [image, setImage],
     labelArr: [labelArr, setLabelArr],
     segArr: [, setSegArr],
@@ -91,13 +106,36 @@ const App = () => {
         // TODO: split here
         // set all our ground truth arrays. labelArr and segArr are set to null
         setImage(img);
-        setLabelArr(new Uint8ClampedArray(width * height).fill(0));
-        setSegArr(new Uint8ClampedArray(width * height).fill(0));
+        const tempLabelArr = new Uint8ClampedArray(width * height).fill(0);
+        setLabelArr(tempLabelArr);
+        const tempSegArr = new Uint8ClampedArray(width * height).fill(0);
+        setSegArr(tempSegArr);
+        for (let triple of [[img, imgArrs, setImgArrs], [tempLabelArr, labelArrs, setLabelArrs], [tempSegArr, segArrs, setSegArrs]]) {
+          const [newVal, oldArr, setter] = [triple[0], triple[1] as any[], triple[2] as any]
+          const newArr = appendArr(oldArr, newVal)
+          setter(newArr)
+        }
       };
     } catch (error) {
       console.log(error);
     }
   };
+
+  const changeToImage = (idx: number) => {
+    // TODO: add saving current arrs here
+    const img = imgArrs[idx]
+    const { height, width, samScale } = handleImageScale(img);
+    setModelScale({
+      height: height,
+      width: width,
+      samScale: samScale,
+    });
+    img.width = width;
+    img.height = height;
+    setImage(img);
+    setLabelArr(labelArrs[idx]);
+    setSegArr(segArrs[idx]);
+  }
 
   const requestEmbedding = async () => {
     // Ping our encode enpoint, request and await an embedding, then set it.

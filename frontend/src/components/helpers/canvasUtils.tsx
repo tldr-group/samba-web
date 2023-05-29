@@ -153,7 +153,6 @@ export const getZoomPanCoords = (cw: number, ch: number, image: HTMLImageElement
   let [sx0, sx1, sy0, sy1] = [0, 0, 0, 0]
   let [dx, dy, dw, dh] = [0, 0, 0, 0]
   if (zw <= cw) {
-    console.log("smaller width")
     sx0 = 0
     sx1 = w
     dx = offset.x
@@ -191,7 +190,7 @@ export const getZoomPanXY = (canvX: number, canvY: number, ctx: CanvasRenderingC
 export const drawImage = (ctx: CanvasRenderingContext2D, image: HTMLImageElement, offset: Offset, zoom: number) => {
   // split into 2 funcitons - one to get coords and one to draw, then reverse the coords for transfert.
   const [sx0, sy0, sx1, sy1, dx, dy, dw, dh] = getZoomPanCoords(ctx.canvas.width, ctx.canvas.height, image, offset, zoom)
-  console.log(sx0, sy0, sx1, sy1, dx, dy, dw, dh)
+  //console.log(sx0, sy0, sx1, sy1, dx, dy, dw, dh)
   ctx.drawImage(image, sx0, sy0, sx1, sy1, dx, dy, dw, dh)
 }
 

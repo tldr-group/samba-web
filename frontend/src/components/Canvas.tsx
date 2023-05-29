@@ -8,7 +8,7 @@ import {
 import * as _ from "underscore";
 
 
-const MAX_ZOOM = 5
+const MAX_ZOOM = 10
 const MIN_ZOOM = 0.1
 const SCROLL_SENSITIVITY = 0.0005
 const PAN_OFFSET = 20
@@ -131,18 +131,18 @@ const MultiCanvas = () => {
 
     const handleScroll = (e: any) => {
         // Adjust the zoom level based on scroll wheel delta
-        e.preventDefault()
+        //e.preventDefault()
         const delta = e.deltaY * SCROLL_SENSITIVITY > 0 ? -0.1 : 0.1; // Change the zoom increment as needed
         let newZoom = zoom + delta
         newZoom = Math.min(newZoom, MAX_ZOOM)
         newZoom = Math.max(newZoom, MIN_ZOOM)
-        console.log(newZoom, getxy(e))
+        //console.log(newZoom, getxy(e))
         setZoom(newZoom);
     };
 
 
     const handleKeyPress = (e: any) => {
-        console.log(e.key)
+        //console.log(e.key)
         const delta = PAN_OFFSET / zoom
         if (e.key >= '0' && e.key <= '6') {
             // Perform desired actions for number key press
@@ -215,7 +215,7 @@ const MultiCanvas = () => {
     useEffect(() => { clearctx(animatedCanvasRef) }, [labelType]) // clear animated canvas when switching
 
     useEffect(() => {
-        console.log(cameraOffset);
+        //console.log(cameraOffset);
         for (let i = 0; i < refs.length; i++) {
             const ctx = getctx(refs[i])
             const gt = groundTruths[i]

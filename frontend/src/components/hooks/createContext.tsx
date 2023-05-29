@@ -8,18 +8,32 @@ import { createContext } from "react";
 import { modelInputProps, Label, LabelFrameProps, Offset } from "../helpers/Interfaces";
 
 interface contextProps {
-  clicks: [
-    clicks: modelInputProps[] | null,
-    setClicks: (e: modelInputProps[] | null) => void
-  ];
-  image: [
-    image: HTMLImageElement | null,
-    setImage: (e: HTMLImageElement | null) => void
+  imgType: [
+    imgType: "large" | "stack" | "multi" | "single",
+    setImgType: (e: "large" | "stack" | "multi" | "single") => void
   ];
   imgIdx: [
     imgIdX: number,
     setImgIdx: (e: number) => void
-  ]
+  ];
+  imgArrs: [
+    imgArrs: Array<HTMLImageElement>,
+    setImgArrs: (e: Array<HTMLImageElement>) => void
+  ];
+  segArrs: [
+    segArrs: Array<Uint8ClampedArray>,
+    setSegArrs: (e: Array<Uint8ClampedArray>) => void
+  ];
+  labelArrs: [
+    labelArrs: Array<Uint8ClampedArray>,
+    setLabelArrs: (e: Array<Uint8ClampedArray>) => void
+  ];
+
+
+  image: [
+    image: HTMLImageElement | null,
+    setImage: (e: HTMLImageElement | null) => void
+  ];
   labelArr: [
     labelArr: Uint8ClampedArray,
     setLabelArr: (e: Uint8ClampedArray) => void
@@ -27,6 +41,12 @@ interface contextProps {
   segArr: [
     segArr: Uint8ClampedArray,
     setSegArr: (e: Uint8ClampedArray) => void
+  ];
+
+
+  clicks: [
+    clicks: modelInputProps[] | null,
+    setClicks: (e: modelInputProps[] | null) => void
   ];
   maskImg: [
     maskImg: HTMLImageElement | null,
@@ -44,6 +64,8 @@ interface contextProps {
     labelType: Label,
     setLabelType: (e: Label) => void
   ];
+
+
   overlayType: [
     overlayType: "Segmentation" | "Label",
     setOverlayType: (e: "Segmentation" | "Label") => void

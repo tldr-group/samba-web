@@ -17,6 +17,7 @@ const PAN_OFFSET = 20
 const MultiCanvas = () => {
     const {
         image: [image],
+        imgIdx: [imgIdx,],
         maskImg: [maskImg],
         clicks: [, setClicks],
         labelType: [labelType],

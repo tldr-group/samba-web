@@ -201,6 +201,7 @@ const NavigationFrame = ({ changeToImage }: NavigationProps) => {
 const ImgSelect = ({ changeToImage }: NavigationProps) => {
     const {
         image: [image,],
+        imgArrs: [imgArrs,],
         labelClass: [labelClass,],
         imgIdx: [imgIdx, setImgIdx],
         imgType: [imgType,],
@@ -295,7 +296,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
     if (imgType === "large") {
         return (
             <div>
-                <div className={`flex`}>Piece: <input type="number" min={1} max={nImages}
+                <div className={`flex`}>Piece: <input type="number" min={1} max={imgArrs.length}
                     value={imgIdx} onChange={e => changeImageIdx(e)}
                     style={{ marginLeft: '8px', color: 'black', borderRadius: '4px', marginBottom: '10px' }} />
                 </div>
@@ -314,8 +315,8 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
     } else if (imgType === "stack") {
         return (
             <div>
-                Image: <input type="number" min={1} max={nImages} value={imgIdx} onChange={e => changeImageIdx(e)} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px' }} />
-                <Form.Range min={1} value={imgIdx} max={nImages} onChange={e => changeImageIdx(e)} />
+                Image: <input type="number" min={1} max={imgArrs.length} value={imgIdx} onChange={e => changeImageIdx(e)} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px' }} />
+                <Form.Range min={1} value={imgIdx} max={imgArrs.length} onChange={e => changeImageIdx(e)} />
             </div>
         )
     } else {

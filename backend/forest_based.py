@@ -79,6 +79,32 @@ def get_training_data(
     return fit_data, target_data
 
 
+def get_training_data_multiple_images(
+    imgs: List[np.ndarray], labels: List[np.ndarray], selected_features: dict
+) -> Tuple[List[np.ndarray], np.ndarray, np.ndarray]:
+    """For each image, featurise. Then check if it's labelled and if it is get the training data and concat."""
+    feature_stacks: List[np.ndarray] = []
+    fit_data_set = False
+    all_fit_data: np.ndarray
+    all_target_data: np.ndarray
+    for i in range(len(imgs)):
+        img, label = imgs[i], labels[i]
+        feature_stack = multiscale_advanced_features(img, selected_features)
+        feature_stacks.append(feature_stack)
+        is_labelled = np.sum(label) >= 1
+        # print(i, is_labelled, fit_data_set, np.sum(label))
+        if is_labelled:
+            fit_data, target_data = get_training_data(feature_stack, label)
+            if fit_data_set is False:
+                all_fit_data = fit_data
+                all_target_data = target_data
+                fit_data_set = True
+            else:
+                all_fit_data = np.concatenate((all_fit_data, fit_data), axis=0)
+                all_target_data = np.concatenate((all_target_data, target_data), axis=0)
+    return (feature_stacks, all_fit_data, all_target_data)
+
+
 def fit(
     model: EnsembleMethod,
     train_data: np.ndarray,
@@ -147,20 +173,22 @@ def get_model(
 
 
 def featurise_then_segment(
-    img: np.ndarray,
+    imgs: List[np.ndarray],
     selected_features: dict,
-    labels: np.ndarray,
+    labels: List[np.ndarray],
     model_name: EnsembleMethodName = "FRF",
     balance_classes: bool = True,
-) -> np.ndarray:
-    """Perform each step of classification: featurising, get data, get model, git, apply."""
-    feature_stack = multiscale_advanced_features(img, selected_features)
-    fit_data, target_data = get_training_data(feature_stack, labels)
+) -> List[np.ndarray]:
+    """Perform each step of classification: featurising, get data, get model, fit, apply."""
+    # feature_stack = multiscale_advanced_features(img, selected_features)
+    feature_stacks, fit_data, target_data = get_training_data_multiple_images(
+        imgs, labels, selected_features
+    )  # get_training_data(feature_stack, labels)
     model = get_model(model_name)
     if balance_classes:
         weights = get_class_weights(target_data)
     else:
         weights = None
     model = fit(model, fit_data, target_data, weights)
-    out_data = apply(model, [feature_stack])
-    return out_data[0]
+    out_data = apply(model, feature_stacks)
+    return out_data

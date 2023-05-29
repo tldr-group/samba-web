@@ -33,6 +33,7 @@ def encode_respond():
         image = _get_image_from_b64(request.json["message"])
         # image.save("image.jpeg")
         encoded = encode(image)
+        # this may not work when deploying on a webapp becuase multuiple users may be trying to access this
         response = send_file("encoding.npy")
         # order = {"message": b64_image}
         return _corsify_actual_response(response)
@@ -45,9 +46,9 @@ def segment_respond():
     if "OPTIONS" in request.method:  # CORS preflight
         return _build_cors_preflight_response()
     elif "POST" in request.method:  # The actual request following the preflight
-        image = _get_image_from_b64(request.json["image"])
-        labels_dict = request.json["labels"]
-        segmentation = segment(image, labels_dict)
+        images = [_get_image_from_b64(i) for i in request.json["images"]]
+        labels_dicts = request.json["labels"]
+        segmentation = segment(images, labels_dicts)
         response = Response(
             segmentation.tobytes()
         )  # jsonify({"message": segmentation.tolist()})

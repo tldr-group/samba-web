@@ -12,7 +12,7 @@ const AppContextProvider = (props: {
   children: React.ReactElement<any, string | React.JSXElementConstructor<any>>;
 }) => {
   // Multi-image states. TODO: add list of encoding tensors (Array<any | null>)
-  const [imgType, setImgType] = useState<"large" | "stack" | "multi" | "single">("stack");
+  const [imgType, setImgType] = useState<"large" | "stack" | "multi" | "single">("single");
   const [imgIdx, setImgIdx] = useState<number>(1);
   const [imgArrs, setImgArrs] = useState<Array<HTMLImageElement>>([]);
   const [labelArrs, setLabelArrs] = useState<Array<Uint8ClampedArray>>([]);
@@ -21,6 +21,7 @@ const AppContextProvider = (props: {
 
   // Current canvas states (i.e things corresponding to currently selected image)
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  // this why not work - should be null
   const [labelArr, setLabelArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(1));
   const [segArr, setSegArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(1));
 

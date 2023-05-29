@@ -36,6 +36,7 @@ const Topbar = ({ loadImage }: TopbarProps) => {
             hrefs.push(imageDataToImage(imgData).src)
         }
         loadImage(hrefs)
+        if (tifs.length > 1) { setImgType("stack") } else { setImgType("single") }
     }
 
     const saveAsTIFF = (arr: Uint8ClampedArray, width: number, height: number) => {
@@ -76,11 +77,10 @@ const Topbar = ({ loadImage }: TopbarProps) => {
             const extension = file.name.split('.').pop()?.toLowerCase()
             const isTIF = (extension === "tif" || extension === "tiff")
             reader.onload = () => {
-                let href = "foo";
                 if (isTIF) {
                     loadTIFF(reader.result as ArrayBuffer);
                 } else {
-                    href = reader.result as string;
+                    const href = reader.result as string;
                     loadImage([href]);
                 };
             };

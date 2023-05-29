@@ -52,6 +52,8 @@ const appendArr = (oldArr: Array<any>, newVal: any) => {
 const App = () => {
   const {
     clicks: [clicks],
+    imgType: [, setImgType],
+    imgIdx: [imgIdx,],
     imgArrs: [imgArrs, setImgArrs],
     segArrs: [segArrs, setSegArrs],
     labelArrs: [labelArrs, setLabelArrs],
@@ -94,33 +96,35 @@ const App = () => {
   const loadImage = async (hrefs: string[]) => {
     // make this take a list of hrefs and put all data into array then set it (i.e only update state once )
     try {
-      const imgs: Array<HTMLImageElement> = []
-      const nullLabels: Array<Uint8ClampedArray> = []
-      const nullSegs: Array<Uint8ClampedArray> = []
-      const nullTensors: Array<any | null> = []
-      for (let href of hrefs) {
+      const imgs: Array<HTMLImageElement> = [];
+      const nullLabels: Array<Uint8ClampedArray> = [];
+      const nullSegs: Array<Uint8ClampedArray> = [];
+      const nullTensors: Array<any | null> = [];
+      for (let i = 0; i < hrefs.length; i++) {
+        const href = hrefs[i]
+        console.log(i, hrefs.length)
         const img = new Image();
         img.src = href;
         img.onload = () => {
           const { height, width, samScale } = handleImageScale(img);
-          setModelScale({
-            height: height,  // original image height
-            width: width,  // original image width
-            samScale: samScale, // scaling factor for image which has been resized to longest side 1024
-          });
           img.width = width;
           img.height = height;
           const tempLabelArr = new Uint8ClampedArray(width * height).fill(0);
           const tempSegArr = new Uint8ClampedArray(width * height).fill(0);
-          imgs.push(img)
-          nullLabels.push(tempLabelArr)
-          nullSegs.push(tempSegArr)
-          nullTensors.push(null)
-          // this is bad: O(n^2) as will trigger whenever img loads
-          setImgArrs(imgs)
-          setLabelArrs(nullLabels)
-          setSegArrs(nullSegs)
-          setTensorArrs(nullTensors)
+          imgs.push(img);
+          nullLabels.push(tempLabelArr);
+          nullSegs.push(tempSegArr);
+          nullTensors.push(null);
+          // Set the arrays once only when very last image is loaded
+          if (i === hrefs.length - 1) {
+            console.log('last')
+            setImgArrs(imgs);
+            setLabelArrs(nullLabels);
+            setSegArrs(nullSegs);
+            setTensorArrs(nullTensors);
+            setSegArr(tempSegArr)
+            setLabelArr(tempLabelArr)
+          }
         };
       }
     } catch (error) {
@@ -129,6 +133,7 @@ const App = () => {
   };
 
   const changeToImage = (oldIdx: number, newIdx: number) => {
+    // Update arrs with arrs of old image, then switch to new one.
     console.log(oldIdx, newIdx)
     const newLabelArrs = updateArr(labelArrs, oldIdx - 1, labelArr)
     const newSegArrs = updateArr(segArrs, oldIdx - 1, segArr)
@@ -147,9 +152,9 @@ const App = () => {
     img.width = width;
     img.height = height;
     setImage(img);
-    setLabelArr(labelArrs[newIdx - 1]);
-    setSegArr(segArrs[newIdx - 1]);
-    setTensor(tensorArrs[newIdx - 1])
+    setLabelArr(newLabelArrs[newIdx - 1]);
+    setSegArr(newSegArrs[newIdx - 1]);
+    setTensor(newTensorArrs[newIdx - 1])
   }
 
   const requestEmbedding = async () => {
@@ -172,27 +177,48 @@ const App = () => {
   };
 
   const trainClassifier = async () => {
+    // NEED TO UPDATE LABELS ARR BEFORE SENIND
     // Ping our segment endpoint, send it our image and labels then await the array.
     if (image === null || labelArr === null) {
       return;
     }
+    const newLabelArrs = updateArr(labelArrs, imgIdx - 1, labelArr)
+    setLabelArrs(newLabelArrs)
     setProcessing("Segmenting")
-    const b64image = getb64Image(image);
+    const b64images: string[] = imgArrs.map((img, i) => getb64Image(img));
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8')
     console.log("Started Segementing")
-    let resp = await fetch(SEGMENT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "image": b64image, "labels": labelArr }) })
+    let resp = await fetch(SEGMENT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "labels": newLabelArrs }) })
     // buffer + dataView > JSON for arrays.
     const buffer = await resp.arrayBuffer();
     const dataView = new DataView(buffer);
     const arrayLength = buffer.byteLength;
-    const arr = new Uint8ClampedArray(image.width * image.height).fill(0);
+
+    let newSegArrs: Array<Uint8ClampedArray> = []
+    let idx = 1
+    let j = 0
+    let limit = imgArrs[0].width * imgArrs[0].height
+    let tempArr = new Uint8ClampedArray(limit).fill(0);
+
     for (let i = 0; i < arrayLength; i++) {
-      arr[i] = dataView.getUint8(i);
+      if (j == limit) {
+        console.log(idx, ' segs')
+        j = 0
+        newSegArrs.push(tempArr)
+        if (idx < imgArrs.length) {
+          limit = imgArrs[idx].width * imgArrs[idx].height
+          tempArr = new Uint8ClampedArray(limit).fill(0);
+          idx += 1
+        }
+      }
+      tempArr[j] = dataView.getUint8(i);
+      j += 1
     }
+    newSegArrs.push(tempArr) //needed for the last one
+    setSegArrs(newSegArrs)
     console.log("Finished segmenting");
     setProcessing("None");
-    setSegArr(arr);
   }
 
   // Run the ONNX model every time clicks has changed i.e monitors state of clicks - useful for zooming!
@@ -231,10 +257,16 @@ const App = () => {
     }
   };
 
+  // Called once when stack/image loaded
   useEffect(() => {
     if (imgArrs.length === 0) { return; }
     changeToImage(1, 1)
   }, [imgArrs])
+
+  useEffect(() => {
+    if (segArrs.length === 0) { return; }
+    setSegArr(segArrs[imgIdx - 1])
+  }, [segArrs])
 
   return <Stage loadImage={loadImage} requestEmbedding={requestEmbedding} trainClassifier={trainClassifier} changeToImage={changeToImage} />;
 };

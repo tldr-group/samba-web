@@ -24,6 +24,10 @@ interface contextProps {
     segArrs: Array<Uint8ClampedArray>,
     setSegArrs: (e: Array<Uint8ClampedArray>) => void
   ];
+  tensorArrs: [
+    tensorArrs: Array<any | null>,
+    setTensorArrs: (e: Array<any | null>) => void
+  ];
   labelArrs: [
     labelArrs: Array<Uint8ClampedArray>,
     setLabelArrs: (e: Array<Uint8ClampedArray>) => void

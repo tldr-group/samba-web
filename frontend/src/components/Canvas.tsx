@@ -187,7 +187,7 @@ const MultiCanvas = () => {
 
     const updateImgOnArr = (arr: Uint8ClampedArray, img: HTMLImageElement | null, opacity: number, setterFn: any) => {
         if (img === null) { return; }
-        const newImageData = arrayToImageData(arr, img.height, img.width, 0, null, labelOpacity);
+        const newImageData = arrayToImageData(arr, img.height, img.width, 0, null, opacity);
         const newImage = imageDataToImage(newImageData);
         setterFn(newImage);
     }

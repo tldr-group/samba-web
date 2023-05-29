@@ -13,7 +13,7 @@ import Canvas from "./Canvas"
 import { modelInputProps, TopbarProps, Label, StageProps } from "./helpers/Interfaces";
 import AppContext from "./hooks/createContext";
 
-const Stage = ({ loadImage, requestEmbedding, trainClassifier }: StageProps) => {
+const Stage = ({ loadImage, requestEmbedding, trainClassifier, changeToImage }: StageProps) => {
   const {
     labelClass: [, setLabelClass],
   } = useContext(AppContext)!;
@@ -27,7 +27,7 @@ const Stage = ({ loadImage, requestEmbedding, trainClassifier }: StageProps) => 
         <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`}>
           <Canvas />
         </div>
-        <Sidebar requestEmbedding={requestEmbedding} trainClassifier={trainClassifier} />
+        <Sidebar requestEmbedding={requestEmbedding} trainClassifier={trainClassifier} changeToImage={changeToImage} />
       </div>
 
     </div >

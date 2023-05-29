@@ -13,6 +13,7 @@ const UTIF = require("./UTIF.js")
 
 const Topbar = ({ loadImage }: TopbarProps) => {
     const {
+        imgType: [, setImgType],
         segArr: [segArr,],
         image: [image,],
     } = useContext(AppContext)!;
@@ -27,11 +28,14 @@ const Topbar = ({ loadImage }: TopbarProps) => {
 
     const loadTIFF = (result: ArrayBuffer) => {
         const tifs = UTIF.decode(result)
-        const tif0 = tifs[0]
-        UTIF.decodeImage(result, tif0)
-        const imgDataArr = new Uint8ClampedArray(UTIF.toRGBA8(tif0))
-        const imgData = new ImageData(imgDataArr, tif0.width, tif0.height)
-        return imageDataToImage(imgData).src
+        const hrefs: Array<string> = []
+        for (let tif of tifs) {
+            UTIF.decodeImage(result, tif)
+            const imgDataArr = new Uint8ClampedArray(UTIF.toRGBA8(tif))
+            const imgData = new ImageData(imgDataArr, tif.width, tif.height)
+            hrefs.push(imageDataToImage(imgData).src)
+        }
+        loadImage(hrefs)
     }
 
     const saveAsTIFF = (arr: Uint8ClampedArray, width: number, height: number) => {
@@ -74,11 +78,11 @@ const Topbar = ({ loadImage }: TopbarProps) => {
             reader.onload = () => {
                 let href = "foo";
                 if (isTIF) {
-                    href = loadTIFF(reader.result as ArrayBuffer);
+                    loadTIFF(reader.result as ArrayBuffer);
                 } else {
                     href = reader.result as string;
-                }
-                loadImage(href);
+                    loadImage([href]);
+                };
             };
             if (isTIF) {
                 reader.readAsArrayBuffer(file);

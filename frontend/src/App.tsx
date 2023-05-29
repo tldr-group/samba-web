@@ -55,9 +55,10 @@ const App = () => {
     imgArrs: [imgArrs, setImgArrs],
     segArrs: [segArrs, setSegArrs],
     labelArrs: [labelArrs, setLabelArrs],
+    tensorArrs: [tensorArrs, setTensorArrs],
     image: [image, setImage],
     labelArr: [labelArr, setLabelArr],
-    segArr: [, setSegArr],
+    segArr: [segArr, setSegArr],
     maskImg: [, setMaskImg],
     maskIdx: [maskIdx],
     labelClass: [labelClass],
@@ -90,40 +91,53 @@ const App = () => {
     initModel();
   }, []);
 
-  const loadImage = async (href: string) => {
+  const loadImage = async (hrefs: string[]) => {
+    // make this take a list of hrefs and put all data into array then set it (i.e only update state once )
     try {
-      const img = new Image();
-      img.src = href;
-      img.onload = () => {
-        const { height, width, samScale } = handleImageScale(img);
-        setModelScale({
-          height: height,  // original image height
-          width: width,  // original image width
-          samScale: samScale, // scaling factor for image which has been resized to longest side 1024
-        });
-        img.width = width;
-        img.height = height;
-        // TODO: split here
-        // set all our ground truth arrays. labelArr and segArr are set to null
-        setImage(img);
-        const tempLabelArr = new Uint8ClampedArray(width * height).fill(0);
-        setLabelArr(tempLabelArr);
-        const tempSegArr = new Uint8ClampedArray(width * height).fill(0);
-        setSegArr(tempSegArr);
-        for (let triple of [[img, imgArrs, setImgArrs], [tempLabelArr, labelArrs, setLabelArrs], [tempSegArr, segArrs, setSegArrs]]) {
-          const [newVal, oldArr, setter] = [triple[0], triple[1] as any[], triple[2] as any]
-          const newArr = appendArr(oldArr, newVal)
-          setter(newArr)
-        }
-      };
+      const imgs: Array<HTMLImageElement> = []
+      const nullLabels: Array<Uint8ClampedArray> = []
+      const nullSegs: Array<Uint8ClampedArray> = []
+      const nullTensors: Array<any | null> = []
+      for (let href of hrefs) {
+        const img = new Image();
+        img.src = href;
+        img.onload = () => {
+          const { height, width, samScale } = handleImageScale(img);
+          setModelScale({
+            height: height,  // original image height
+            width: width,  // original image width
+            samScale: samScale, // scaling factor for image which has been resized to longest side 1024
+          });
+          img.width = width;
+          img.height = height;
+          const tempLabelArr = new Uint8ClampedArray(width * height).fill(0);
+          const tempSegArr = new Uint8ClampedArray(width * height).fill(0);
+          imgs.push(img)
+          nullLabels.push(tempLabelArr)
+          nullSegs.push(tempSegArr)
+          nullTensors.push(null)
+          // this is bad: O(n^2) as will trigger whenever img loads
+          setImgArrs(imgs)
+          setLabelArrs(nullLabels)
+          setSegArrs(nullSegs)
+          setTensorArrs(nullTensors)
+        };
+      }
     } catch (error) {
       console.log(error);
     }
   };
 
-  const changeToImage = (idx: number) => {
-    // TODO: add saving current arrs here
-    const img = imgArrs[idx]
+  const changeToImage = (oldIdx: number, newIdx: number) => {
+    console.log(oldIdx, newIdx)
+    const newLabelArrs = updateArr(labelArrs, oldIdx - 1, labelArr)
+    const newSegArrs = updateArr(segArrs, oldIdx - 1, segArr)
+    const newTensorArrs = updateArr(tensorArrs, oldIdx - 1, tensor)
+    setLabelArrs(newLabelArrs)
+    setSegArrs(newSegArrs)
+    setTensorArrs(newTensorArrs)
+
+    const img = imgArrs[newIdx - 1]
     const { height, width, samScale } = handleImageScale(img);
     setModelScale({
       height: height,
@@ -133,8 +147,9 @@ const App = () => {
     img.width = width;
     img.height = height;
     setImage(img);
-    setLabelArr(labelArrs[idx]);
-    setSegArr(segArrs[idx]);
+    setLabelArr(labelArrs[newIdx - 1]);
+    setSegArr(segArrs[newIdx - 1]);
+    setTensor(tensorArrs[newIdx - 1])
   }
 
   const requestEmbedding = async () => {
@@ -216,7 +231,12 @@ const App = () => {
     }
   };
 
-  return <Stage loadImage={loadImage} requestEmbedding={requestEmbedding} trainClassifier={trainClassifier} />;
+  useEffect(() => {
+    if (imgArrs.length === 0) { return; }
+    changeToImage(1, 1)
+  }, [imgArrs])
+
+  return <Stage loadImage={loadImage} requestEmbedding={requestEmbedding} trainClassifier={trainClassifier} changeToImage={changeToImage} />;
 };
 
 export default App;

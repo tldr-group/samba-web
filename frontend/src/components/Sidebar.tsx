@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import AppContext from "./hooks/createContext";
 import { colours, rgbaToHex, getSplitInds, getctx, getxy } from "./helpers/canvasUtils";
-import { Label, SidebarProps } from "./helpers/Interfaces";
+import { Label, LabelFrameProps, NavigationProps, SidebarProps } from "./helpers/Interfaces";
 
 
 import Card from 'react-bootstrap/Card';
@@ -12,22 +12,22 @@ import Spinner from "react-bootstrap/Spinner";
 import * as _ from "underscore";
 
 
-const Sidebar = ({ requestEmbedding, trainClassifier }: SidebarProps) => {
+const Sidebar = ({ requestEmbedding, trainClassifier, changeToImage }: SidebarProps) => {
     // holds all the stuff on the side of the screen: train button, label frame, overlay frame and a hidden spin wheel that displays when encoding or segmenting
     return (
         <div className="items-center" style={{ padding: '10px 10px', alignItems: 'center' }}>
             <Button onClick={trainClassifier} variant="dark" style={{ marginLeft: '28%', boxShadow: "1px 1px  1px grey" }}>Train Classifier!</Button>{' '}
             <div className={`h-full w-[20%]`}>
-                <LabelFrame requestEmbedding={requestEmbedding} trainClassifier={trainClassifier} />
+                <LabelFrame requestEmbedding={requestEmbedding} />
                 <OverlaysFrame />
-                <NavigationFrame />
+                <NavigationFrame changeToImage={changeToImage} />
                 <SpinWheel></SpinWheel>
             </div>
         </div>
     );
 }
 
-const LabelFrame = ({ requestEmbedding }: SidebarProps) => {
+const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
     const {
         labelType: [labelType, setLabelType],
         labelClass: [labelClass, setLabelClass],
@@ -178,7 +178,7 @@ const SpinWheel = () => {
     )
 }
 
-const NavigationFrame = () => {
+const NavigationFrame = ({ changeToImage }: NavigationProps) => {
     const { imgType: [imgType,] } = useContext(AppContext)!;
     const nImages = 2
 
@@ -187,7 +187,7 @@ const NavigationFrame = () => {
             <Card className="bg-dark text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }}>
                 <Card.Header as="h5">Navigation</Card.Header>
                 <Card.Body>
-                    <ImgSelect />
+                    <ImgSelect changeToImage={changeToImage} />
                 </Card.Body>
             </Card>
         )
@@ -198,7 +198,7 @@ const NavigationFrame = () => {
     }
 }
 
-const ImgSelect = () => {
+const ImgSelect = ({ changeToImage }: NavigationProps) => {
     const {
         image: [image,],
         labelClass: [labelClass,],
@@ -281,11 +281,12 @@ const ImgSelect = () => {
 
     const changeImageIdx = (e: any) => {
         // TODO: pass down the change image function from app to here and call it - means we can access new idx and prev idx to do saving laoding
+        changeToImage(imgIdx, e.target.value)
         setImgIdx(e.target.value)
     }
 
     useEffect(() => {
-        if (image === null) { return; }
+        if (image === null || canvRef.current === null) { return; }
         const ctx = getctx(canvRef);
         if (ctx === null) { return; }
         drawCanvas(ctx, imgIdx - 1, image, null, null);

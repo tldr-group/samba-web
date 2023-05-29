@@ -31,23 +31,28 @@ export interface ToolProps {
 }
 
 export interface StageProps {
-  loadImage: (href: string) => void;
+  loadImage: (hrefs: string[]) => void;
   requestEmbedding: () => void;
   trainClassifier: () => void;
+  changeToImage: (oldIdx: number, newIdx: number) => void;
 }
 
 export interface TopbarProps {
-  loadImage: (href: string) => void;
+  loadImage: (hrefs: string[]) => void;
 }
 
 export interface SidebarProps {
   requestEmbedding: () => void;
   trainClassifier: () => void;
+  changeToImage: (oldIdx: number, newIdx: number) => void;
 }
 
-
 export interface LabelFrameProps {
-  icon_path: string;
+  requestEmbedding: () => void;
+}
+
+export interface NavigationProps {
+  changeToImage: (oldIdx: number, newIdx: number) => void;
 }
 
 

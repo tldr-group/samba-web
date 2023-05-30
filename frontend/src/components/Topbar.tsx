@@ -1,6 +1,6 @@
 import React, { useRef, useContext } from "react";
 import AppContext from "./hooks/createContext";
-import { imageDataToImage } from "./helpers/canvasUtils";
+import { imageDataToImage, getSplitInds } from "./helpers/canvasUtils";
 import { TopbarProps } from "./helpers/Interfaces";
 
 import Container from 'react-bootstrap/Container';
@@ -11,8 +11,9 @@ import NavDropdown from 'react-bootstrap/NavDropdown';
 const UTIF = require("./UTIF.js")
 
 
-const Topbar = ({ loadImage }: TopbarProps) => {
+const Topbar = ({ loadImages }: TopbarProps) => {
     const {
+        largeImg: [, setLargeImg],
         imgType: [, setImgType],
         segArr: [segArr,],
         image: [image,],
@@ -27,16 +28,68 @@ const Topbar = ({ loadImage }: TopbarProps) => {
     }
 
     const loadTIFF = (result: ArrayBuffer) => {
-        const tifs = UTIF.decode(result)
+        const tifs = UTIF.decode(result);
         const hrefs: Array<string> = []
         for (let tif of tifs) {
-            UTIF.decodeImage(result, tif)
-            const imgDataArr = new Uint8ClampedArray(UTIF.toRGBA8(tif))
-            const imgData = new ImageData(imgDataArr, tif.width, tif.height)
-            hrefs.push(imageDataToImage(imgData).src)
+            UTIF.decodeImage(result, tif);
+            const imgDataArr = new Uint8ClampedArray(UTIF.toRGBA8(tif));
+            const imgData = new ImageData(imgDataArr, tif.width, tif.height);
+            hrefs.push(imageDataToImage(imgData).src);
         }
-        loadImage(hrefs)
-        if (tifs.length > 1) { setImgType("stack") } else { setImgType("single") }
+        const isSmall = (tifs[0].width < 1024 && tifs[0].height < 1024)
+        if (tifs.length > 1 && isSmall) {
+            loadImages(hrefs);
+            setImgType("stack");
+        } else if (tifs.length == 1 && isSmall) {
+            loadImages(hrefs);
+            setImgType("single");
+        } else if (!isSmall) {
+            const img = new Image();
+            img.src = hrefs[0];
+            img.onload = () => {
+                loadLargeImage(img)
+                setImgType("large");
+            }
+        }
+    }
+
+    const loadPNGJPEG = (href: string) => {
+        const img = new Image();
+        img.src = href;
+        img.onload = () => {
+            if (img.width > 1024 || img.height > 1024) {
+                console.log('large')
+                loadLargeImage(img); //load large image
+                setImgType("large")
+            }
+            else {
+                loadImages([href]);
+                setImgType("single")
+            }
+        }
+    }
+
+    const loadLargeImage = (img: HTMLImageElement) => {
+        const hrefs: string[] = []
+        const inds = getSplitInds(img)
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (ctx === null) { return; }
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0)
+        const [widths, heights] = [inds.w, inds.h]
+        for (let y = 0; y < heights.length - 1; y++) {
+            const [h0, h1] = [heights[y], heights[y + 1]]
+            for (let x = 0; x < widths.length - 1; x++) {
+                const [w0, w1] = [widths[x], widths[x + 1]]
+                const imgData = ctx.getImageData(w0, h0, w1 - w0, h1 - h0)
+                const cropImg = imageDataToImage(imgData)
+                hrefs.push(cropImg.src)
+            }
+        }
+        loadImages(hrefs)
+        setLargeImg(img)
     }
 
     const saveAsTIFF = (arr: Uint8ClampedArray, width: number, height: number) => {
@@ -64,12 +117,13 @@ const Topbar = ({ loadImage }: TopbarProps) => {
 
     const onSaveClick = () => {
         if (image === null || segArr === null) { return; }
-        saveAsTIFF(segArr, image.width, image.height)
+        saveAsTIFF(segArr, image.width, image.height);
     }
 
 
+    // TODO: 
     const handleFileUpload = (e: any) => {
-        // Open file dialog and load file. TODO: add in .tiff loading (parse as image?)
+        // Open file dialog and load file.
         const file: File | null = e.target.files?.[0] || null;
         const reader = new FileReader();
 
@@ -81,7 +135,7 @@ const Topbar = ({ loadImage }: TopbarProps) => {
                     loadTIFF(reader.result as ArrayBuffer);
                 } else {
                     const href = reader.result as string;
-                    loadImage([href]);
+                    loadPNGJPEG(href);
                 };
             };
             if (isTIF) {

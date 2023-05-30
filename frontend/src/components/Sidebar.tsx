@@ -200,13 +200,12 @@ const NavigationFrame = ({ changeToImage }: NavigationProps) => {
 
 const ImgSelect = ({ changeToImage }: NavigationProps) => {
     const {
-        image: [image,],
+        largeImg: [largeImg,],
         imgArrs: [imgArrs,],
         labelClass: [labelClass,],
         imgIdx: [imgIdx, setImgIdx],
         imgType: [imgType,],
     } = useContext(AppContext)!;
-    const nImages = 12
     const canvRef = useRef<HTMLCanvasElement>(null);
 
     const canvClick = (e: any) => { console.log("canvas clicked") }
@@ -228,7 +227,6 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
             const hoverBox = rgbaToHex(182, 182, 182, 0.8 * 255);
             const sqX = Math.round((x / ctx.canvas.width) * largeImg.width / dx) //n
             const sqY = Math.floor((y / ctx.canvas.height) * largeImg.height / dy)
-            console.log(x, y)
             drawSquare(ctx, sqX, sqY, splitInds, largeImg.width, largeImg.height, hoverBox)
         }
     }
@@ -261,48 +259,50 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
 
     const drawOnHover = _.throttle((e: any) => {
         const res = getxy(e)
-        if (image === null) { return; }
+        if (largeImg === null) { return; }
         const ctx = getctx(canvRef);
         if (ctx === null) { return; }
-        drawCanvas(ctx, imgIdx - 1, image, res[0], res[1]);
+        drawCanvas(ctx, imgIdx, largeImg, res[0], res[1]);
     }, 4)
 
     const onClick = (e: any) => {
         const ctx = getctx(canvRef);
-        if (image === null || ctx === null) { return; }
+        if (largeImg === null || ctx === null) { return; }
         const res = getxy(e)
         const [x, y] = res
-        const splitInds = getSplitInds(image);
+        const splitInds = getSplitInds(largeImg);
         const [dx, dy, nW] = [splitInds['dx'], splitInds['dy'], splitInds['nW']]
-        const sqX = Math.round((x / ctx.canvas.width) * image.width / dx)
-        const sqY = Math.floor((y / ctx.canvas.height) * image.height / dy)
+        const sqX = Math.round((x / ctx.canvas.width) * largeImg.width / dx)
+        const sqY = Math.floor((y / ctx.canvas.height) * largeImg.height / dy)
         const sq = sqX + nW * sqY
-        setImgIdx(sq + 1)
+        console.log(sq)
+        changeToImage(imgIdx, sq)
+        setImgIdx(sq)
     }
 
     const changeImageIdx = (e: any) => {
         // TODO: pass down the change image function from app to here and call it - means we can access new idx and prev idx to do saving laoding
-        changeToImage(imgIdx, e.target.value)
-        setImgIdx(e.target.value)
+        changeToImage(imgIdx, e.target.value - 1)
+        setImgIdx(e.target.value - 1)
     }
 
     useEffect(() => {
-        if (image === null || canvRef.current === null) { return; }
+        if (largeImg === null || canvRef.current === null) { return; }
         const ctx = getctx(canvRef);
         if (ctx === null) { return; }
-        drawCanvas(ctx, imgIdx - 1, image, null, null);
-    }, [image, labelClass, imgIdx])
+        drawCanvas(ctx, imgIdx, largeImg, null, null);
+    }, [largeImg, labelClass, imgIdx])
 
     if (imgType === "large") {
         return (
             <div>
                 <div className={`flex`}>Piece: <input type="number" min={1} max={imgArrs.length}
-                    value={imgIdx} onChange={e => changeImageIdx(e)}
+                    value={imgIdx + 1} onChange={e => changeImageIdx(e)}
                     style={{ marginLeft: '8px', color: 'black', borderRadius: '4px', marginBottom: '10px' }} />
                 </div>
                 <div style={{ display: 'grid' }}>
-                    {(image !== null) ? <img src={image.src} style={{ gridColumn: 1, gridRow: 1, width: "100%", height: "100%" }}></img> : <></>}
-                    {(image !== null) ? <canvas onClick={canvClick}
+                    {(largeImg !== null) ? <img src={largeImg.src} style={{ gridColumn: 1, gridRow: 1, width: "100%", height: "100%" }}></img> : <></>}
+                    {(largeImg !== null) ? <canvas onClick={canvClick}
                         onMouseMove={drawOnHover}
                         onMouseDown={onClick}
                         ref={canvRef}
@@ -315,7 +315,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
     } else if (imgType === "stack") {
         return (
             <div>
-                Image: <input type="number" min={1} max={imgArrs.length} value={imgIdx} onChange={e => changeImageIdx(e)} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px' }} />
+                Image: <input type="number" min={1} max={imgArrs.length} value={imgIdx + 1} onChange={e => changeImageIdx(e)} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px' }} />
                 <Form.Range min={1} value={imgIdx} max={imgArrs.length} onChange={e => changeImageIdx(e)} />
             </div>
         )

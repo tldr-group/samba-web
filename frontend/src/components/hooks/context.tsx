@@ -12,8 +12,9 @@ const AppContextProvider = (props: {
   children: React.ReactElement<any, string | React.JSXElementConstructor<any>>;
 }) => {
   // Multi-image states. TODO: add list of encoding tensors (Array<any | null>)
-  const [imgType, setImgType] = useState<"large" | "stack" | "multi" | "single">("single");
-  const [imgIdx, setImgIdx] = useState<number>(1);
+  const [largeImg, setLargeImg] = useState<HTMLImageElement | null>(null);
+  const [imgType, setImgType] = useState<"large" | "stack" | "multi" | "single">("large");
+  const [imgIdx, setImgIdx] = useState<number>(0);
   const [imgArrs, setImgArrs] = useState<Array<HTMLImageElement>>([]);
   const [labelArrs, setLabelArrs] = useState<Array<Uint8ClampedArray>>([]);
   const [segArrs, setSegArrs] = useState<Array<Uint8ClampedArray>>([]);
@@ -44,6 +45,7 @@ const AppContextProvider = (props: {
   return (
     <AppContext.Provider
       value={{
+        largeImg: [largeImg, setLargeImg],
         imgType: [imgType, setImgType],
         imgIdx: [imgIdx, setImgIdx],
         imgArrs: [imgArrs, setImgArrs],

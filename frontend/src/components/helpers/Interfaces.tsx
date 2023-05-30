@@ -31,14 +31,14 @@ export interface ToolProps {
 }
 
 export interface StageProps {
-  loadImage: (hrefs: string[]) => void;
+  loadImages: (hrefs: string[]) => void;
   requestEmbedding: () => void;
   trainClassifier: () => void;
   changeToImage: (oldIdx: number, newIdx: number) => void;
 }
 
 export interface TopbarProps {
-  loadImage: (hrefs: string[]) => void;
+  loadImages: (hrefs: string[]) => void;
 }
 
 export interface SidebarProps {

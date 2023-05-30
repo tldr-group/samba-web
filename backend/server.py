@@ -32,10 +32,9 @@ def encode_respond():
     elif "POST" in request.method:  # The actual request following the preflight
         image = _get_image_from_b64(request.json["message"])
         # image.save("image.jpeg")
-        encoded = encode(image)
-        # this may not work when deploying on a webapp becuase multuiple users may be trying to access this
-        response = send_file("encoding.npy")
-        # order = {"message": b64_image}
+        UID = request.json["id"]
+        encoded = encode(image, UID)
+        response = send_file(f"{UID}_encoding.npy")
         return _corsify_actual_response(response)
     else:
         raise RuntimeError("Wrong HTTP method {}".format(request.method))
@@ -48,7 +47,8 @@ def segment_respond():
     elif "POST" in request.method:  # The actual request following the preflight
         images = [_get_image_from_b64(i) for i in request.json["images"]]
         labels_dicts = request.json["labels"]
-        segmentation = segment(images, labels_dicts)
+        UID = request.json["id"]
+        segmentation = segment(images, labels_dicts, UID)
         response = Response(
             segmentation.tobytes()
         )  # jsonify({"message": segmentation.tolist()})

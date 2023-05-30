@@ -8,6 +8,10 @@ import { createContext } from "react";
 import { modelInputProps, Label, LabelFrameProps, Offset } from "../helpers/Interfaces";
 
 interface contextProps {
+  largeImg: [
+    largeImg: HTMLImageElement | null,
+    setLargeImg: (e: HTMLImageElement | null) => void
+  ];
   imgType: [
     imgType: "large" | "stack" | "multi" | "single",
     setImgType: (e: "large" | "stack" | "multi" | "single") => void

@@ -178,7 +178,7 @@ def featurise_then_segment(
     labels: List[np.ndarray],
     model_name: EnsembleMethodName = "FRF",
     balance_classes: bool = True,
-) -> List[np.ndarray]:
+) -> Tuple[List[np.ndarray], EnsembleMethod]:
     """Perform each step of classification: featurising, get data, get model, fit, apply."""
     # feature_stack = multiscale_advanced_features(img, selected_features)
     feature_stacks, fit_data, target_data = get_training_data_multiple_images(
@@ -191,4 +191,4 @@ def featurise_then_segment(
         weights = None
     model = fit(model, fit_data, target_data, weights)
     out_data = apply(model, feature_stacks)
-    return out_data
+    return out_data, model

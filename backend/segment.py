@@ -9,7 +9,7 @@ from forest_based import featurise_then_segment
 from features import DEAFAULT_FEATURES
 
 
-def segment(images: List[Image.Image], labels_dicts: List[dict]):
+def segment(images: List[Image.Image], labels_dicts: List[dict], UID: str):
     img_arrs: List[np.ndarray] = []
     label_arrs: List[np.ndarray] = []
     for i in range(len(images)):
@@ -23,7 +23,8 @@ def segment(images: List[Image.Image], labels_dicts: List[dict]):
         label_arrs.append(label_arr)
 
     remasked_flattened_arrs: np.ndarray
-    probs = featurise_then_segment(img_arrs, DEAFAULT_FEATURES, label_arrs)
+    probs, model = featurise_then_segment(img_arrs, DEAFAULT_FEATURES, label_arrs)
+
     for i in range(len(probs)):
         label_arr = label_arrs[i]
         classes = np.argmax(probs[i], axis=0).astype(np.uint8) + 1

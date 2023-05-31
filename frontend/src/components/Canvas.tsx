@@ -28,8 +28,6 @@ const MultiCanvas = () => {
         labelOpacity: [labelOpacity],
         segOpacity: [segOpacity,],
         maskIdx: [maskIdx, setMaskIdx],
-        //cameraOffset: [cameraOffset, setCameraOffset],
-        //zoom: [zoom, setZoom],
     } = useContext(AppContext)!;
 
     // We use references here because we don't want to re-render every time these change (they do that already as they're canvases!)
@@ -137,13 +135,11 @@ const MultiCanvas = () => {
         // Adjust the zoom level based on scroll wheel delta
         //e.preventDefault()
         const delta = e.deltaY * SCROLL_SENSITIVITY > 0 ? -0.1 : 0.1; // Change the zoom increment as needed
-        let newZoom = zoom.current + delta
-        newZoom = Math.min(newZoom, MAX_ZOOM)
-        newZoom = Math.max(newZoom, MIN_ZOOM)
-        //console.log(newZoom, getxy(e))
-        //setZoom(newZoom);
-        drawAllCanvases(newZoom, cameraOffset.current)
-        zoom.current = newZoom
+        let newZoom = zoom.current + delta;
+        newZoom = Math.min(newZoom, MAX_ZOOM);
+        newZoom = Math.max(newZoom, MIN_ZOOM);
+        drawAllCanvases(newZoom, cameraOffset.current);
+        zoom.current = newZoom;
     };
 
 
@@ -159,38 +155,30 @@ const MultiCanvas = () => {
     }
 
     const handlePanKey = (e: any) => {
-        let redraw = false
-        let newOffset: Offset
+        let redraw = false;
+        let newOffset: Offset;
         const c = cameraOffset.current;
-        const delta = PAN_OFFSET / zoom.current
+        const delta = PAN_OFFSET / zoom.current;
         if (e.key == "w" || e.key == "ArrowUp") {
-            //const c = cameraOffset;
-            //setCameraOffset({ x: c.x, y: Math.max(c.y - delta, 0) });
-            newOffset = { x: c.x, y: Math.max(c.y - delta, 0) }
-            redraw = true
+            newOffset = { x: c.x, y: Math.max(c.y - delta, 0) };
+            redraw = true;
         }
         else if (e.key == "s" || e.key == "ArrowDown") {
-            //const c = cameraOffset;
-            //setCameraOffset({ x: c.x, y: c.y + delta })
-            newOffset = { x: c.x, y: c.y + delta }
-            redraw = true
+            newOffset = { x: c.x, y: c.y + delta };
+            redraw = true;
         } else if (e.key == "a" || e.key == "ArrowLeft") {
-            //const c = cameraOffset;
-            //setCameraOffset({ x: Math.max(c.x - delta, 0), y: c.y });
-            newOffset = { x: Math.max(c.x - delta, 0), y: c.y }
-            redraw = true
+            newOffset = { x: Math.max(c.x - delta, 0), y: c.y };
+            redraw = true;
         } else if (e.key == "d" || e.key == "ArrowRight") {
-            //const c = cameraOffset;
-            //setCameraOffset({ x: c.x + delta, y: c.y });
-            newOffset = { x: c.x + delta, y: c.y }
-            redraw = true
+            newOffset = { x: c.x + delta, y: c.y };
+            redraw = true;
         } else {
-            newOffset = c
+            newOffset = c;
         }
 
         if (redraw) {
-            drawAllCanvases(zoom.current, newOffset)
-            cameraOffset.current = newOffset
+            drawAllCanvases(zoom.current, newOffset);
+            cameraOffset.current = newOffset;
         }
     }
 
@@ -202,9 +190,7 @@ const MultiCanvas = () => {
                 return;
             }
             ctx?.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-            if (i < 4) {
-                drawImage(ctx, gt, updateOffset, updateZoom);
-            };
+            drawImage(ctx, gt, updateOffset, updateZoom);
         };
     }
 
@@ -257,13 +243,6 @@ const MultiCanvas = () => {
     }, [segImg])
 
     useEffect(() => { clearctx(animatedCanvasRef) }, [labelType]) // clear animated canvas when switching
-
-    /*
-    useEffect(() => {
-        //console.log(cameraOffset);
-        drawAllCanvases(zoom, cameraOffset)
-    }, [cameraOffset, zoom])
-    */
 
     // Fixed canvas width will cause errors later i.e lack of resizing //onWheel={handleScroll} onKeyUp={e => onKeyUp(e)}
     return (

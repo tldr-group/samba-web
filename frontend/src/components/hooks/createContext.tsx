@@ -90,14 +90,6 @@ interface contextProps {
     brushWidth: number,
     setBrushWidth: (e: number) => void
   ];
-  cameraOffset: [
-    cameraOffset: Offset,
-    setCameraOffset: (e: Offset) => void
-  ];
-  zoom: [
-    zoom: number,
-    setZoom: (e: any) => void
-  ];
   processing: [
     processing: "None" | "Encoding" | "Segmenting",
     setProcessing: (e: "None" | "Encoding" | "Segmenting") => void

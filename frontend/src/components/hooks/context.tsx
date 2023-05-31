@@ -5,7 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import React, { useState } from "react";
-import { modelInputProps, Label, Offset } from "../helpers/Interfaces";
+import { modelInputProps, Label } from "../helpers/Interfaces";
 import AppContext from "./createContext";
 
 const AppContextProvider = (props: {
@@ -38,8 +38,6 @@ const AppContextProvider = (props: {
   const [overlayType, setOverlayType] = useState<"Segmentation" | "Label">("Segmentation");
   const [labelOpacity, setLabelOpacity] = useState<number>(0.6 * 255);
   const [segOpacity, setSegOpacity] = useState<number>(0.9 * 255);
-  const [cameraOffset, setCameraOffset] = useState<Offset>({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState<number>(1);
   const [processing, setProcessing] = useState<"None" | "Encoding" | "Segmenting">("None");
 
   return (
@@ -67,9 +65,7 @@ const AppContextProvider = (props: {
         overlayType: [overlayType, setOverlayType],
         labelOpacity: [labelOpacity, setLabelOpacity],
         segOpacity: [segOpacity, setSegOpacity],
-        cameraOffset: [cameraOffset, setCameraOffset],
-        zoom: [zoom, setZoom],
-        processing: [processing, setProcessing]
+        processing: [processing, setProcessing],
       }}
     >
       {props.children}

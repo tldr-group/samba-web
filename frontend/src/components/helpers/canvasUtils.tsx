@@ -205,3 +205,14 @@ export const getSplitInds = (image: HTMLImageElement) => {
   const inds = { 'w': wInds, 'h': hInds, 'dx': dx, 'dy': dy, 'nW': nW, 'nH': nH }
   return inds
 }
+
+
+export const getXYfromI = (i: number, arrW: number) => {
+  const y = Math.floor(i / arrW)
+  const x = i % arrW
+  return [x, y]
+}
+
+export const getIfromXY = (x: number, y: number, arrW: number) => {
+  return y * arrW + x
+}

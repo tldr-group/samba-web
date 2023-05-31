@@ -47,7 +47,8 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
     const classes: number[] = [1, 2, 3, 4, 5, 6]
     const _setLabel = (e: any, name: string) => {
         setLabelType(name as Label);
-        if (name == "SAM") { // if switching to SAM labelling, requestEmbedding from app (which returns early if it's already set)
+        if (name == "Smart Labelling") { // if switching to SAM labelling, requestEmbedding from app (which returns early if it's already set)
+            console.log('Smart Labelling')
             requestEmbedding();
         };
     };
@@ -78,9 +79,10 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                     {labels.map(l =>
                         <OverlayTrigger
                             key={l.name}
-                            placement="left"
+                            placement="top"
                             delay={{ show: 250, hide: 400 }}
-                            overlay={ToolTip(l.name)}>
+                            overlay={ToolTip(l.name)}
+                        >
                             <img src={prefix + l.path} style={
                                 {
                                     backgroundColor: 'white', borderRadius: '3px',

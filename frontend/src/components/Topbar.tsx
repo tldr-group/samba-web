@@ -13,9 +13,11 @@ import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 const UTIF = require("./UTIF.js")
 
 export const ToolTip = (str: string) => {
-    return (<Tooltip style={{
-        pointerEvents: 'none', fontSize: '1.2em'
-    }}> {str}</Tooltip >)
+    return (
+        <Tooltip id={str} style={{
+            pointerEvents: 'none', fontSize: '1.2em'
+        }}> {str}</Tooltip >
+    )
 }
 
 
@@ -191,11 +193,13 @@ const Topbar = ({ loadImages }: TopbarProps) => {
                     </Nav>
                 </Navbar.Collapse>
             </Container>
+
             {icons.map(i => <OverlayTrigger
                 key={i[0]}
-                placement="left"
+                placement="bottom"
                 delay={{ show: 250, hide: 400 }}
-                overlay={ToolTip(i[0])}>
+                overlay={ToolTip(i[0])}
+            >
                 <Navbar.Brand href={i[2]}>
                     <img
                         src={"/assets/icons/" + i[1]}

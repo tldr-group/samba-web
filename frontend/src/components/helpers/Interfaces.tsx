@@ -6,7 +6,7 @@
 
 import { Tensor } from "onnxruntime-web";
 
-export type Label = "SAM" | "Poly" | "Brush" | "Erase"
+export type Label = "Smart Labelling" | "Poly" | "Brush" | "Erase"
 
 export interface modelScaleProps {
   samScale: number;

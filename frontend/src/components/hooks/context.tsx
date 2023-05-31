@@ -13,7 +13,7 @@ const AppContextProvider = (props: {
 }) => {
   // Multi-image states. TODO: add list of encoding tensors (Array<any | null>)
   const [largeImg, setLargeImg] = useState<HTMLImageElement | null>(null);
-  const [imgType, setImgType] = useState<"large" | "stack" | "multi" | "single">("large");
+  const [imgType, setImgType] = useState<"large" | "stack" | "multi" | "single">("single");
   const [imgIdx, setImgIdx] = useState<number>(0);
   const [imgArrs, setImgArrs] = useState<Array<HTMLImageElement>>([]);
   const [labelArrs, setLabelArrs] = useState<Array<Uint8ClampedArray>>([]);

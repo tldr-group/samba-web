@@ -3,12 +3,13 @@ import AppContext from "./hooks/createContext";
 import { colours, rgbaToHex, getSplitInds, getctx, getxy } from "./helpers/canvasUtils";
 import { Label, LabelFrameProps, NavigationProps, SidebarProps } from "./helpers/Interfaces";
 
-
+import { ToolTip } from "./Topbar";
 import Card from 'react-bootstrap/Card';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Spinner from "react-bootstrap/Spinner";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import * as _ from "underscore";
 
 
@@ -36,8 +37,8 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
     } = useContext(AppContext)!;
 
     const prefix = "../assets/icons/";
-    const sam = { "path": "smart.png", "name": "SAM" };
-    const poly = { "path": "polygon.png", "name": "Poly" };
+    const sam = { "path": "smart.png", "name": "Smart Labelling" };
+    const poly = { "path": "polygon.png", "name": "Polygon" };
     const brush = { "path": "brush.png", "name": "Brush" };
     const erase = { "path": "erase.png", "name": "Erase" };
     const labels = [sam, poly, brush, erase]; // loop over these to generate icons
@@ -74,15 +75,23 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
             <Card.Header as="h5">Label</Card.Header>
             <Card.Body className={`flex`}>
                 <>
-                    {labels.map(l => <img key={l.name} src={prefix + l.path} style={
-                        {
-                            backgroundColor: 'white', borderRadius: '3px',
-                            marginLeft: '7%', width: '40px', boxShadow: '2px 2px 2px black',
-                            outline: _getCSSColour(l.name, labelType, "3px solid ", labelClass)
-                        }
-                    }
-                        onClick={(e) => _setLabel(e, l.name)}
-                    ></img>)}
+                    {labels.map(l =>
+                        <OverlayTrigger
+                            key={l.name}
+                            placement="left"
+                            delay={{ show: 250, hide: 400 }}
+                            overlay={ToolTip(l.name)}>
+                            <img src={prefix + l.path} style={
+                                {
+                                    backgroundColor: 'white', borderRadius: '3px',
+                                    marginLeft: '7%', width: '40px', boxShadow: '2px 2px 2px black',
+                                    outline: _getCSSColour(l.name, labelType, "3px solid ", labelClass)
+                                }
+                            }
+                                onClick={(e) => _setLabel(e, l.name)}></img>
+                        </OverlayTrigger>
+
+                    )}
                 </>
             </Card.Body>
             <Card.Body>
@@ -208,8 +217,6 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
     } = useContext(AppContext)!;
     const canvRef = useRef<HTMLCanvasElement>(null);
 
-    const canvClick = (e: any) => { console.log("canvas clicked") }
-
     const drawCanvas = (ctx: CanvasRenderingContext2D, selectedImg: number, largeImg: HTMLImageElement, x: number | null, y: number | null) => {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
         const c = colours[labelClass];
@@ -274,14 +281,13 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
         const [dx, dy, nW] = [splitInds['dx'], splitInds['dy'], splitInds['nW']]
         const sqX = Math.round((x / ctx.canvas.width) * largeImg.width / dx)
         const sqY = Math.floor((y / ctx.canvas.height) * largeImg.height / dy)
-        const sq = sqX + nW * sqY
-        console.log(sq)
+        // TODO: bug here. When click on bottom half of bottom row, rounds up and tries to index square outside range. Clamping as temporary solution
+        const sq = Math.min(sqX + nW * sqY, imgArrs.length - 1)
         changeToImage(imgIdx, sq)
         setImgIdx(sq)
     }
 
     const changeImageIdx = (e: any) => {
-        // TODO: pass down the change image function from app to here and call it - means we can access new idx and prev idx to do saving laoding
         changeToImage(imgIdx, e.target.value - 1)
         setImgIdx(e.target.value - 1)
     }
@@ -302,7 +308,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
                 </div>
                 <div style={{ display: 'grid' }}>
                     {(largeImg !== null) ? <img src={largeImg.src} style={{ gridColumn: 1, gridRow: 1, width: "100%", height: "100%" }}></img> : <></>}
-                    {(largeImg !== null) ? <canvas onClick={canvClick}
+                    {(largeImg !== null) ? <canvas
                         onMouseMove={drawOnHover}
                         onMouseDown={onClick}
                         ref={canvRef}

@@ -57,7 +57,7 @@ const getUID = () => {
   return String(Date.now()) + id.join('')
 }
 
-
+const UID = getUID() // this is called every re render - don't do that lol, use state
 
 const App = () => {
   const {
@@ -76,7 +76,7 @@ const App = () => {
     labelClass: [labelClass],
     processing: [, setProcessing]
   } = useContext(AppContext)!;
-  const UID = getUID() // this is called every re render - don't do that lol, use state
+
   //console.log(UID)
   const [model, setModel] = useState<InferenceSession | null>(null); // ONNX model
   const [tensor, setTensor] = useState<Tensor | null>(null); // Image embedding tensor
@@ -150,7 +150,6 @@ const App = () => {
 
   const changeToImage = (oldIdx: number, newIdx: number) => {
     // Update arrs with arrs of old image, then switch to new one.
-    console.log(oldIdx, newIdx)
     const newLabelArrs = updateArr(labelArrs, oldIdx, labelArr)
     const newSegArrs = updateArr(segArrs, oldIdx, segArr)
     const newTensorArrs = updateArr(tensorArrs, oldIdx, tensor)
@@ -178,6 +177,7 @@ const App = () => {
     if (tensor != null || image === null) { // Early return if we already have one
       return;
     }
+    console.log(UID)
     setProcessing("Encoding")
     const b64image = getb64Image(image);
     let npLoader = new npyjs();

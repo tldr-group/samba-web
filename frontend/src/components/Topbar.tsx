@@ -7,8 +7,16 @@ import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import NavDropdown from 'react-bootstrap/NavDropdown';
+import Tooltip from "react-bootstrap/Tooltip";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 
 const UTIF = require("./UTIF.js")
+
+export const ToolTip = (str: string) => {
+    return (<Tooltip style={{
+        pointerEvents: 'none', fontSize: '1.2em'
+    }}> {str}</Tooltip >)
+}
 
 
 const Topbar = ({ loadImages }: TopbarProps) => {
@@ -58,7 +66,6 @@ const Topbar = ({ loadImages }: TopbarProps) => {
         img.src = href;
         img.onload = () => {
             if (img.width > 1024 || img.height > 1024) {
-                console.log('large')
                 loadLargeImage(img); //load large image
                 setImgType("large")
             }
@@ -73,12 +80,15 @@ const Topbar = ({ loadImages }: TopbarProps) => {
         const hrefs: string[] = []
         const inds = getSplitInds(img)
         const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
         if (ctx === null) { return; }
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0)
         const [widths, heights] = [inds.w, inds.h]
+        // need to add the ends of the image
+        widths.push(img.width)
+        heights.push(img.height)
         for (let y = 0; y < heights.length - 1; y++) {
             const [h0, h1] = [heights[y], heights[y + 1]]
             for (let x = 0; x < widths.length - 1; x++) {
@@ -88,6 +98,7 @@ const Topbar = ({ loadImages }: TopbarProps) => {
                 hrefs.push(cropImg.src)
             }
         }
+        console.log(hrefs.length, widths, heights)
         loadImages(hrefs)
         setLargeImg(img)
     }
@@ -120,8 +131,6 @@ const Topbar = ({ loadImages }: TopbarProps) => {
         saveAsTIFF(segArr, image.width, image.height);
     }
 
-
-    // TODO: 
     const handleFileUpload = (e: any) => {
         // Open file dialog and load file.
         const file: File | null = e.target.files?.[0] || null;
@@ -145,6 +154,12 @@ const Topbar = ({ loadImages }: TopbarProps) => {
             };
         }
     }
+
+    const icons: string[][] = [
+        ["Paper", "paper.png", "coming_soon"],
+        ["Help", "help.png", "https://github.com/tldr-group/samba-web"],
+        ["TLDR Group", "tldr.png", "https://tldr-group.github.io/#/"]
+    ]
 
     return (
         <Navbar bg="dark" variant="dark" expand="lg" style={{ boxShadow: "1px 1px  1px grey" }}>
@@ -176,6 +191,22 @@ const Topbar = ({ loadImages }: TopbarProps) => {
                     </Nav>
                 </Navbar.Collapse>
             </Container>
+            {icons.map(i => <OverlayTrigger
+                key={i[0]}
+                placement="left"
+                delay={{ show: 250, hide: 400 }}
+                overlay={ToolTip(i[0])}>
+                <Navbar.Brand href={i[2]}>
+                    <img
+                        src={"/assets/icons/" + i[1]}
+                        width="30"
+                        height="30"
+                        className="d-inline-block align-top"
+                        style={{ backgroundColor: '#ffffff', borderRadius: '20px' }}
+                    />
+                </Navbar.Brand>
+            </OverlayTrigger>
+            )}
         </Navbar>
     );
 }

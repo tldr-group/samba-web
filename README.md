@@ -60,7 +60,7 @@ yarn && yarn start
 - [ ] Ideally compute featurisations in background every time an image is loaded then cache. Will need to make sure what happens if seg requested before featurisations finished (loop till file available - should work as flask multithreaded)
 - [ ] Save/load/apply classifier as .skops/restricted .pickle file. Save classifier with UID. Overwrite on train/load. Don’t overwrite on apply 
 - [ ] Fix OOM errors: only compute feature stacks for images with labels before training. Then, compute feature stacks on demand in a loop, only saving the result. Might conflict with 1 & 2
-Tests for backend: component and integration. Test each filter does as expected, then test if it matches Weka, then test the classification process produces similar results (for fixed labels and filters)
+- [ ] Tests for backend: component and integration. Test each filter does as expected, then test if it matches Weka, then test the classification process produces similar results (for fixed labels and filters)
 # Drawing:
 - [ ] Make animated canvas actually animated with requestAnimationFrame. (Some render loop - try avoid triggering re rendering)
 - [ ] Add in polygon labelling (track clicker points in a ref, draw lines between then every animation frame and a line from last point to current mouse position if correct brush mode), brush/eraser outline (draw circle at mouse position every request animation frame if correct brush mode)

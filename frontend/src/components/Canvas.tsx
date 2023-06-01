@@ -54,6 +54,16 @@ const MultiCanvas = () => {
     // Track mouse state (for drag drawing)
     const clicking = useRef<boolean>(false);
 
+    const updateSAM = () => {
+        const canvX = mousePos.current.x;
+        const canvY = mousePos.current.y;
+        const ctx = getctx(animatedCanvasRef);
+        if (ctx === null || image === null) { return };
+        const [x, y] = getZoomPanXY(canvX, canvY, ctx, image, cameraOffset.current, zoom.current);
+        const click = getClick(x, y);
+        if (click) setClicks([click]);
+    };
+
     const getClick = (x: number, y: number): modelInputProps => {
         // used for ONNX
         const clickType = 1;
@@ -65,7 +75,6 @@ const MultiCanvas = () => {
         const drawing = (labelType == "Brush" || labelType == "Erase")
         if (drawing) { clicking.current = true; }
     }
-
 
     const handleClickEnd = (e: any) => {
         // Once a click finishes, get current labelling state and apply correct action
@@ -92,12 +101,7 @@ const MultiCanvas = () => {
             // Update SAM type when right clicking
             const newMaskIdx = (maskIdx % 3) + 1;
             setMaskIdx((newMaskIdx));
-            const res = getxy(e);
-            const canvX = res[0];
-            const canvY = res[1];
-            const [x, y] = getZoomPanXY(canvX, canvY, ctx, image, cameraOffset.current, zoom.current)
-            const click = getClick(x, y);
-            if (click) setClicks([click]); // reload mask with new MaskIdx
+            updateSAM()
         } else if (labelType == "Erase") {
             // Erase directly on labels (so get real time preview). Not currently working
             const labelctx = getctx(labelCanvasRef);
@@ -148,13 +152,13 @@ const MultiCanvas = () => {
         zoom.current = newZoom;
     };
 
-
     const handleKeyPress = (e: any) => {
         //console.log(e.key)
         if (e.key >= '0' && e.key <= '6') {
             // Perform desired actions for number key press
             console.log('Number key pressed:', e.key);
             setLabelClass(parseInt(e.key));
+            updateSAM();
         } else {
             handlePanKey(e);
         }

@@ -22,7 +22,7 @@ const MultiCanvas = () => {
     const {
         image: [image],
         imgIdx: [imgIdx,],
-        maskImg: [maskImg],
+        maskImg: [maskImg, setMaskImg],
         clicks: [, setClicks],
         labelType: [labelType],
         labelClass: [labelClass, setLabelClass],
@@ -174,13 +174,14 @@ const MultiCanvas = () => {
     };
 
     const handleKeyPress = (e: any) => {
-        //console.log(e.key)
+        console.log(e.key)
         if (e.key >= '0' && e.key <= '6') {
             // Perform desired actions for number key press
             console.log('Number key pressed:', e.key);
             setLabelClass(parseInt(e.key));
             updateSAM();
-            // TODO: add cancel polygon  & sam mask on esc key press
+        } else if (e.key === 'Escape') {
+            resetLabels()
         } else {
             handlePanKey(e);
         }
@@ -212,6 +213,12 @@ const MultiCanvas = () => {
             drawAllCanvases(zoom.current, newOffset);
             cameraOffset.current = newOffset;
         }
+    }
+
+    const resetLabels = () => {
+        polyPoints.current = []
+        clearctx(animatedCanvasRef)
+        setMaskImg(null)
     }
 
     const resetAnimation = () => {
@@ -300,7 +307,9 @@ const MultiCanvas = () => {
         drawImgOnUpdate(segCanvasRef, segImg)
     }, [segImg])
 
-    useEffect(() => { clearctx(animatedCanvasRef) }, [labelType]) // clear animated canvas when switching
+    useEffect(() => {
+        resetLabels()
+    }, [labelType]) // clear animated canvas when switching
 
     useEffect(() => { resetAnimation() }, [labelType, brushWidth, labelClass])
 
@@ -311,7 +320,7 @@ const MultiCanvas = () => {
             onMouseMove={handleClickMove}
             onMouseUp={handleClickEnd}
             onContextMenu={(e) => e.preventDefault()}
-            onMouseLeave={e => clearctx(animatedCanvasRef)}
+            onMouseLeave={e => resetLabels()}
             onKeyDown={e => handleKeyPress(e)}
             tabIndex={0}
             onWheel={e => handleScroll(e)}>

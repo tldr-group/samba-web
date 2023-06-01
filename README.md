@@ -53,32 +53,31 @@ yarn && yarn start
 
 ## TODO:
 # IO:
-- [] Fix line bug in large file saving - probably indexing 
-- [] Save tif stack into one file - need to poke around UTIF.JS. Might need to encode each seg are as a tif then encode list of tiffs then save
+- [ ] Fix line bug in large file saving - probably indexing 
+- [ ] Save tif stack into one file - need to poke around UTIF.JS. Might need to encode each seg are as a tif then encode list of tiffs then save
 # Classifier/Backend:
-- [] Cache featurisations into a .npy file 
-- [] Ideally compute featurisations in background every time an image is loaded then cache. Will need to make sure what happens if seg requested before featurisations finished (loop till file available - should work as flask multithreaded)
-- [] Save/load/apply classifier as .skops/restricted .pickle file. Save classifier with UID. Overwrite on train/load. Don’t overwrite on apply 
-- [] Fix OOM errors: only compute feature stacks for images with labels before training. Then, compute feature stacks on demand in a loop, only saving the result. Might conflict with 1 & 2
+- [ ] Cache featurisations into a .npy file 
+- [ ] Ideally compute featurisations in background every time an image is loaded then cache. Will need to make sure what happens if seg requested before featurisations finished (loop till file available - should work as flask multithreaded)
+- [ ] Save/load/apply classifier as .skops/restricted .pickle file. Save classifier with UID. Overwrite on train/load. Don’t overwrite on apply 
+- [ ] Fix OOM errors: only compute feature stacks for images with labels before training. Then, compute feature stacks on demand in a loop, only saving the result. Might conflict with 1 & 2
 Tests for backend: component and integration. Test each filter does as expected, then test if it matches Weka, then test the classification process produces similar results (for fixed labels and filters)
 # Drawing:
-- [] Make animated canvas actually animated with requestAnimationFrame. (Some render loop - try avoid triggering re rendering)
-- [] Add in polygon labelling (track clicker points in a ref, draw lines between then every animation frame and a line from last point to current mouse position if correct brush mode), brush/eraser outline (draw circle at mouse position every request animation frame if correct brush mode)
-- [] Fix eraser bug/subtle Sam/draw bug where draw labels slightly dilated when added 
+- [ ] Make animated canvas actually animated with requestAnimationFrame. (Some render loop - try avoid triggering re rendering)
+- [ ] Add in polygon labelling (track clicker points in a ref, draw lines between then every animation frame and a line from last point to current mouse position if correct brush mode), brush/eraser outline (draw circle at mouse position every request animation frame if correct brush mode)
+- [ ] Fix eraser bug/subtle Sam/draw bug where draw labels slightly dilated when added 
 # Misc:
-- [] Error messages as modals - have error text as a state in context (i.e share across all components). Have conditional rendering of modal of test set and set text to “” when modal quit clicked. 
+- [ ] Error messages as modals - have error text as a state in context (i.e share across all components). Have conditional rendering of modal of test set and set text to “” when modal quit clicked. 
 Comments
-- [] Remove tool.tsx and other meta AI comments
-- [] Write a user manual (with gifs) on the GitHub, link to it in README and in app itself 
-- [] Fix tooltip jitter- seems to load a horizontal scroll bar occasionally on hover 
-- [] Code cleanup: DRY etc
-- [] Post processing
-- [] paper?
+- [ ] Write a user manual (with gifs) on the GitHub, link to it in README and in app itself 
+- [ ] Fix tooltip jitter- seems to load a horizontal scroll bar occasionally on hover 
+- [ ] Code cleanup: DRY etc
+- [ ] Post processing
+- [ ] paper?
 # Cloud
-- [] Post segmentation quality review/share prompt - maybe as a toast notification 
-- [] Deploy on Azure
-- [] Database/datalake in backend
-- [] Caps for budget
-- [] Track total compute time in DB and add kill switch 
+- [ ] Post segmentation quality review/share prompt - maybe as a toast notification 
+- [ ] Deploy on Azure
+- [ ] Database/datalake in backend
+- [ ] Caps for budget
+- [ ] Track total compute time in DB and add kill switch 
 # Future
-- [] Gallery page
+- [ ] Gallery page

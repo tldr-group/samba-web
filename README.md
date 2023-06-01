@@ -66,7 +66,7 @@ yarn && yarn start
 - [ ] Add in polygon labelling (track clicker points in a ref, draw lines between then every animation frame and a line from last point to current mouse position if correct brush mode), brush/eraser outline (draw circle at mouse position every request animation frame if correct brush mode)
 - [ ] Fix eraser bug/subtle Sam/draw bug where draw labels slightly dilated when added 
 - [ ] Make SAM suggestion change colour as soon as key pressed (should be fixed by 1 & 2)
-#GUI:
+# GUI:
 - [ ] Make canvas and sidebar reactive - i.e sidebar should sit on LHS at 18 rem and canvas should fill the rest of the space
 - [ ] Dark background/Dark mode (better for eyes) 
 # Misc:

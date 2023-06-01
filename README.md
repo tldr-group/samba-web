@@ -65,12 +65,18 @@ yarn && yarn start
 - [ ] Make animated canvas actually animated with requestAnimationFrame. (Some render loop - try avoid triggering re rendering)
 - [ ] Add in polygon labelling (track clicker points in a ref, draw lines between then every animation frame and a line from last point to current mouse position if correct brush mode), brush/eraser outline (draw circle at mouse position every request animation frame if correct brush mode)
 - [ ] Fix eraser bug/subtle Sam/draw bug where draw labels slightly dilated when added 
+- [ ] Make SAM suggestion change colour as soon as key pressed (should be fixed by 1 & 2)
+#GUI:
+- [ ] Make canvas and sidebar reactive - i.e sidebar should sit on LHS at 18 rem and canvas should fill the rest of the space
+- [ ] Dark background/Dark mode (better for eyes) 
 # Misc:
 - [ ] Error messages as modals - have error text as a state in context (i.e share across all components). Have conditional rendering of modal of test set and set text to “” when modal quit clicked. 
-Comments
+- [ ] Comments
 - [ ] Write a user manual (with gifs) on the GitHub, link to it in README and in app itself 
 - [ ] Fix tooltip jitter- seems to load a horizontal scroll bar occasionally on hover 
 - [ ] Code cleanup: DRY etc
+- [ ] Have a default microstructure with preloaded encoding so users can have a play with it w/out having their own
+- [ ] Is SAMBA a good name?
 - [ ] Post processing
 - [ ] paper?
 # Cloud

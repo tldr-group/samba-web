@@ -180,7 +180,9 @@ def featurise_then_segment(
     balance_classes: bool = True,
 ) -> Tuple[List[np.ndarray], EnsembleMethod]:
     """Perform each step of classification: featurising, get data, get model, fit, apply."""
-    # feature_stack = multiscale_advanced_features(img, selected_features)
+    # TODO: fix out of memory errors by only computing feature stacks of labelled images and then computing and applying on demand?
+    # compute one at a time, saving to a file each time? how would this work w/out loading the whole thing into memory?
+    # will it matter how much memory the VM/cloud instance if it's shared between users (i.e could one user use too much memory?)
     feature_stacks, fit_data, target_data = get_training_data_multiple_images(
         imgs, labels, selected_features
     )  # get_training_data(feature_stack, labels)

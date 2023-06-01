@@ -5,7 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import { createContext } from "react";
-import { modelInputProps, Label, LabelFrameProps, Offset } from "../helpers/Interfaces";
+import { modelInputProps, Label, } from "../helpers/Interfaces";
 
 interface contextProps {
   largeImg: [

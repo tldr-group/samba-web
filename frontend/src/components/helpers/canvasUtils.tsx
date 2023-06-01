@@ -103,18 +103,16 @@ export function onnxMaskToImage(input: any, width: number, height: number, mask_
 }
 
 
-export const draw = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, colour: string) => {
+export const draw = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, colour: string, fill: boolean = true) => {
   ctx.fillStyle = colour; //"#43ff641a"
+  ctx.strokeStyle = colour
   ctx.beginPath();
   ctx.ellipse(x, y, width, width, 0, 0, 2 * Math.PI);
-  ctx.fill();
-}
-
-export const drawOutline = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, colour: string) => {
-  ctx.strokeStyle = colour; //"#43ff641a"
-  ctx.beginPath();
-  ctx.ellipse(x, y, width, width, 0, 0, 2 * Math.PI);
-  ctx.stroke();
+  if (fill) {
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
 }
 
 export const erase = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number) => {
@@ -126,6 +124,25 @@ export const drawEraseOutline = (ctx: CanvasRenderingContext2D, x: number, y: nu
   ctx.beginPath();
   ctx.rect(x - width / 2, y - width / 2, width, width)
   ctx.stroke();
+}
+
+export const drawPolygon = (ctx: CanvasRenderingContext2D, polygon: Array<Offset>, colour: string, fill: boolean = false) => {
+  const p0 = polygon[0]
+  ctx.fillStyle = colour;
+  ctx.strokeStyle = colour;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(p0.x, p0.y)
+  for (let i = 1; i < polygon.length; i++) {
+    const p = polygon[i]
+    ctx.lineTo(p.x, p.y)
+  }
+  if (fill === true) {
+    ctx.closePath()
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
 }
 
 export const getctx = (ref: RefObject<HTMLCanvasElement>): CanvasRenderingContext2D | null => { return ref.current!.getContext("2d", { willReadFrequently: true }) }

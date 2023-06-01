@@ -4,7 +4,7 @@ import { modelInputProps, Offset } from "./helpers/Interfaces";
 import {
     getctx, transferLabels, addImageDataToArray, clearctx, getxy, getZoomPanXY,
     getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage,
-    imageDataToImage, erase, drawOutline, drawEraseOutline
+    imageDataToImage, erase, drawEraseOutline, drawPolygon
 } from "./helpers/canvasUtils"
 import * as _ from "underscore";
 
@@ -14,6 +14,9 @@ const MIN_ZOOM = 0.1
 const SCROLL_SENSITIVITY = 0.0005
 const PAN_OFFSET = 20
 
+const appendArr = (oldArr: Array<any>, newVal: any) => {
+    return [...oldArr, newVal];
+};
 
 const MultiCanvas = () => {
     const {
@@ -38,6 +41,7 @@ const MultiCanvas = () => {
     const animatedOverlayRef = useRef<HTMLCanvasElement>(null);
     const animatedCanvasRef = useRef<HTMLCanvasElement>(null);
 
+    const polyPoints = useRef<Array<Offset>>([]);
     const animationRef = useRef<number>(0);
 
     const zoom = useRef<number>(1);
@@ -74,6 +78,15 @@ const MultiCanvas = () => {
         // Start tracking user click
         const drawing = (labelType == "Brush" || labelType == "Erase")
         if (drawing) { clicking.current = true; }
+    };
+
+    const addCanvasToArr = (canvas: HTMLCanvasElement, img: HTMLImageElement, oldArr: Uint8ClampedArray, drawOriginal = false, erase = false) => {
+        const transferCtx = transferLabels(canvas, img, cameraOffset.current, zoom.current, drawOriginal);
+        if (transferCtx === undefined || image === null) { return; };
+        // (relatively) slow operation as needs to draw onto full image size
+        const imageData = transferCtx.getImageData(0, 0, image?.width, image?.height);
+        const arr = addImageDataToArray(imageData, oldArr, labelClass, erase);
+        return arr
     }
 
     const handleClickEnd = (e: any) => {
@@ -90,12 +103,8 @@ const MultiCanvas = () => {
         if (drawing && leftClick) { clicking.current = false; };
         if ((labelType == "Brush" || labelType == "Smart Labelling") && leftClick) {
             // Draw what was on our animated canvas (brush or SAM) onto the label canvas
-            const transferCtx = transferLabels(ctx.canvas, labelImg, cameraOffset.current, zoom.current)
-            if (transferCtx === undefined) { return }
-            // (relatively) slow operation as needs to draw onto full image size
-            const labelImageData = transferCtx.getImageData(0, 0, image?.width, image?.height);
-            const arr = addImageDataToArray(labelImageData, labelArr, labelClass);
-            setLabelArr(arr);
+            const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr)
+            if (arr !== undefined) { setLabelArr(arr); }
             clearctx(animatedCanvasRef);
         } else if (labelType == "Smart Labelling" && rightClick) {
             // Update SAM type when right clicking
@@ -106,11 +115,23 @@ const MultiCanvas = () => {
             // Erase directly on labels (so get real time preview). Not currently working
             const labelctx = getctx(labelCanvasRef);
             if (labelctx === null) { return }
-            const transferCtx = transferLabels(labelctx.canvas, labelImg, cameraOffset.current, zoom.current, true)
-            if (transferCtx === undefined) { return }
-            const labelImageData = transferCtx.getImageData(0, 0, image?.width, image?.height); // was cameraOffset.x, cameraOffset.y
-            const arr = addImageDataToArray(labelImageData, labelArr, labelClass, true);
-            setLabelArr(arr);
+            const arr = addCanvasToArr(labelctx.canvas, labelImg, labelArr, true, true)
+            if (arr !== undefined) { setLabelArr(arr); }
+            //setLabelArr(arr);
+        } else if (labelType === "Polygon" && leftClick) {
+            const newPoly = appendArr(polyPoints.current, mousePos.current);
+            polyPoints.current = newPoly;
+        } else if (labelType === "Polygon" && rightClick) {
+            const animctx = getctx(animatedOverlayRef)
+            if (animctx === null) { return }
+            const newPoly = appendArr(polyPoints.current, mousePos.current);
+            const c = colours[labelClass];
+            const hex = rgbaToHex(c[0], c[1], c[2], 255);
+            drawPolygon(ctx, newPoly, hex, true)
+            const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr)
+            if (arr !== undefined) { setLabelArr(arr); }
+            polyPoints.current = []
+            clearctx(animatedCanvasRef)
         }
     };
 
@@ -159,6 +180,7 @@ const MultiCanvas = () => {
             console.log('Number key pressed:', e.key);
             setLabelClass(parseInt(e.key));
             updateSAM();
+            // TODO: add cancel polygon  & sam mask on esc key press
         } else {
             handlePanKey(e);
         }
@@ -202,14 +224,19 @@ const MultiCanvas = () => {
         const ctx = getctx(animatedOverlayRef)
         if (ctx === null) { return; }
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-        if (labelType == "Brush") {
-            const c = colours[labelClass];
-            const hex = rgbaToHex(c[0], c[1], c[2], 255);
-            drawOutline(ctx, mousePos.current.x, mousePos.current.y, brushWidth, hex)
-        } else if (labelType == "Erase") {
-            drawEraseOutline(ctx, mousePos.current.x, mousePos.current.y, brushWidth)
+        const c = colours[labelClass];
+        const hex = rgbaToHex(c[0], c[1], c[2], 255);
+        if (labelType === "Brush") {
+            draw(ctx, mousePos.current.x, mousePos.current.y, brushWidth, hex, false);
+        } else if (labelType === "Erase") {
+            drawEraseOutline(ctx, mousePos.current.x, mousePos.current.y, brushWidth);
+        } else if (labelType === "Polygon") {
+            if (polyPoints.current.length > 0) {
+                drawPolygon(ctx, polyPoints.current, hex);
+                drawPolygon(ctx, [polyPoints.current[polyPoints.current.length - 1], mousePos.current], hex)
+            }
         }
-        animationRef.current = requestAnimationFrame(animation)
+        animationRef.current = requestAnimationFrame(animation);
     }
 
     const drawAllCanvases = (updateZoom: number, updateOffset: Offset) => {

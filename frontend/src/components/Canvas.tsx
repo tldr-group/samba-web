@@ -3,7 +3,8 @@ import AppContext from "./hooks/createContext";
 import { modelInputProps, Offset } from "./helpers/Interfaces";
 import {
     getctx, transferLabels, addImageDataToArray, clearctx, getxy, getZoomPanXY,
-    getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage, imageDataToImage, erase
+    getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage,
+    imageDataToImage, erase, drawOutline, drawEraseOutline
 } from "./helpers/canvasUtils"
 import * as _ from "underscore";
 
@@ -34,10 +35,14 @@ const MultiCanvas = () => {
     const imgCanvasRef = useRef<HTMLCanvasElement>(null);
     const segCanvasRef = useRef<HTMLCanvasElement>(null);
     const labelCanvasRef = useRef<HTMLCanvasElement>(null);
+    const animatedOverlayRef = useRef<HTMLCanvasElement>(null);
     const animatedCanvasRef = useRef<HTMLCanvasElement>(null);
+
+    const animationRef = useRef<number>(0);
 
     const zoom = useRef<number>(1);
     const cameraOffset = useRef<Offset>({ x: 0, y: 0 })
+    const mousePos = useRef<Offset>({ x: 0, y: 0 })
 
     const [labelImg, setLabelImg] = useState<HTMLImageElement | null>(null);
     const [segImg, setSegImg] = useState<HTMLImageElement | null>(null);
@@ -45,7 +50,7 @@ const MultiCanvas = () => {
     // Our images - when we update them their corresponding canvas changes. 
     const groundTruths = [image, segImg, labelImg, maskImg]
     // Our canvases - updated when our images update but also can update them (i.e when drawing labels.)
-    const refs = [imgCanvasRef, segCanvasRef, labelCanvasRef, animatedCanvasRef]
+    const refs = [imgCanvasRef, segCanvasRef, labelCanvasRef, animatedCanvasRef, animatedOverlayRef]
     // Track mouse state (for drag drawing)
     const clicking = useRef<boolean>(false);
 
@@ -112,6 +117,7 @@ const MultiCanvas = () => {
         const canvY = res[1];
         const ctx = getctx(animatedCanvasRef);
         const labelctx = getctx(labelCanvasRef);
+        mousePos.current = { x: canvX, y: canvY } //cache mouse pos for overlay
 
         if (ctx === null || image === null || labelctx === null) { return; }
 
@@ -182,8 +188,28 @@ const MultiCanvas = () => {
         }
     }
 
+    const resetAnimation = () => {
+        window.cancelAnimationFrame(animationRef.current)
+        animation()
+    }
+
+    const animation = () => {
+        if (animatedOverlayRef.current === null) { return; }
+        const ctx = getctx(animatedOverlayRef)
+        if (ctx === null) { return; }
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+        if (labelType == "Brush") {
+            const c = colours[labelClass];
+            const hex = rgbaToHex(c[0], c[1], c[2], 255);
+            drawOutline(ctx, mousePos.current.x, mousePos.current.y, brushWidth, hex)
+        } else if (labelType == "Erase") {
+            drawEraseOutline(ctx, mousePos.current.x, mousePos.current.y, brushWidth)
+        }
+        animationRef.current = requestAnimationFrame(animation)
+    }
+
     const drawAllCanvases = (updateZoom: number, updateOffset: Offset) => {
-        for (let i = 0; i < refs.length; i++) {
+        for (let i = 0; i < refs.length - 1; i++) {
             const ctx = getctx(refs[i])
             const gt = groundTruths[i]
             if (gt === null || ctx?.canvas == undefined || ctx === null) {
@@ -220,6 +246,7 @@ const MultiCanvas = () => {
         setSegImg(newSegImg);
 
         if (ctx !== null) { drawImage(ctx, image, cameraOffset.current, zoom.current); }
+        animation()
     }, [image])
 
     useEffect(() => {
@@ -243,6 +270,9 @@ const MultiCanvas = () => {
     }, [segImg])
 
     useEffect(() => { clearctx(animatedCanvasRef) }, [labelType]) // clear animated canvas when switching
+
+    useEffect(() => { resetAnimation() }, [labelType, brushWidth, labelClass])
+
 
     // Fixed canvas width will cause errors later i.e lack of resizing //onWheel={handleScroll} onKeyUp={e => onKeyUp(e)}
     return (

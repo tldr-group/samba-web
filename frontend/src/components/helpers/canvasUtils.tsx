@@ -110,8 +110,22 @@ export const draw = (ctx: CanvasRenderingContext2D, x: number, y: number, width:
   ctx.fill();
 }
 
+export const drawOutline = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, colour: string) => {
+  ctx.strokeStyle = colour; //"#43ff641a"
+  ctx.beginPath();
+  ctx.ellipse(x, y, width, width, 0, 0, 2 * Math.PI);
+  ctx.stroke();
+}
+
 export const erase = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number) => {
   ctx.clearRect(x - width / 2, y - width / 2, width, width)
+}
+
+export const drawEraseOutline = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number) => {
+  ctx.strokeStyle = "#000000"; //"#43ff641a"
+  ctx.beginPath();
+  ctx.rect(x - width / 2, y - width / 2, width, width)
+  ctx.stroke();
 }
 
 export const getctx = (ref: RefObject<HTMLCanvasElement>): CanvasRenderingContext2D | null => { return ref.current!.getContext("2d", { willReadFrequently: true }) }

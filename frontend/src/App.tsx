@@ -1,8 +1,11 @@
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-// All rights reserved.
+/* Heavily adapted from Meta AI's segment anything demo, i.e SAM model interface kept and the rest
+thrown away.
 
-// This source code is licensed under the license found in the
-// LICENSE file in the root directory of this source tree.
+App is the entrypoint for the client. It holds the user-uploaded images, their associated labels
+and the backend generated SAM embeddings and segmentations. It contains the functions that
+interact with the backend API and the code to run the ONNX quantised lightweight decoder head
+of the SAM model (with the image encoding part run on the backed.).
+*/
 
 import { InferenceSession, Tensor } from "onnxruntime-web";
 import React, { useContext, useEffect, useState } from "react";
@@ -17,17 +20,16 @@ import AppContext from "./components/hooks/createContext";
 const ort = require("onnxruntime-web");
 /* @ts-ignore */
 import npyjs from "npyjs";
-import { List } from "underscore";
 
-// Define image, embedding and model paths
-//const IMAGE_PATH = "/assets/data/dogs.jpg";
-const IMAGE_EMBEDDING = "/assets/data/dogs_embedding.npy";
+
 const MODEL_DIR = "/model/sam_onnx_quantized_example.onnx";
 
+// URLS of our API endpoints - change when live
 const ENCODE_ENDPOINT = "http://127.0.0.1:5000/encoding"
 const SEGMENT_ENDPOINT = "http://127.0.0.1:5000/segmenting"
 
 const getb64Image = (img: HTMLImageElement): string => {
+  // Convert HTML Image to b64 string encoding by drawing onto canvas. Used for sending over HTTP
   const tempCanvas = document.createElement("canvas");
   tempCanvas.width = img.width
   tempCanvas.height = img.height
@@ -39,6 +41,7 @@ const getb64Image = (img: HTMLImageElement): string => {
 
 
 const updateArr = (oldArr: Array<any>, idx: number, setVal: any) => {
+  // React is functional - we don't mutate the state of our states but instead replace with fresh copy
   const newArr = oldArr.map((v, i) => (i === idx) ? setVal : v);
   return newArr;
 };
@@ -52,12 +55,13 @@ const getRandomInt = (max: number) => {
 }
 
 const getUID = () => {
+  // 'Unique' session identifier for a client: UNIX timestamp + 5 digit random code. Odds of collision negligible.
   const maxes = [9, 9, 9, 9, 9]
   const id = maxes.map((v, i) => String(getRandomInt(v)))
   return String(Date.now()) + id.join('')
 }
 
-const UID = getUID() // this is called every re render - don't do that lol, use state
+const UID = getUID()
 
 const App = () => {
   const {
@@ -77,21 +81,15 @@ const App = () => {
     processing: [, setProcessing]
   } = useContext(AppContext)!;
 
-  //console.log(UID)
   const [model, setModel] = useState<InferenceSession | null>(null); // ONNX model
   const [tensor, setTensor] = useState<Tensor | null>(null); // Image embedding tensor
-  // maybe I want label and segs arrays (0-6) as states that when updated uodate their respective canvases. will let you check against it when getting sam mask
-  // a decoupling of data and canvas representations could be useful for image as well 
-  // update labelData by looping through every pixel in the animated canvas != 0 & set to currentClass! 
 
   // The ONNX model expects the input to be rescaled to 1024. 
   // The modelScale state variable keeps track of the scale values.
   const [modelScale, setModelScale] = useState<modelScaleProps | null>(null);
 
-  // Initialize the ONNX model. load the image, and load the SAM
-  // pre-computed image embedding
   useEffect(() => {
-    // Initialize the ONNX model
+    // Initialize the ONNX model on load
     const initModel = async () => {
       try {
         if (MODEL_DIR === undefined) return;
@@ -157,6 +155,7 @@ const App = () => {
     setSegArrs(newSegArrs)
     setTensorArrs(newTensorArrs)
 
+    // Set samScale of model for new image
     const img = imgArrs[newIdx]
     const { height, width, samScale } = handleImageScale(img);
     setModelScale({
@@ -211,6 +210,9 @@ const App = () => {
   }
 
   const loadSegmentationsFromHTTP = (buffer: ArrayBuffer) => {
+    /*The arr we recieve from segment endpoint is *every* segmentation in flat byte list. Here we loop
+    over each byte in the arraybuffer and use a second loop variable that keeps track of where we are
+    inside of the current image.*/
     const dataView = new DataView(buffer);
     const arrayLength = buffer.byteLength;
 
@@ -236,7 +238,7 @@ const App = () => {
     console.log("Finished segmenting");
   }
 
-  // Run the ONNX model every time clicks has changed i.e monitors state of clicks - useful for zooming!
+  // Run the ONNX model every time clicks state changes - updated in Canvas
   useEffect(() => {
     runONNX();
   }, [clicks]);
@@ -252,7 +254,6 @@ const App = () => {
         return;
       else {
         // Preapre the model input in the correct format for SAM. 
-        // The modelData function is from onnxModelAPI.tsx.
         const feeds = modelData({
           clicks,
           tensor,
@@ -263,8 +264,9 @@ const App = () => {
         // Run the SAM ONNX model with the feeds returned from modelData()
         const results = await model.run(feeds);
         const output = results[model.outputNames[0]];
-        // The predicted mask returned from the ONNX model is an array which is 
-        // rendered as an HTML image using onnxMaskToImage() from maskUtils.tsx.
+        /* The predicted mask returned from the ONNX model is an array which is 
+         rendered as an HTML image using onnxMaskToImage() from canvasUtils.tsx. We also feed
+         in the index of the mask we want to look it, the current labelling class and current label array. */
         setMaskImg(onnxMaskToImage(output.data, output.dims[2], output.dims[3], maskIdx, labelClass, labelArr));
       }
     } catch (e) {

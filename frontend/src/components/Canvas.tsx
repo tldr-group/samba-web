@@ -1,4 +1,4 @@
-import React, { RefObject, useRef, useContext, useEffect, useState, SetStateAction } from "react";
+import React, { RefObject, useRef, useContext, useEffect, useState } from "react";
 import AppContext from "./hooks/createContext";
 import { modelInputProps, Offset } from "./helpers/Interfaces";
 import {

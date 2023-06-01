@@ -1,4 +1,14 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+/* Sidebar is the series of cards on the left hand side of the screen that contain the buttons for changing states in 
+the App. These are:
+1) LabelFrame: change labelling type, label class, brush width, SAM label region. Also has a nice outline that changes
+when current class changes
+2) Overlays frame: changes the opacity of the selected overlay (segmentation or labels)
+3) Navigation frame: either a slider to change which image in a TIFF stack is looked at OR a neat little thumbnail
+of a large image which when clicked will change focus to that sub-image
+4) A spinny wheel in a box that appears when pinging the backed (segmenting or encoding).
+*/
+
+import React, { useContext, useEffect, useRef } from "react";
 import AppContext from "./hooks/createContext";
 import { colours, rgbaToHex, getSplitInds, getctx, getxy } from "./helpers/canvasUtils";
 import { Label, LabelFrameProps, NavigationProps, SidebarProps } from "./helpers/Interfaces";
@@ -81,8 +91,7 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                             key={l.name}
                             placement="top"
                             delay={{ show: 250, hide: 400 }}
-                            overlay={ToolTip(l.name)}
-                        >
+                            overlay={ToolTip(l.name)}>
                             <img src={prefix + l.path} style={
                                 {
                                     backgroundColor: 'white', borderRadius: '3px',
@@ -118,7 +127,6 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                     }}>{size}</Button>)}
                 </ButtonGroup>
             </Card.Body>
-
         </Card >
     );
 }
@@ -217,9 +225,14 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
         imgIdx: [imgIdx, setImgIdx],
         imgType: [imgType,],
     } = useContext(AppContext)!;
+    // Reference stord to update later.
     const canvRef = useRef<HTMLCanvasElement>(null);
 
     const drawCanvas = (ctx: CanvasRenderingContext2D, selectedImg: number, largeImg: HTMLImageElement, x: number | null, y: number | null) => {
+        /* Given canvas context, currently chosen image, the large image and a click x, click , split the image up with
+        splitInds (largest even split that's less than 1024 in each dir), draw lines across the image corresponding to
+        this splitting in canvas coordinates (shrunk relative to real image). Highlight the currently chosen sub image
+        with the labelling and if hovering over the canvas, draw a grey square over where the mouse is. */
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
         const c = colours[labelClass];
         const hex = rgbaToHex(c[0], c[1], c[2], 255);
@@ -266,6 +279,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
         ctx.fillRect(sqX * sfW * dx, sqY * sfH * dy, dx * sfW, dy * sfH);
     }
 
+    // Throttled to avoid over drawing
     const drawOnHover = _.throttle((e: any) => {
         const res = getxy(e)
         if (largeImg === null) { return; }
@@ -275,6 +289,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
     }, 4)
 
     const onClick = (e: any) => {
+        // On click, change sub image to the selected square
         const ctx = getctx(canvRef);
         if (largeImg === null || ctx === null) { return; }
         const res = getxy(e)
@@ -295,12 +310,14 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
     }
 
     useEffect(() => {
+        // Update if the user changes the image, label class (new colour) or Image idx (i.e with spinbox)
         if (largeImg === null || canvRef.current === null) { return; }
         const ctx = getctx(canvRef);
         if (ctx === null) { return; }
         drawCanvas(ctx, imgIdx, largeImg, null, null);
     }, [largeImg, labelClass, imgIdx])
 
+    // Two different display modes: visual navigation for large images and slider for stacks
     if (imgType === "large") {
         return (
             <div>
@@ -320,7 +337,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
             </div>
 
         )
-    } else if (imgType === "stack") {
+    } else if (imgType === "stack" || imgType === "multi") {
         return (
             <div>
                 Image: <input type="number" min={1} max={imgArrs.length} value={imgIdx + 1} onChange={e => changeImageIdx(e)} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px' }} />

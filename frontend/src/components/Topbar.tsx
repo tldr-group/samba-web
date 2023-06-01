@@ -1,3 +1,8 @@
+/* Topbar of the app, holding the buttons to add/remove data, save/load classifier
+
+
+*/
+
 import React, { useRef, useContext } from "react";
 import AppContext from "./hooks/createContext";
 import { imageDataToImage, getSplitInds, getXYfromI, getIfromXY } from "./helpers/canvasUtils";
@@ -80,30 +85,30 @@ const Topbar = ({ loadImages }: TopbarProps) => {
     }
 
     const loadLargeImage = (img: HTMLImageElement) => {
-        const hrefs: string[] = []
-        const inds = getSplitInds(img)
+        const hrefs: string[] = [];
+        const inds = getSplitInds(img);
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d", { willReadFrequently: true });
         if (ctx === null) { return; }
         canvas.width = img.width;
         canvas.height = img.height;
-        ctx.drawImage(img, 0, 0)
-        const [widths, heights] = [inds.w, inds.h]
+        ctx.drawImage(img, 0, 0);
+        const [widths, heights] = [inds.w, inds.h];
         // need to add the ends of the image
-        widths.push(img.width)
-        heights.push(img.height)
+        widths.push(img.width);
+        heights.push(img.height);
         for (let y = 0; y < heights.length - 1; y++) {
-            const [h0, h1] = [heights[y], heights[y + 1]]
+            const [h0, h1] = [heights[y], heights[y + 1]];
             for (let x = 0; x < widths.length - 1; x++) {
-                const [w0, w1] = [widths[x], widths[x + 1]]
-                const imgData = ctx.getImageData(w0, h0, w1 - w0, h1 - h0)
-                const cropImg = imageDataToImage(imgData)
-                hrefs.push(cropImg.src)
+                const [w0, w1] = [widths[x], widths[x + 1]];
+                const imgData = ctx.getImageData(w0, h0, w1 - w0, h1 - h0);
+                const cropImg = imageDataToImage(imgData);
+                hrefs.push(cropImg.src);
             }
         }
-        console.log(hrefs.length, widths, heights)
-        loadImages(hrefs)
-        setLargeImg(img)
+        console.log(hrefs.length, widths, heights);
+        loadImages(hrefs);
+        setLargeImg(img);
     }
 
     const saveAsTIFF = (arr: Uint8ClampedArray, width: number, height: number) => {
@@ -134,45 +139,25 @@ const Topbar = ({ loadImages }: TopbarProps) => {
         if (imgType === "single") {
             saveAsTIFF(segArr, image.width, image.height);
         } else if (imgType === "large" && largeImg !== null) {
-            const [w, h] = [largeImg.width, largeImg.height]
-            const inds = getSplitInds(largeImg)
+            // TODO: fix line artefact here
+            const [w, h] = [largeImg.width, largeImg.height];
+            const inds = getSplitInds(largeImg);
             const wholeImgData = new Uint8ClampedArray(largeImg.width * largeImg.height)
-            console.log(wholeImgData.length, inds)
+            console.log(wholeImgData.length, inds);
             for (let i = 0; i < wholeImgData.length; i++) {
-                const [x, y] = getXYfromI(i, w)
-                const [sqX, sqY] = [Math.floor(x / inds.dx), Math.floor(y / inds.dy)]
-                const sq = sqY * inds.nW + sqX
-                const j = (x - inds.dx) + (y % inds.dy) * inds.dx
+                const [x, y] = getXYfromI(i, w);
+                const [sqX, sqY] = [Math.floor(x / inds.dx), Math.floor(y / inds.dy)];
+                const sq = sqY * inds.nW + sqX;
+                const j = (x - inds.dx) + (y % inds.dy) * inds.dx;
                 try {
-                    const data = segArrs[sq][j]
-                    wholeImgData[i] = data
+                    const data = segArrs[sq][j];
+                    wholeImgData[i] = data;
                 } catch {
-                    console.log(sq, sqX, sqY, i, j)
+                    console.log(sq, sqX, sqY, i, j);
                 }
             }
-
-            /*
-            let wholeImgArr: Array<number> = [0]
-            let i = 0;
-            The problem here is that you're just appending the data i.e whole seg arr complete then next one, but you actually 
-            need to restructure completely i.e rearrange
-            for (let y = 0; y < heights.length - 1; y++) {
-                for (let x = 0; x < widths.length - 1; x++) {
-                    let data = segArrs[i];
-                    let arr = Array.from(data)
-                    if (i === 0) {
-                        wholeImgArr = arr
-                    } else {
-                        wholeImgArr = wholeImgArr.concat(arr);
-                    }
-                    i += 1
-                };
-            };
-            */
-            //console.log(wholeImgArr.length, i)
-            //const wholeImgData = Uint8ClampedArray.from(wholeImgArr)
-            saveAsTIFF(wholeImgData, largeImg.width, largeImg.height)
-        }
+            saveAsTIFF(wholeImgData, largeImg.width, largeImg.height);
+        } //TODO: add in stack saving here
     }
 
     const handleFileUpload = (e: any) => {

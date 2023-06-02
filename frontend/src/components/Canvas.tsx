@@ -4,7 +4,7 @@ import { modelInputProps, Offset } from "./helpers/Interfaces";
 import {
     getctx, transferLabels, addImageDataToArray, clearctx, getxy, getZoomPanXY,
     getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage,
-    imageDataToImage, erase, drawEraseOutline, drawPolygon
+    imageDataToImage, erase, drawErase, drawPolygon
 } from "./helpers/canvasUtils"
 import * as _ from "underscore";
 
@@ -80,12 +80,13 @@ const MultiCanvas = () => {
         if (drawing) { clicking.current = true; }
     };
 
-    const addCanvasToArr = (canvas: HTMLCanvasElement, img: HTMLImageElement, oldArr: Uint8ClampedArray, drawOriginal = false, erase = false) => {
-        const transferCtx = transferLabels(canvas, img, cameraOffset.current, zoom.current, drawOriginal);
+    const addCanvasToArr = (canvas: HTMLCanvasElement, img: HTMLImageElement, oldArr: Uint8ClampedArray, erase = false) => {
+        const transferCtx = transferLabels(canvas, img, cameraOffset.current, zoom.current);
         if (transferCtx === undefined || image === null) { return; };
         // (relatively) slow operation as needs to draw onto full image size
         const imageData = transferCtx.getImageData(0, 0, image?.width, image?.height);
-        const arr = addImageDataToArray(imageData, oldArr, labelClass, erase);
+        const currentClass = (erase === true) ? 0 : labelClass
+        const arr = addImageDataToArray(imageData, oldArr, currentClass, erase);
         return arr
     }
 
@@ -115,8 +116,9 @@ const MultiCanvas = () => {
             // Erase directly on labels (so get real time preview). Not currently working
             const labelctx = getctx(labelCanvasRef);
             if (labelctx === null) { return }
-            const arr = addCanvasToArr(labelctx.canvas, labelImg, labelArr, true, true)
+            const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr, true)
             if (arr !== undefined) { setLabelArr(arr); }
+            clearctx(animatedCanvasRef);
             //setLabelArr(arr);
         } else if (labelType === "Polygon" && leftClick) {
             const newPoly = appendArr(polyPoints.current, mousePos.current);
@@ -159,6 +161,9 @@ const MultiCanvas = () => {
             if (click) setClicks([click]);
         } else if ((clicking.current) && (labelType == "Erase")) {
             erase(labelctx, canvX, canvY, brushWidth);
+            const c = colours[0];
+            const hex = rgbaToHex(c[0], c[1], c[2], 1); // was label opacity
+            drawErase(ctx, canvX, canvY, brushWidth, true, hex);
         }
     }, 15);
 
@@ -170,6 +175,7 @@ const MultiCanvas = () => {
         newZoom = Math.min(newZoom, MAX_ZOOM);
         newZoom = Math.max(newZoom, MIN_ZOOM);
         drawAllCanvases(newZoom, cameraOffset.current);
+        resetLabels();
         zoom.current = newZoom;
     };
 
@@ -210,6 +216,7 @@ const MultiCanvas = () => {
         }
 
         if (redraw) {
+            resetLabels();
             drawAllCanvases(zoom.current, newOffset);
             cameraOffset.current = newOffset;
         }
@@ -218,6 +225,7 @@ const MultiCanvas = () => {
     const resetLabels = () => {
         polyPoints.current = []
         clearctx(animatedCanvasRef)
+        clearctx(animatedOverlayRef)
         setMaskImg(null)
     }
 
@@ -236,7 +244,7 @@ const MultiCanvas = () => {
         if (labelType === "Brush") {
             draw(ctx, mousePos.current.x, mousePos.current.y, brushWidth, hex, false);
         } else if (labelType === "Erase") {
-            drawEraseOutline(ctx, mousePos.current.x, mousePos.current.y, brushWidth);
+            drawErase(ctx, mousePos.current.x, mousePos.current.y, brushWidth, false);
         } else if (labelType === "Polygon") {
             if (polyPoints.current.length > 0) {
                 drawPolygon(ctx, polyPoints.current, hex);

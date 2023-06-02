@@ -67,7 +67,7 @@ export function addImageDataToArray(imageData: ImageData, arr: Uint8ClampedArray
     // check if this pixel is set in the image and not set in the arr
     if (isPixelSet([data[4 * i], data[4 * i + 1], data[4 * i + 2]]) && arr[i] == 0) {
       newArr[i] = classVal;
-    } else if (erase && !isPixelSet([data[4 * i], data[4 * i + 1], data[4 * i + 2]]) && arr[i] != 0) {
+    } else if (erase && isPixelSet([data[4 * i], data[4 * i + 1], data[4 * i + 2]])) {
       newArr[i] = 0;
     } else {
       newArr[i] = arr[i];
@@ -119,11 +119,16 @@ export const erase = (ctx: CanvasRenderingContext2D, x: number, y: number, width
   ctx.clearRect(x - width / 2, y - width / 2, width, width)
 }
 
-export const drawEraseOutline = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number) => {
+export const drawErase = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, fill = true, hex = "#ffffff") => {
   ctx.strokeStyle = "#000000"; //"#43ff641a"
+  ctx.fillStyle = hex;
   ctx.beginPath();
   ctx.rect(x - width / 2, y - width / 2, width, width)
-  ctx.stroke();
+  if (fill) {
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
 }
 
 export const drawPolygon = (ctx: CanvasRenderingContext2D, polygon: Array<Offset>, colour: string, fill: boolean = false) => {
@@ -162,14 +167,13 @@ export const getxy = (e: any): [number, number] => {
   return [x, y]
 }
 
-export const transferLabels = (animCanv: HTMLCanvasElement, labelImage: HTMLImageElement, offset: Offset, zoom: number, drawOriginal: boolean = true) => {
+export const transferLabels = (animCanv: HTMLCanvasElement, labelImage: HTMLImageElement, offset: Offset, zoom: number) => {
   const [sx0, sy0, sw, sh, dx, dy, dw, dh] = getZoomPanCoords(animCanv.width, animCanv.height, labelImage, offset, zoom)
   const transferCanvas = document.createElement("canvas");
   const transferCtx = transferCanvas.getContext("2d");
   if (transferCtx === null) { return; };
   transferCanvas.width = labelImage.width;
   transferCanvas.height = labelImage.height;
-  if (drawOriginal === true) { transferCtx.drawImage(labelImage, 0, 0) };
   transferCtx.clearRect(sx0, sy0, sw, sh)
   transferCtx.drawImage(animCanv, dx, dy, dw, dh, sx0, sy0, sw, sh);
   return transferCtx;

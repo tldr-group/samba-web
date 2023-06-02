@@ -46,9 +46,6 @@ const updateArr = (oldArr: Array<any>, idx: number, setVal: any) => {
   return newArr;
 };
 
-const appendArr = (oldArr: Array<any>, newVal: any) => {
-  return [...oldArr, newVal];
-};
 
 const getRandomInt = (max: number) => {
   return Math.floor(Math.random() * max);

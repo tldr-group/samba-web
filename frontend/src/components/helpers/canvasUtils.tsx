@@ -67,7 +67,7 @@ export function addImageDataToArray(imageData: ImageData, arr: Uint8ClampedArray
     // check if this pixel is set in the image and not set in the arr
     if (isPixelSet([data[4 * i], data[4 * i + 1], data[4 * i + 2]]) && arr[i] == 0) {
       newArr[i] = classVal;
-    } else if (erase && !isPixelSet([data[4 * i], data[4 * i + 1], data[4 * i + 2]]) && arr[i] != 0) {
+    } else if (erase && isPixelSet([data[4 * i], data[4 * i + 1], data[4 * i + 2]])) {
       newArr[i] = 0;
     } else {
       newArr[i] = arr[i];
@@ -103,15 +103,51 @@ export function onnxMaskToImage(input: any, width: number, height: number, mask_
 }
 
 
-export const draw = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, colour: string) => {
+export const draw = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, colour: string, fill: boolean = true) => {
   ctx.fillStyle = colour; //"#43ff641a"
+  ctx.strokeStyle = colour
   ctx.beginPath();
   ctx.ellipse(x, y, width, width, 0, 0, 2 * Math.PI);
-  ctx.fill();
+  if (fill) {
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
 }
 
 export const erase = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number) => {
   ctx.clearRect(x - width / 2, y - width / 2, width, width)
+}
+
+export const drawErase = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, fill = true, hex = "#ffffff") => {
+  ctx.strokeStyle = "#000000"; //"#43ff641a"
+  ctx.fillStyle = hex;
+  ctx.beginPath();
+  ctx.rect(x - width / 2, y - width / 2, width, width)
+  if (fill) {
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
+}
+
+export const drawPolygon = (ctx: CanvasRenderingContext2D, polygon: Array<Offset>, colour: string, fill: boolean = false) => {
+  const p0 = polygon[0]
+  ctx.fillStyle = colour;
+  ctx.strokeStyle = colour;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(p0.x, p0.y)
+  for (let i = 1; i < polygon.length; i++) {
+    const p = polygon[i]
+    ctx.lineTo(p.x, p.y)
+  }
+  if (fill === true) {
+    ctx.closePath()
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
 }
 
 export const getctx = (ref: RefObject<HTMLCanvasElement>): CanvasRenderingContext2D | null => { return ref.current!.getContext("2d", { willReadFrequently: true }) }
@@ -131,14 +167,13 @@ export const getxy = (e: any): [number, number] => {
   return [x, y]
 }
 
-export const transferLabels = (animCanv: HTMLCanvasElement, labelImage: HTMLImageElement, offset: Offset, zoom: number, drawOriginal: boolean = true) => {
+export const transferLabels = (animCanv: HTMLCanvasElement, labelImage: HTMLImageElement, offset: Offset, zoom: number) => {
   const [sx0, sy0, sw, sh, dx, dy, dw, dh] = getZoomPanCoords(animCanv.width, animCanv.height, labelImage, offset, zoom)
   const transferCanvas = document.createElement("canvas");
   const transferCtx = transferCanvas.getContext("2d");
   if (transferCtx === null) { return; };
   transferCanvas.width = labelImage.width;
   transferCanvas.height = labelImage.height;
-  if (drawOriginal === true) { transferCtx.drawImage(labelImage, 0, 0) };
   transferCtx.clearRect(sx0, sy0, sw, sh)
   transferCtx.drawImage(animCanv, dx, dy, dw, dh, sx0, sy0, sw, sh);
   return transferCtx;

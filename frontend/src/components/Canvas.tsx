@@ -3,7 +3,8 @@ import AppContext from "./hooks/createContext";
 import { modelInputProps, Offset } from "./helpers/Interfaces";
 import {
     getctx, transferLabels, addImageDataToArray, clearctx, getxy, getZoomPanXY,
-    getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage, imageDataToImage, erase
+    getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage,
+    imageDataToImage, erase, drawErase, drawPolygon
 } from "./helpers/canvasUtils"
 import * as _ from "underscore";
 
@@ -13,12 +14,15 @@ const MIN_ZOOM = 0.1
 const SCROLL_SENSITIVITY = 0.0005
 const PAN_OFFSET = 20
 
+const appendArr = (oldArr: Array<any>, newVal: any) => {
+    return [...oldArr, newVal];
+};
 
 const MultiCanvas = () => {
     const {
         image: [image],
         imgIdx: [imgIdx,],
-        maskImg: [maskImg],
+        maskImg: [maskImg, setMaskImg],
         clicks: [, setClicks],
         labelType: [labelType],
         labelClass: [labelClass, setLabelClass],
@@ -34,10 +38,15 @@ const MultiCanvas = () => {
     const imgCanvasRef = useRef<HTMLCanvasElement>(null);
     const segCanvasRef = useRef<HTMLCanvasElement>(null);
     const labelCanvasRef = useRef<HTMLCanvasElement>(null);
+    const animatedOverlayRef = useRef<HTMLCanvasElement>(null);
     const animatedCanvasRef = useRef<HTMLCanvasElement>(null);
+
+    const polyPoints = useRef<Array<Offset>>([]);
+    const animationRef = useRef<number>(0);
 
     const zoom = useRef<number>(1);
     const cameraOffset = useRef<Offset>({ x: 0, y: 0 })
+    const mousePos = useRef<Offset>({ x: 0, y: 0 })
 
     const [labelImg, setLabelImg] = useState<HTMLImageElement | null>(null);
     const [segImg, setSegImg] = useState<HTMLImageElement | null>(null);
@@ -45,9 +54,19 @@ const MultiCanvas = () => {
     // Our images - when we update them their corresponding canvas changes. 
     const groundTruths = [image, segImg, labelImg, maskImg]
     // Our canvases - updated when our images update but also can update them (i.e when drawing labels.)
-    const refs = [imgCanvasRef, segCanvasRef, labelCanvasRef, animatedCanvasRef]
+    const refs = [imgCanvasRef, segCanvasRef, labelCanvasRef, animatedCanvasRef, animatedOverlayRef]
     // Track mouse state (for drag drawing)
     const clicking = useRef<boolean>(false);
+
+    const updateSAM = () => {
+        const canvX = mousePos.current.x;
+        const canvY = mousePos.current.y;
+        const ctx = getctx(animatedCanvasRef);
+        if (ctx === null || image === null) { return };
+        const [x, y] = getZoomPanXY(canvX, canvY, ctx, image, cameraOffset.current, zoom.current);
+        const click = getClick(x, y);
+        if (click) setClicks([click]);
+    };
 
     const getClick = (x: number, y: number): modelInputProps => {
         // used for ONNX
@@ -59,8 +78,17 @@ const MultiCanvas = () => {
         // Start tracking user click
         const drawing = (labelType == "Brush" || labelType == "Erase")
         if (drawing) { clicking.current = true; }
-    }
+    };
 
+    const addCanvasToArr = (canvas: HTMLCanvasElement, img: HTMLImageElement, oldArr: Uint8ClampedArray, erase = false) => {
+        const transferCtx = transferLabels(canvas, img, cameraOffset.current, zoom.current);
+        if (transferCtx === undefined || image === null) { return; };
+        // (relatively) slow operation as needs to draw onto full image size
+        const imageData = transferCtx.getImageData(0, 0, image?.width, image?.height);
+        const currentClass = (erase === true) ? 0 : labelClass
+        const arr = addImageDataToArray(imageData, oldArr, currentClass, erase);
+        return arr
+    }
 
     const handleClickEnd = (e: any) => {
         // Once a click finishes, get current labelling state and apply correct action
@@ -76,32 +104,36 @@ const MultiCanvas = () => {
         if (drawing && leftClick) { clicking.current = false; };
         if ((labelType == "Brush" || labelType == "Smart Labelling") && leftClick) {
             // Draw what was on our animated canvas (brush or SAM) onto the label canvas
-            const transferCtx = transferLabels(ctx.canvas, labelImg, cameraOffset.current, zoom.current)
-            if (transferCtx === undefined) { return }
-            // (relatively) slow operation as needs to draw onto full image size
-            const labelImageData = transferCtx.getImageData(0, 0, image?.width, image?.height);
-            const arr = addImageDataToArray(labelImageData, labelArr, labelClass);
-            setLabelArr(arr);
+            const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr)
+            if (arr !== undefined) { setLabelArr(arr); }
             clearctx(animatedCanvasRef);
         } else if (labelType == "Smart Labelling" && rightClick) {
             // Update SAM type when right clicking
             const newMaskIdx = (maskIdx % 3) + 1;
             setMaskIdx((newMaskIdx));
-            const res = getxy(e);
-            const canvX = res[0];
-            const canvY = res[1];
-            const [x, y] = getZoomPanXY(canvX, canvY, ctx, image, cameraOffset.current, zoom.current)
-            const click = getClick(x, y);
-            if (click) setClicks([click]); // reload mask with new MaskIdx
+            updateSAM()
         } else if (labelType == "Erase") {
             // Erase directly on labels (so get real time preview). Not currently working
             const labelctx = getctx(labelCanvasRef);
             if (labelctx === null) { return }
-            const transferCtx = transferLabels(labelctx.canvas, labelImg, cameraOffset.current, zoom.current, true)
-            if (transferCtx === undefined) { return }
-            const labelImageData = transferCtx.getImageData(0, 0, image?.width, image?.height); // was cameraOffset.x, cameraOffset.y
-            const arr = addImageDataToArray(labelImageData, labelArr, labelClass, true);
-            setLabelArr(arr);
+            const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr, true)
+            if (arr !== undefined) { setLabelArr(arr); }
+            clearctx(animatedCanvasRef);
+            //setLabelArr(arr);
+        } else if (labelType === "Polygon" && leftClick) {
+            const newPoly = appendArr(polyPoints.current, mousePos.current);
+            polyPoints.current = newPoly;
+        } else if (labelType === "Polygon" && rightClick) {
+            const animctx = getctx(animatedOverlayRef)
+            if (animctx === null) { return }
+            const newPoly = appendArr(polyPoints.current, mousePos.current);
+            const c = colours[labelClass];
+            const hex = rgbaToHex(c[0], c[1], c[2], 255);
+            drawPolygon(ctx, newPoly, hex, true)
+            const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr)
+            if (arr !== undefined) { setLabelArr(arr); }
+            polyPoints.current = []
+            clearctx(animatedCanvasRef)
         }
     };
 
@@ -112,6 +144,7 @@ const MultiCanvas = () => {
         const canvY = res[1];
         const ctx = getctx(animatedCanvasRef);
         const labelctx = getctx(labelCanvasRef);
+        mousePos.current = { x: canvX, y: canvY } //cache mouse pos for overlay
 
         if (ctx === null || image === null || labelctx === null) { return; }
 
@@ -128,6 +161,9 @@ const MultiCanvas = () => {
             if (click) setClicks([click]);
         } else if ((clicking.current) && (labelType == "Erase")) {
             erase(labelctx, canvX, canvY, brushWidth);
+            const c = colours[0];
+            const hex = rgbaToHex(c[0], c[1], c[2], 1); // was label opacity
+            drawErase(ctx, canvX, canvY, brushWidth, true, hex);
         }
     }, 15);
 
@@ -139,16 +175,19 @@ const MultiCanvas = () => {
         newZoom = Math.min(newZoom, MAX_ZOOM);
         newZoom = Math.max(newZoom, MIN_ZOOM);
         drawAllCanvases(newZoom, cameraOffset.current);
+        resetLabels();
         zoom.current = newZoom;
     };
 
-
     const handleKeyPress = (e: any) => {
-        //console.log(e.key)
+        console.log(e.key)
         if (e.key >= '0' && e.key <= '6') {
             // Perform desired actions for number key press
             console.log('Number key pressed:', e.key);
             setLabelClass(parseInt(e.key));
+            updateSAM();
+        } else if (e.key === 'Escape') {
+            resetLabels()
         } else {
             handlePanKey(e);
         }
@@ -177,13 +216,46 @@ const MultiCanvas = () => {
         }
 
         if (redraw) {
+            resetLabels();
             drawAllCanvases(zoom.current, newOffset);
             cameraOffset.current = newOffset;
         }
     }
 
+    const resetLabels = () => {
+        polyPoints.current = []
+        clearctx(animatedCanvasRef)
+        clearctx(animatedOverlayRef)
+        setMaskImg(null)
+    }
+
+    const resetAnimation = () => {
+        window.cancelAnimationFrame(animationRef.current)
+        animation()
+    }
+
+    const animation = () => {
+        if (animatedOverlayRef.current === null) { return; }
+        const ctx = getctx(animatedOverlayRef)
+        if (ctx === null) { return; }
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+        const c = colours[labelClass];
+        const hex = rgbaToHex(c[0], c[1], c[2], 255);
+        if (labelType === "Brush") {
+            draw(ctx, mousePos.current.x, mousePos.current.y, brushWidth, hex, false);
+        } else if (labelType === "Erase") {
+            drawErase(ctx, mousePos.current.x, mousePos.current.y, brushWidth, false);
+        } else if (labelType === "Polygon") {
+            if (polyPoints.current.length > 0) {
+                drawPolygon(ctx, polyPoints.current, hex);
+                drawPolygon(ctx, [polyPoints.current[polyPoints.current.length - 1], mousePos.current], hex)
+            }
+        }
+        animationRef.current = requestAnimationFrame(animation);
+    }
+
     const drawAllCanvases = (updateZoom: number, updateOffset: Offset) => {
-        for (let i = 0; i < refs.length; i++) {
+        for (let i = 0; i < refs.length - 1; i++) {
             const ctx = getctx(refs[i])
             const gt = groundTruths[i]
             if (gt === null || ctx?.canvas == undefined || ctx === null) {
@@ -220,6 +292,7 @@ const MultiCanvas = () => {
         setSegImg(newSegImg);
 
         if (ctx !== null) { drawImage(ctx, image, cameraOffset.current, zoom.current); }
+        animation()
     }, [image])
 
     useEffect(() => {
@@ -242,7 +315,12 @@ const MultiCanvas = () => {
         drawImgOnUpdate(segCanvasRef, segImg)
     }, [segImg])
 
-    useEffect(() => { clearctx(animatedCanvasRef) }, [labelType]) // clear animated canvas when switching
+    useEffect(() => {
+        resetLabels()
+    }, [labelType]) // clear animated canvas when switching
+
+    useEffect(() => { resetAnimation() }, [labelType, brushWidth, labelClass])
+
 
     // Fixed canvas width will cause errors later i.e lack of resizing //onWheel={handleScroll} onKeyUp={e => onKeyUp(e)}
     return (
@@ -250,7 +328,7 @@ const MultiCanvas = () => {
             onMouseMove={handleClickMove}
             onMouseUp={handleClickEnd}
             onContextMenu={(e) => e.preventDefault()}
-            onMouseLeave={e => clearctx(animatedCanvasRef)}
+            onMouseLeave={e => resetLabels()}
             onKeyDown={e => handleKeyPress(e)}
             tabIndex={0}
             onWheel={e => handleScroll(e)}>

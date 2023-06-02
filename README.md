@@ -21,7 +21,11 @@ pip install git+https://github.com/facebookresearch/segment-anything.git
 ```
 pip install -U scikit-learn
 ```
-4. With your virtual environment activated and in the `samba-web` directory, run
+4. Install scikit-image (for the classifier features)
+```
+pip install -U scikit-image
+```
+5. With your virtual environment activated and in the `samba-web` directory, run
 ```
 python -m flask --app server run
 ```
@@ -62,10 +66,10 @@ yarn && yarn start
 - [ ] Fix OOM errors: only compute feature stacks for images with labels before training. Then, compute feature stacks on demand in a loop, only saving the result. Might conflict with 1 & 2
 - [ ] Tests for backend: component and integration. Test each filter does as expected, then test if it matches Weka, then test the classification process produces similar results (for fixed labels and filters)
 # Drawing:
-- [ ] Make animated canvas actually animated with requestAnimationFrame. (Some render loop - try avoid triggering re rendering)
-- [ ] Add in polygon labelling (track clicker points in a ref, draw lines between then every animation frame and a line from last point to current mouse position if correct brush mode), brush/eraser outline (draw circle at mouse position every request animation frame if correct brush mode)
-- [ ] Fix eraser bug/subtle Sam/draw bug where draw labels slightly dilated when added 
-- [ ] Make SAM suggestion change colour as soon as key pressed (should be fixed by 1 & 2)
+- [x] Make animated canvas actually animated with requestAnimationFrame. (Some render loop - try avoid triggering re rendering)
+- [x] Add in polygon labelling (track clicker points in a ref, draw lines between then every animation frame and a line from last point to current mouse position if correct brush mode), brush/eraser outline (draw circle at mouse position every request animation frame if correct brush mode)
+- [x] Fix eraser bug/subtle Sam/draw bug where draw labels slightly dilated when added 
+- [x] Make SAM suggestion change colour as soon as key pressed (should be fixed by 1 & 2)
 # GUI:
 - [ ] Make canvas and sidebar reactive - i.e sidebar should sit on LHS at 18 rem and canvas should fill the rest of the space
 - [ ] Dark background/Dark mode (better for eyes) 
@@ -73,7 +77,7 @@ yarn && yarn start
 - [ ] Error messages as modals - have error text as a state in context (i.e share across all components). Have conditional rendering of modal of test set and set text to “” when modal quit clicked. 
 - [ ] Comments
 - [ ] Write a user manual (with gifs) on the GitHub, link to it in README and in app itself 
-- [ ] Fix tooltip jitter- seems to load a horizontal scroll bar occasionally on hover 
+- [x] Fix tooltip jitter- seems to load a horizontal scroll bar occasionally on hover 
 - [ ] Code cleanup: DRY etc
 - [ ] Have a default microstructure with preloaded encoding so users can have a play with it w/out having their own
 - [ ] Is SAMBA a good name?

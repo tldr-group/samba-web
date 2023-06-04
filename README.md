@@ -57,13 +57,13 @@ yarn && yarn start
 
 ## TODO:
 # IO:
-- [ ] Fix line bug in large file saving - probably indexing 
-- [ ] Save tif stack into one file - need to poke around UTIF.JS. Might need to encode each seg are as a tif then encode list of tiffs then save
+- [x] Fix line bug in large file saving - probably indexing 
+- [x] Save tif stack into one file - need to poke around UTIF.JS. Might need to encode each seg are as a tif then encode list of tiffs then save
 # Classifier/Backend:
-- [ ] Cache featurisations into a .npy file 
-- [ ] Ideally compute featurisations in background every time an image is loaded then cache. Will need to make sure what happens if seg requested before featurisations finished (loop till file available - should work as flask multithreaded)
+- [x] Cache featurisations into a .npy file 
+- [x] Ideally compute featurisations in background every time an image is loaded then cache. Will need to make sure what happens if seg requested before featurisations finished (loop till file available - should work as flask multithreaded)
 - [ ] Save/load/apply classifier as .skops/restricted .pickle file. Save classifier with UID. Overwrite on train/load. Don’t overwrite on apply 
-- [ ] Fix OOM errors: only compute feature stacks for images with labels before training. Then, compute feature stacks on demand in a loop, only saving the result. Might conflict with 1 & 2
+- [x] Fix OOM errors: only compute feature stacks for images with labels before training. Then, compute feature stacks on demand in a loop, only saving the result. Might conflict with 1 & 2
 - [ ] Tests for backend: component and integration. Test each filter does as expected, then test if it matches Weka, then test the classification process produces similar results (for fixed labels and filters)
 # Drawing:
 - [x] Make animated canvas actually animated with requestAnimationFrame. (Some render loop - try avoid triggering re rendering)

@@ -28,12 +28,8 @@ export const ToolTip = (str: string) => {
 
 const Topbar = ({ loadImages, saveSeg }: TopbarProps) => {
     const {
-        largeImg: [largeImg, setLargeImg],
-        imgType: [imgType, setImgType],
-        segArrs: [segArrs,],
-        segArr: [segArr,],
-        image: [image,],
-        imgArrs: [imgArrs,]
+        largeImg: [, setLargeImg],
+        imgType: [, setImgType],
     } = useContext(AppContext)!;
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -53,7 +49,6 @@ const Topbar = ({ loadImages, saveSeg }: TopbarProps) => {
             const imgData = new ImageData(imgDataArr, tif.width, tif.height);
             hrefs.push(imageDataToImage(imgData).src);
         }
-        console.log(tifs)
         const isSmall = (tifs[0].width < 1024 && tifs[0].height < 1024)
         if (tifs.length > 1 && isSmall) {
             loadImages(hrefs);

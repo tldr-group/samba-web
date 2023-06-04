@@ -8,7 +8,7 @@ of a large image which when clicked will change focus to that sub-image
 4) A spinny wheel in a box that appears when pinging the backed (segmenting or encoding).
 */
 
-import React, { useContext, useEffect, useRef } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import AppContext from "./hooks/createContext";
 import { colours, rgbaToHex, getSplitInds, getctx, getxy } from "./helpers/canvasUtils";
 import { Label, LabelFrameProps, NavigationProps, SidebarProps } from "./helpers/Interfaces";
@@ -227,6 +227,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
     } = useContext(AppContext)!;
     // Reference stord to update later.
     const canvRef = useRef<HTMLCanvasElement>(null);
+    const [canvSize, setCanvSize] = useState({ width: 0, height: 0 });
 
     const drawCanvas = (ctx: CanvasRenderingContext2D, selectedImg: number, largeImg: HTMLImageElement, x: number | null, y: number | null) => {
         /* Given canvas context, currently chosen image, the large image and a click x, click , split the image up with
@@ -238,7 +239,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
         const hex = rgbaToHex(c[0], c[1], c[2], 255);
         ctx.strokeStyle = hex;
         const splitInds = getSplitInds(largeImg);
-        const [dx, dy, nW] = [splitInds['dx'], splitInds['dy'], splitInds['nW']]
+        const [dx, dy, nW, nH] = [splitInds['dx'], splitInds['dy'], splitInds['nW'], splitInds['nH']]
         drawLines(ctx, splitInds['h'], largeImg.width, largeImg.height, 'h');
         drawLines(ctx, splitInds['w'], largeImg.width, largeImg.height, 'w');
         const selectedBox = rgbaToHex(c[0], c[1], c[2], 0.55 * 255);
@@ -247,8 +248,8 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
         drawSquare(ctx, sqX, sqY, splitInds, largeImg.width, largeImg.height, selectedBox)
         if (x != null && y != null) {
             const hoverBox = rgbaToHex(182, 182, 182, 0.8 * 255);
-            const sqX = Math.round((x / ctx.canvas.width) * largeImg.width / dx) //n
-            const sqY = Math.floor((y / ctx.canvas.height) * largeImg.height / dy)
+            const sqX = Math.round((x / canvSize.width) * (nW - 1)) //n
+            const sqY = Math.round((y / canvSize.height) * (nH - 1))
             drawSquare(ctx, sqX, sqY, splitInds, largeImg.width, largeImg.height, hoverBox)
         }
     }
@@ -286,7 +287,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
         const ctx = getctx(canvRef);
         if (ctx === null) { return; }
         drawCanvas(ctx, imgIdx, largeImg, res[0], res[1]);
-    }, 4)
+    }, 15)
 
     const onClick = (e: any) => {
         // On click, change sub image to the selected square
@@ -295,9 +296,9 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
         const res = getxy(e)
         const [x, y] = res
         const splitInds = getSplitInds(largeImg);
-        const [dx, dy, nW] = [splitInds['dx'], splitInds['dy'], splitInds['nW']]
-        const sqX = Math.round((x / ctx.canvas.width) * largeImg.width / dx)
-        const sqY = Math.floor((y / ctx.canvas.height) * largeImg.height / dy)
+        const [dx, dy, nW, nH] = [splitInds['dx'], splitInds['dy'], splitInds['nW'], splitInds['nH']]
+        const sqX = Math.round((x / canvSize.width) * (nW - 1)) //n
+        const sqY = Math.round((y / canvSize.height) * (nH - 1))
         // TODO: bug here. When click on bottom half of bottom row, rounds up and tries to index square outside range. Clamping as temporary solution
         const sq = Math.min(sqX + nW * sqY, imgArrs.length - 1)
         changeToImage(imgIdx, sq)
@@ -317,7 +318,25 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
         drawCanvas(ctx, imgIdx, largeImg, null, null);
     }, [largeImg, labelClass, imgIdx])
 
+    useEffect(() => {
+        const canvas = canvRef.current;
+        if (canvas === null) { return; }
+        canvas.width = canvSize.width;
+        canvas.height = canvSize.height;
+
+    }, [canvSize]);
+
+    useEffect(() => {
+        const canvasContainer = document.getElementById('container');
+        if (canvasContainer === null) { return }
+        setCanvSize({
+            width: canvasContainer.offsetWidth,
+            height: canvasContainer.offsetHeight
+        });
+    }, [])
+
     // Two different display modes: visual navigation for large images and slider for stacks
+    //width: "100%", height: "100%"
     if (imgType === "large") {
         return (
             <div>
@@ -325,7 +344,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
                     value={imgIdx + 1} onChange={e => changeImageIdx(e)}
                     style={{ marginLeft: '8px', color: 'black', borderRadius: '4px', marginBottom: '10px' }} />
                 </div>
-                <div style={{ display: 'grid' }}>
+                <div id="container" style={{ display: 'grid', width: "100%", height: "100%" }}>
                     {(largeImg !== null) ? <img src={largeImg.src} style={{ gridColumn: 1, gridRow: 1, width: "100%", height: "100%" }}></img> : <></>}
                     {(largeImg !== null) ? <canvas
                         onMouseMove={drawOnHover}
@@ -334,7 +353,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
                         style={{ gridColumn: 1, gridRow: 1, width: "100%", height: "100%" }}
                     ></canvas> : <></>}
                 </div>
-            </div>
+            </div >
 
         )
     } else if (imgType === "stack" || imgType === "multi") {

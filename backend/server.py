@@ -3,7 +3,7 @@ from flask import Flask, request, make_response, jsonify, send_file, Response
 import base64
 from io import BytesIO
 from PIL import Image
-import numpy as np
+from tifffile import imread
 import os
 
 from encode import encode, featurise
@@ -79,6 +79,18 @@ def segment_respond():
         segmentation = segment(images, labels_dicts, UID, save_mode, large_w, large_h)
         response = Response(segmentation.tobytes())
         response.headers.add("Content-Type", "application/octet-stream")
+        return _corsify_actual_response(response)
+    else:
+        raise RuntimeError("Wrong HTTP method {}".format(request.method))
+
+
+@app.route("/saving", methods=["POST", "GET", "OPTIONS"])
+def save_respond():
+    if "OPTIONS" in request.method:  # CORS preflight
+        return _build_cors_preflight_response()
+    elif "POST" in request.method:  # The actual request following the preflight
+        UID = request.json["id"]
+        response = send_file(f"{UID}/seg.tiff", mimetype="image/tiff")
         return _corsify_actual_response(response)
     else:
         raise RuntimeError("Wrong HTTP method {}".format(request.method))

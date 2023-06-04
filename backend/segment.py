@@ -67,6 +67,9 @@ def _save_as_tiff(
                 large_seg[y0:y1, x0:x1] = rescaled
                 img_count += 1
         imwrite(f"{UID}/seg.tiff", large_seg)
+    elif mode == "single":
+        rescaled = ((remasked_arrs - 1) * delta).astype(np.uint8)
+        imwrite(f"{UID}/seg.tiff", rescaled)
 
 
 def segment(

@@ -35,10 +35,12 @@ export interface StageProps {
   requestEmbedding: () => void;
   trainClassifier: () => void;
   changeToImage: (oldIdx: number, newIdx: number) => void;
+  saveSeg: () => void;
 }
 
 export interface TopbarProps {
   loadImages: (hrefs: string[]) => void;
+  saveSeg: () => void;
 }
 
 export interface SidebarProps {

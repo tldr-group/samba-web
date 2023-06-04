@@ -2,28 +2,47 @@
 import numpy as np
 from PIL import Image
 from tifffile import imwrite
-
+import os
+from time import sleep
 from typing import List
 
-from forest_based import featurise_then_segment
-from features import DEAFAULT_FEATURES
+from forest_based import segment_with_features
+
+
+def check_featurising_done(n_imgs: int, UID: str):
+    # TODO: ensure this doesn't block threads. Not sure this is a good idea.
+    quit = False
+    finished_writing = False
+    while quit is False:
+        n_feature_files = 0
+        files = os.listdir(UID)
+        for fname in files:
+            if "features" in fname:
+                n_feature_files += 1
+            if "success" in fname:
+                finished_writing = True
+        if n_feature_files == n_imgs and finished_writing:
+            quit = True
+            print("Featurising done!")
+        else:
+            sleep(0.25)
 
 
 def segment(images: List[Image.Image], labels_dicts: List[dict], UID: str):
-    img_arrs: List[np.ndarray] = []
     label_arrs: List[np.ndarray] = []
     for i in range(len(images)):
         image = images[i]
         label_dict = labels_dicts[i]
-        img_arr = np.array(image.convert("L")) * 255
         labels_list = [item for keys, item in label_dict.items()]
         label_arr = np.array(labels_list).reshape(image.height, image.width)
 
-        img_arrs.append(img_arr)
         label_arrs.append(label_arr)
+    # Block until featurising thread done
+    check_featurising_done(len(label_arrs), UID)
 
     remasked_flattened_arrs: np.ndarray
-    probs, model = featurise_then_segment(img_arrs, DEAFAULT_FEATURES, label_arrs)
+    # probs, model = featurise_then_segment(img_arrs, DEAFAULT_FEATURES, label_arrs)
+    probs, model = segment_with_features(label_arrs, UID)
 
     for i in range(len(probs)):
         label_arr = label_arrs[i]

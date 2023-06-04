@@ -4,8 +4,9 @@ import base64
 from io import BytesIO
 from PIL import Image
 import numpy as np
+import os
 
-from encode import encode
+from encode import encode, featurise
 from segment import segment
 
 app = Flask(__name__)
@@ -25,16 +26,40 @@ def _corsify_actual_response(response):
     return response
 
 
+def _get_image_from_b64(b64_with_prefix: str):
+    b64 = b64_with_prefix.split(",")[1]
+    imgdata = base64.standard_b64decode(b64)
+    image = Image.open(BytesIO(imgdata))
+    return image
+
+
+@app.route("/featurising", methods=["POST", "GET", "OPTIONS"])
+def featurise_respond():
+    if "OPTIONS" in request.method:  # CORS preflight
+        return _build_cors_preflight_response()
+    elif "POST" in request.method:
+        UID = request.json["id"]
+        try:
+            os.mkdir(UID)
+        except FileExistsError:
+            pass
+        images = [_get_image_from_b64(i) for i in request.json["images"]]
+        featurise(images, UID)
+        with open(f"{UID}/success.txt", "w+") as f:
+            f.write("done")
+        return _corsify_actual_response(jsonify(success=True))
+
+
 @app.route("/encoding", methods=["POST", "GET", "OPTIONS"])
 def encode_respond():
     if "OPTIONS" in request.method:  # CORS preflight
         return _build_cors_preflight_response()
     elif "POST" in request.method:  # The actual request following the preflight
         image = _get_image_from_b64(request.json["message"])
-        # image.save("image.jpeg")
+        image_id = int(request.json["img_idx"])
         UID = request.json["id"]
-        encoded = encode(image, UID)
-        response = send_file(f"{UID}_encoding.npy")
+        encoded = encode(image, UID, image_id)
+        response = send_file(f"{UID}/encoding_{image_id}.npy")
         return _corsify_actual_response(response)
     else:
         raise RuntimeError("Wrong HTTP method {}".format(request.method))
@@ -49,17 +74,8 @@ def segment_respond():
         labels_dicts = request.json["labels"]
         UID = request.json["id"]
         segmentation = segment(images, labels_dicts, UID)
-        response = Response(
-            segmentation.tobytes()
-        )  # jsonify({"message": segmentation.tolist()})
+        response = Response(segmentation.tobytes())
         response.headers.add("Content-Type", "application/octet-stream")
         return _corsify_actual_response(response)
     else:
         raise RuntimeError("Wrong HTTP method {}".format(request.method))
-
-
-def _get_image_from_b64(b64_with_prefix: str):
-    b64 = b64_with_prefix.split(",")[1]
-    imgdata = base64.standard_b64decode(b64)
-    image = Image.open(BytesIO(imgdata))
-    return image

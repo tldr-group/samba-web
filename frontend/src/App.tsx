@@ -26,6 +26,7 @@ const MODEL_DIR = "/model/sam_onnx_quantized_example.onnx";
 
 // URLS of our API endpoints - change when live
 const ENCODE_ENDPOINT = "http://127.0.0.1:5000/encoding"
+const FEATURISE_ENDPOINT = "http://127.0.0.1:5000/featurising"
 const SEGMENT_ENDPOINT = "http://127.0.0.1:5000/segmenting"
 
 const getb64Image = (img: HTMLImageElement): string => {
@@ -135,6 +136,7 @@ const App = () => {
             setLabelArrs(nullLabels);
             setSegArrs(nullSegs);
             setTensorArrs(nullTensors);
+            requestFeatures(imgs)
           }
         };
       }
@@ -168,6 +170,15 @@ const App = () => {
     setTensor(newTensorArrs[newIdx])
   }
 
+  const requestFeatures = async (imgs: Array<HTMLImageElement>) => {
+    const b64images: string[] = imgs.map((img, i) => getb64Image(img));
+    const headers = new Headers();
+    headers.append('Content-Type', 'application/json;charset=utf-8');
+    console.log("Started Featurising");
+    await fetch(FEATURISE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "id": UID }) })
+    console.log("Finished Featurising");
+  }
+
   const requestEmbedding = async () => {
     // Ping our encode enpoint, request and await an embedding, then set it.
     if (tensor != null || image === null) { // Early return if we already have one
@@ -180,7 +191,7 @@ const App = () => {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     // this works and I am so smart - basically took the parsing code that npyjs uses behind the scenes for files and applied it to my server (which returns a file in the right format)
-    const resp = await fetch(ENCODE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "message": b64image, "id": UID }) })
+    const resp = await fetch(ENCODE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "message": b64image, "id": UID, "img_idx": imgIdx }) })
     const arrayBuf = await resp.arrayBuffer();
     const result = await npLoader.parse(arrayBuf);
     const embedding = new ort.Tensor("float32", result.data, result.shape);

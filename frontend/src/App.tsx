@@ -64,8 +64,9 @@ const UID = getUID()
 const App = () => {
   const {
     clicks: [clicks],
-    imgType: [, setImgType],
+    imgType: [imgType,],
     imgIdx: [imgIdx,],
+    largeImg: [largeImg,],
     imgArrs: [imgArrs, setImgArrs],
     segArrs: [segArrs, setSegArrs],
     labelArrs: [labelArrs, setLabelArrs],
@@ -211,7 +212,13 @@ const App = () => {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     console.log("Started Segementing");
-    let resp = await fetch(SEGMENT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "labels": newLabelArrs, "id": UID }) })
+    let [largeW, largeH]: Array<number> = [0, 0]
+    if (imgType === "large" && largeImg !== null) {
+      largeW = largeImg.width
+      largeH = largeImg.height
+    }
+    const msg = { "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType, "large_w": largeW, "large_h": largeH }
+    let resp = await fetch(SEGMENT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify(msg) })
     const buffer = await resp.arrayBuffer();
     loadSegmentationsFromHTTP(buffer);
     setProcessing("None");

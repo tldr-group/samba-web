@@ -163,6 +163,7 @@ def apply(
 def apply_features_done(
     model: EnsembleMethod, UID: str, n_imgs: int, reorder: bool = True
 ) -> List[np.ndarray]:
+    """Assuming feature stacks saved in folder, decompress each one, apply trained classifier and return segmentation."""
     out: List[np.ndarray] = []
     for i in range(n_imgs):
         feature_stack = np.load(f"{UID}/features_{i}.npz")["a"]
@@ -243,6 +244,7 @@ def segment_with_features(
     model_name: EnsembleMethodName = "FRF",
     balance_classes: bool = True,
 ) -> Tuple[List[np.ndarray], EnsembleMethod]:
+    """Assuming a list of feature stacks are saved at the folder, get training data then fit then apply."""
     fit_data, target_data = get_training_data_features_done(labels, UID)
     model = get_model(model_name)
     if balance_classes:

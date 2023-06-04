@@ -7,7 +7,7 @@ from typing import List
 from features import DEAFAULT_FEATURES, multiscale_advanced_features
 
 
-def encode(image: Image.Image, UID: str, img_id: int = 0):
+def encode(image: Image.Image, UID: str, img_id: int = 0) -> None:
     """Given image, encode with SAM vit model and save to their folder."""
     rgb_arr = np.array(image)
     sam = sam_model_registry["vit_b"](checkpoint="sam_vit_b_01ec64.pth")
@@ -16,7 +16,9 @@ def encode(image: Image.Image, UID: str, img_id: int = 0):
     np.save(f"{UID}/encoding_{img_id}.npy", sam_predictor.features)
 
 
-def featurise(images: List[Image.Image], UID: str, selected_features=DEAFAULT_FEATURES):
+def featurise(
+    images: List[Image.Image], UID: str, selected_features=DEAFAULT_FEATURES
+) -> None:
     """For each img in images, convert to np array then featurise, saving the result to the user's folder."""
     for i, img in enumerate(images):
         img_arr = np.array(img.convert("L")) * 255

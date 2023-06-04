@@ -73,7 +73,10 @@ def segment_respond():
         images = [_get_image_from_b64(i) for i in request.json["images"]]
         labels_dicts = request.json["labels"]
         UID = request.json["id"]
-        segmentation = segment(images, labels_dicts, UID)
+        save_mode = request.json["save_mode"]
+        large_w, large_h = request.json["large_w"], request.json["large_h"]
+        print(save_mode, large_w, large_h)
+        segmentation = segment(images, labels_dicts, UID, save_mode, large_w, large_h)
         response = Response(segmentation.tobytes())
         response.headers.add("Content-Type", "application/octet-stream")
         return _corsify_actual_response(response)

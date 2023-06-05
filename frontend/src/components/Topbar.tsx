@@ -30,6 +30,7 @@ const Topbar = ({ loadImages, saveSeg, saveClassifier }: TopbarProps) => {
     const {
         largeImg: [, setLargeImg],
         imgType: [, setImgType],
+        errorObject: [, setErrorObject],
     } = useContext(AppContext)!;
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -112,17 +113,25 @@ const Topbar = ({ loadImages, saveSeg, saveClassifier }: TopbarProps) => {
         // Open file dialog and load file.
         const file: File | null = e.target.files?.[0] || null;
         const reader = new FileReader();
-
         if (file != null) {
             const extension = file.name.split('.').pop()?.toLowerCase()
             const isTIF = (extension === "tif" || extension === "tiff")
+            const isPNGJPG = (extension === "png" || extension === "jpg" || extension === "jpeg")
             reader.onload = () => {
-                if (isTIF) {
-                    loadTIFF(reader.result as ArrayBuffer);
-                } else {
-                    const href = reader.result as string;
-                    loadPNGJPEG(href);
-                };
+                try {
+                    if (isTIF) {
+                        loadTIFF(reader.result as ArrayBuffer);
+                    } else if (isPNGJPG) {
+                        const href = reader.result as string;
+                        loadPNGJPEG(href);
+                    } else {
+                        throw `Unsupported file format .${extension}`;
+                    }
+                }
+                catch (e) {
+                    const error = e as Error;
+                    setErrorObject({ msg: "Failed to upload image - must be .tif, .tiff, .png or .jpg", stackTrace: error.toString() });
+                }
             };
             if (isTIF) {
                 reader.readAsArrayBuffer(file);

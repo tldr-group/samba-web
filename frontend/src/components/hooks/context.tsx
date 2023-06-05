@@ -41,7 +41,7 @@ const AppContextProvider = (props: {
   const [processing, setProcessing] = useState<"None" | "Encoding" | "Segmenting">("None");
 
   // Menus
-  const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "foo", stackTrace: "bar" })
+  const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "", stackTrace: "" })
 
   return (
     <AppContext.Provider

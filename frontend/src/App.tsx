@@ -179,6 +179,8 @@ const App = () => {
     setTensor(newTensorArrs[newIdx])
   }
 
+  //TODO: add in a function that loads a default image (b64) and SAM encoding, sets them and sets brush type to smart labelling. Pass this as props to drag n drop 
+
   const requestFeatures = async (imgs: Array<HTMLImageElement>) => {
     const b64images: string[] = imgs.map((img, i) => getb64Image(img));
     const headers = new Headers();

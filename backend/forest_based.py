@@ -105,6 +105,28 @@ def get_training_data_multiple_images(
     return (feature_stacks, all_fit_data, all_target_data)
 
 
+def get_training_data_features_done(
+    labels: List[np.ndarray], UID: str
+) -> Tuple[np.ndarray, np.ndarray]:
+    """For each image, featurise. Then check if it's labelled and if it is get the training data and concat."""
+    fit_data_set = False
+    all_fit_data: np.ndarray
+    all_target_data: np.ndarray
+    for i, label in enumerate(labels):
+        feature_stack = np.load(f"{UID}/features_{i}.npz")["a"]  # need to index
+        is_labelled = np.sum(label) >= 1
+        if is_labelled:
+            fit_data, target_data = get_training_data(feature_stack, label)
+            if fit_data_set is False:
+                all_fit_data = fit_data
+                all_target_data = target_data
+                fit_data_set = True
+            else:
+                all_fit_data = np.concatenate((all_fit_data, fit_data), axis=0)
+                all_target_data = np.concatenate((all_target_data, target_data), axis=0)
+    return (all_fit_data, all_target_data)
+
+
 def fit(
     model: EnsembleMethod,
     train_data: np.ndarray,
@@ -125,6 +147,26 @@ def apply(
     """Given $model, apply it to each feature stack in $feature stacks."""
     out: List[np.ndarray] = []
     for feature_stack in feature_stacks:
+        h, w, feat = feature_stack.shape
+        flat_apply_data = feature_stack.reshape((h * w, feat))
+        out_probs = model.predict_proba(flat_apply_data)
+        _, n_classes = out_probs.shape
+        # gui expects arr in form (n_classes, h, w)
+        if reorder:
+            out_probs_arr = out_probs.T.reshape((n_classes, h, w))
+        else:
+            out_probs_arr = out_probs
+        out.append(out_probs_arr)
+    return out
+
+
+def apply_features_done(
+    model: EnsembleMethod, UID: str, n_imgs: int, reorder: bool = True
+) -> List[np.ndarray]:
+    """Assuming feature stacks saved in folder, decompress each one, apply trained classifier and return segmentation."""
+    out: List[np.ndarray] = []
+    for i in range(n_imgs):
+        feature_stack = np.load(f"{UID}/features_{i}.npz")["a"]
         h, w, feat = feature_stack.shape
         flat_apply_data = feature_stack.reshape((h * w, feat))
         out_probs = model.predict_proba(flat_apply_data)
@@ -193,4 +235,22 @@ def featurise_then_segment(
         weights = None
     model = fit(model, fit_data, target_data, weights)
     out_data = apply(model, feature_stacks)
+    return out_data, model
+
+
+def segment_with_features(
+    labels: List[np.ndarray],
+    UID: str,
+    model_name: EnsembleMethodName = "FRF",
+    balance_classes: bool = True,
+) -> Tuple[List[np.ndarray], EnsembleMethod]:
+    """Assuming a list of feature stacks are saved at the folder, get training data then fit then apply."""
+    fit_data, target_data = get_training_data_features_done(labels, UID)
+    model = get_model(model_name)
+    if balance_classes:
+        weights = get_class_weights(target_data)
+    else:
+        weights = None
+    model = fit(model, fit_data, target_data, weights)
+    out_data = apply_features_done(model, UID, len(labels))
     return out_data, model

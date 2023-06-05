@@ -26,7 +26,10 @@ const MODEL_DIR = "/model/sam_onnx_quantized_example.onnx";
 
 // URLS of our API endpoints - change when live
 const ENCODE_ENDPOINT = "http://127.0.0.1:5000/encoding"
+const FEATURISE_ENDPOINT = "http://127.0.0.1:5000/featurising"
 const SEGMENT_ENDPOINT = "http://127.0.0.1:5000/segmenting"
+const SAVE_ENDPOINT = "http://127.0.0.1:5000/saving"
+const CLASSIFIER_ENDPOINT = "http://127.0.0.1:5000/classifier"
 
 const getb64Image = (img: HTMLImageElement): string => {
   // Convert HTML Image to b64 string encoding by drawing onto canvas. Used for sending over HTTP
@@ -63,8 +66,9 @@ const UID = getUID()
 const App = () => {
   const {
     clicks: [clicks],
-    imgType: [, setImgType],
+    imgType: [imgType,],
     imgIdx: [imgIdx,],
+    largeImg: [largeImg,],
     imgArrs: [imgArrs, setImgArrs],
     segArrs: [segArrs, setSegArrs],
     labelArrs: [labelArrs, setLabelArrs],
@@ -135,6 +139,7 @@ const App = () => {
             setLabelArrs(nullLabels);
             setSegArrs(nullSegs);
             setTensorArrs(nullTensors);
+            requestFeatures(imgs)
           }
         };
       }
@@ -168,6 +173,15 @@ const App = () => {
     setTensor(newTensorArrs[newIdx])
   }
 
+  const requestFeatures = async (imgs: Array<HTMLImageElement>) => {
+    const b64images: string[] = imgs.map((img, i) => getb64Image(img));
+    const headers = new Headers();
+    headers.append('Content-Type', 'application/json;charset=utf-8');
+    console.log("Started Featurising");
+    await fetch(FEATURISE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "id": UID }) })
+    console.log("Finished Featurising");
+  }
+
   const requestEmbedding = async () => {
     // Ping our encode enpoint, request and await an embedding, then set it.
     if (tensor != null || image === null) { // Early return if we already have one
@@ -180,7 +194,7 @@ const App = () => {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     // this works and I am so smart - basically took the parsing code that npyjs uses behind the scenes for files and applied it to my server (which returns a file in the right format)
-    const resp = await fetch(ENCODE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "message": b64image, "id": UID }) })
+    const resp = await fetch(ENCODE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "message": b64image, "id": UID, "img_idx": imgIdx }) })
     const arrayBuf = await resp.arrayBuffer();
     const result = await npLoader.parse(arrayBuf);
     const embedding = new ort.Tensor("float32", result.data, result.shape);
@@ -200,7 +214,13 @@ const App = () => {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     console.log("Started Segementing");
-    let resp = await fetch(SEGMENT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "labels": newLabelArrs, "id": UID }) })
+    let [largeW, largeH]: Array<number> = [0, 0]
+    if (imgType === "large" && largeImg !== null) {
+      largeW = largeImg.width
+      largeH = largeImg.height
+    }
+    const msg = { "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType, "large_w": largeW, "large_h": largeH }
+    let resp = await fetch(SEGMENT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify(msg) })
     const buffer = await resp.arrayBuffer();
     loadSegmentationsFromHTTP(buffer);
     setProcessing("None");
@@ -233,6 +253,33 @@ const App = () => {
     newSegArrs.push(tempArr); //needed for the last one where j < limit
     setSegArrs(newSegArrs);
     console.log("Finished segmenting");
+  }
+
+  const onSaveClick = async () => {
+    if (image === null || segArr === null) { return; }
+    const headers = new Headers();
+    headers.append('Content-Type', 'application/json;charset=utf-8');
+    console.log("Started Featurising");
+    let resp = await fetch(SAVE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID }) })
+    const buffer = await resp.arrayBuffer();
+    const a = document.createElement("a")
+    a.download = "seg.tiff"
+    const file = new Blob([buffer], { type: "image/tiff" });
+    a.href = URL.createObjectURL(file);
+    a.click()
+    console.log("Finished Featurising");
+  }
+
+  const saveClassifier = async () => {
+    const headers = new Headers();
+    headers.append('Content-Type', 'application/json;charset=utf-8');
+    let resp = await fetch(CLASSIFIER_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID }) })
+    const buffer = await resp.arrayBuffer();
+    const a = document.createElement("a")
+    a.download = "classifier.pkl"
+    const file = new Blob([buffer], { type: "application/octet-stream" });
+    a.href = URL.createObjectURL(file);
+    a.click()
   }
 
   // Run the ONNX model every time clicks state changes - updated in Canvas
@@ -282,7 +329,14 @@ const App = () => {
     setSegArr(segArrs[imgIdx]);
   }, [segArrs])
 
-  return <Stage loadImages={loadImages} requestEmbedding={requestEmbedding} trainClassifier={trainClassifier} changeToImage={changeToImage} />;
+  return <Stage
+    loadImages={loadImages}
+    requestEmbedding={requestEmbedding}
+    trainClassifier={trainClassifier}
+    changeToImage={changeToImage}
+    saveSeg={onSaveClick}
+    saveClassifier={saveClassifier}
+  />;
 };
 
 export default App;

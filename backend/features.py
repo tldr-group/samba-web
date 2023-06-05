@@ -384,5 +384,5 @@ def multiscale_advanced_features(
         features = chain(features, bilateral)
 
     features = list(features)  # type: ignore
-    features = np.stack(features, axis=-1)  # type: ignore
+    features: np.ndarray = np.stack(features, axis=-1).astype(np.float16)  # type: ignore
     return features  # type: ignore

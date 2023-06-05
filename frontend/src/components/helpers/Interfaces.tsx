@@ -76,3 +76,8 @@ export const getHTTPRequest = (url: string) => {
   http.setRequestHeader("Content-type", "application/json;charset=utf-8")
   return http
 }
+
+export interface ErrorMessage {
+  msg: string;
+  stackTrace: string;
+} 

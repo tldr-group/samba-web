@@ -5,7 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import { createContext } from "react";
-import { modelInputProps, Label, } from "../helpers/Interfaces";
+import { modelInputProps, Label, ErrorMessage } from "../helpers/Interfaces";
 
 interface contextProps {
   largeImg: [
@@ -93,6 +93,11 @@ interface contextProps {
   processing: [
     processing: "None" | "Encoding" | "Segmenting",
     setProcessing: (e: "None" | "Encoding" | "Segmenting") => void
+  ];
+
+  errorObject: [
+    errorObject: ErrorMessage,
+    setErrorObject: (e: ErrorMessage) => void
   ];
 }
 

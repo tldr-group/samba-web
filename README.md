@@ -62,8 +62,9 @@ yarn && yarn start
 # Classifier/Backend:
 - [x] Cache featurisations into a .npy file 
 - [x] Ideally compute featurisations in background every time an image is loaded then cache. Will need to make sure what happens if seg requested before featurisations finished (loop till file available - should work as flask multithreaded)
-- [ ] Save/load/apply classifier as .skops/restricted .pickle file. Save classifier with UID. Overwrite on train/load. Don’t overwrite on apply 
+- [ ] Load/apply classifier as .skops/restricted .pickle file. Overwrite on train/load. Don’t overwrite on apply 
 - [x] Fix OOM errors: only compute feature stacks for images with labels before training. Then, compute feature stacks on demand in a loop, only saving the result. Might conflict with 1 & 2
+- [ ] Train on only random subset of all label data: np.arange(N_data), shuffle, take first M indices where M is some (capped) sqrt function of N_data. Use last P points as validation data for which error, mIoU and Jaccard index are computed and returned
 - [ ] Tests for backend: component and integration. Test each filter does as expected, then test if it matches Weka, then test the classification process produces similar results (for fixed labels and filters)
 # Drawing:
 - [x] Make animated canvas actually animated with requestAnimationFrame. (Some render loop - try avoid triggering re rendering)

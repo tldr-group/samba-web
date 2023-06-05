@@ -5,11 +5,11 @@ import Sidebar from "./Sidebar";
 import Canvas from "./Canvas"
 import { StageProps } from "./helpers/Interfaces";
 
-const Stage = ({ loadImages, requestEmbedding, trainClassifier, changeToImage, saveSeg }: StageProps) => {
+const Stage = ({ loadImages, requestEmbedding, trainClassifier, changeToImage, saveSeg, saveClassifier }: StageProps) => {
   const flexCenterClasses = "flex items-center justify-center";
   return (
     <div className={`w-full h-full`} >
-      <Topbar loadImages={loadImages} saveSeg={saveSeg} />
+      <Topbar loadImages={loadImages} saveSeg={saveSeg} saveClassifier={saveClassifier} />
       <div className={`flex`} style={{ margin: '1.5%' }}> {/*Canvas div on left, sidebar on right*/}
         <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`}>
           <Canvas />

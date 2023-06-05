@@ -29,6 +29,7 @@ const ENCODE_ENDPOINT = "http://127.0.0.1:5000/encoding"
 const FEATURISE_ENDPOINT = "http://127.0.0.1:5000/featurising"
 const SEGMENT_ENDPOINT = "http://127.0.0.1:5000/segmenting"
 const SAVE_ENDPOINT = "http://127.0.0.1:5000/saving"
+const CLASSIFIER_ENDPOINT = "http://127.0.0.1:5000/classifier"
 
 const getb64Image = (img: HTMLImageElement): string => {
   // Convert HTML Image to b64 string encoding by drawing onto canvas. Used for sending over HTTP
@@ -262,10 +263,23 @@ const App = () => {
     let resp = await fetch(SAVE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID }) })
     const buffer = await resp.arrayBuffer();
     const a = document.createElement("a")
+    a.download = "seg.tiff"
     const file = new Blob([buffer], { type: "image/tiff" });
     a.href = URL.createObjectURL(file);
     a.click()
     console.log("Finished Featurising");
+  }
+
+  const saveClassifier = async () => {
+    const headers = new Headers();
+    headers.append('Content-Type', 'application/json;charset=utf-8');
+    let resp = await fetch(CLASSIFIER_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID }) })
+    const buffer = await resp.arrayBuffer();
+    const a = document.createElement("a")
+    a.download = "classifier.pkl"
+    const file = new Blob([buffer], { type: "application/octet-stream" });
+    a.href = URL.createObjectURL(file);
+    a.click()
   }
 
   // Run the ONNX model every time clicks state changes - updated in Canvas
@@ -315,7 +329,14 @@ const App = () => {
     setSegArr(segArrs[imgIdx]);
   }, [segArrs])
 
-  return <Stage loadImages={loadImages} requestEmbedding={requestEmbedding} trainClassifier={trainClassifier} changeToImage={changeToImage} saveSeg={onSaveClick} />;
+  return <Stage
+    loadImages={loadImages}
+    requestEmbedding={requestEmbedding}
+    trainClassifier={trainClassifier}
+    changeToImage={changeToImage}
+    saveSeg={onSaveClick}
+    saveClassifier={saveClassifier}
+  />;
 };
 
 export default App;

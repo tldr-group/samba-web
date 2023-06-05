@@ -36,11 +36,13 @@ export interface StageProps {
   trainClassifier: () => void;
   changeToImage: (oldIdx: number, newIdx: number) => void;
   saveSeg: () => void;
+  saveClassifier: () => void;
 }
 
 export interface TopbarProps {
   loadImages: (hrefs: string[]) => void;
   saveSeg: () => void;
+  saveClassifier: () => void;
 }
 
 export interface SidebarProps {

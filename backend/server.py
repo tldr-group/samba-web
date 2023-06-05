@@ -90,7 +90,25 @@ def save_respond():
         return _build_cors_preflight_response()
     elif "POST" in request.method:  # The actual request following the preflight
         UID = request.json["id"]
-        response = send_file(f"{UID}/seg.tiff", mimetype="image/tiff")
+        response = send_file(
+            f"{UID}/seg.tiff", mimetype="image/tiff", download_name="seg.tiff"
+        )
+        return _corsify_actual_response(response)
+    else:
+        raise RuntimeError("Wrong HTTP method {}".format(request.method))
+
+
+@app.route("/classifier", methods=["POST", "GET", "OPTIONS"])
+def classifier_respond():
+    if "OPTIONS" in request.method:  # CORS preflight
+        return _build_cors_preflight_response()
+    elif "POST" in request.method:  # The actual request following the preflight
+        UID = request.json["id"]
+        response = send_file(
+            f"{UID}/classifier.pkl",
+            mimetype="application/octet-stream",
+            download_name="classifier.pkl",
+        )
         return _corsify_actual_response(response)
     else:
         raise RuntimeError("Wrong HTTP method {}".format(request.method))

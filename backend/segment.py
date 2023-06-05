@@ -6,6 +6,7 @@ import os
 from time import sleep
 from typing import List
 from math import floor, ceil
+from pickle import dump
 
 from forest_based import segment_with_features
 
@@ -114,5 +115,7 @@ def segment(
                 (remasked_flattened_arrs, remasked.flatten()), axis=0, dtype=np.uint8
             )
     _save_as_tiff(remasked_arrs_list, save_mode, UID, large_w, large_h)
+    with open(f"{UID}/classifier.pkl", "wb") as handle:
+        dump(model, handle)
     print(remasked_flattened_arrs.shape, label_arrs[0].shape)
     return remasked_flattened_arrs

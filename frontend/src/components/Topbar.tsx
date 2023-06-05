@@ -26,7 +26,7 @@ export const ToolTip = (str: string) => {
 }
 
 
-const Topbar = ({ loadImages, saveSeg }: TopbarProps) => {
+const Topbar = ({ loadImages, saveSeg, saveClassifier }: TopbarProps) => {
     const {
         largeImg: [, setLargeImg],
         imgType: [, setImgType],
@@ -157,7 +157,7 @@ const Topbar = ({ loadImages, saveSeg }: TopbarProps) => {
                             <NavDropdown.Item>Remove</NavDropdown.Item>
                         </NavDropdown>
                         <NavDropdown title="Classifier" id="data-dropdown">
-                            <NavDropdown.Item href="#action/3.2">Save</NavDropdown.Item>
+                            <NavDropdown.Item onClick={saveClassifier}>Save</NavDropdown.Item>
                             <NavDropdown.Item href="#action/3.2">Load</NavDropdown.Item>
                             <NavDropdown.Divider />
                             <NavDropdown.Item href="#action/3.4">

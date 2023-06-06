@@ -17,7 +17,8 @@ const Stage = ({ loadImages, requestEmbedding, trainClassifier, changeToImage, s
   const {
     image: [image,],
     imgType: [, setImgType],
-    largeImg: [, setLargeImg]
+    largeImg: [, setLargeImg],
+    errorObject: [, setErrorObject]
   } = useContext(AppContext)!;
   const flexCenterClasses = "flex items-center justify-center";
 
@@ -89,13 +90,41 @@ const Stage = ({ loadImages, requestEmbedding, trainClassifier, changeToImage, s
     setLargeImg(img);
   }
 
+  const loadFromFile = (file: File) => {
+    const reader = new FileReader();
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    const isTIF = (extension === "tif" || extension === "tiff");
+    const isPNGJPG = (extension === "png" || extension === "jpg" || extension === "jpeg");
+    reader.onload = () => {
+      try {
+        if (isTIF) {
+          loadTIFF(reader.result as ArrayBuffer);
+        } else if (isPNGJPG) {
+          const href = reader.result as string;
+          loadPNGJPEG(href);
+        } else {
+          throw `Unsupported file format .${extension}`;
+        };
+      }
+      catch (e) {
+        const error = e as Error;
+        setErrorObject({ msg: "Failed to upload image - must be .tif, .tiff, .png or .jpg", stackTrace: error.toString() });
+      }
+    };
+    if (isTIF) {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsDataURL(file);
+    };
+  }
+
 
   return (
     <div className={`w-full h-full`} >
-      <Topbar loadTIFF={loadTIFF} loadPNGJPEG={loadPNGJPEG} saveSeg={saveSeg} saveClassifier={saveClassifier} />
+      <Topbar loadFromFile={loadFromFile} saveSeg={saveSeg} saveClassifier={saveClassifier} />
       <div className={`flex`} style={{ margin: '1.5%' }}> {/*Canvas div on left, sidebar on right*/}
         <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`}>
-          {!image && <DragDrop loadTIFF={loadTIFF} loadPNGJPEG={loadPNGJPEG} />}
+          {!image && <DragDrop loadFromFile={loadFromFile} />}
           {image && <Canvas />}
         </div>
         <Sidebar requestEmbedding={requestEmbedding} trainClassifier={trainClassifier} changeToImage={changeToImage} />
@@ -141,12 +170,28 @@ const ErrorMessage = () => {
 }
 
 
-const DragDrop = ({ loadTIFF, loadPNGJPEG }: DragDropProps) => {
+const DragDrop = ({ loadFromFile }: DragDropProps) => {
+  const handleDrag = (e: any) => { e.preventDefault(); }
+  const handeDrop = (e: any) => {
+    e.preventDefault();
+    if (e.dataTransfer.items) {
+      const item = e.dataTransfer.items[0]
+      if (item.kind === "file") {
+        const file = item.getAsFile();
+        loadFromFile(file);
+      };
+    };
+  };
+
   return (
     <div style={{
       height: '800px', width: '800px', outline: '10px dashed #b5bab6', color: '#b5bab6',
       fontSize: '2em', display: 'flex', justifyContent: 'center', alignItems: 'center'
-    }}> <span>Drag image file(s) or </span> <a href='foo'> load default micrograph</a>
+    }}
+      onDragOver={handleDrag}
+      onDrop={handeDrop}
+    >
+      <span>Drag image file(s) or&nbsp; </span> <a href='foo'> load default micrograph</a>
     </div>
   )
 }

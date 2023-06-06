@@ -25,10 +25,7 @@ export const ToolTip = (str: string) => {
 }
 
 
-const Topbar = ({ loadTIFF, loadPNGJPEG, saveSeg, saveClassifier }: TopbarProps) => {
-    const {
-        errorObject: [, setErrorObject],
-    } = useContext(AppContext)!;
+const Topbar = ({ loadFromFile, saveSeg, saveClassifier }: TopbarProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Common pattern for opening file dialog w/ button: hidden <input> who is clicked when button is clicked.
@@ -41,33 +38,7 @@ const Topbar = ({ loadTIFF, loadPNGJPEG, saveSeg, saveClassifier }: TopbarProps)
     const handleFileUpload = (e: any) => {
         // Open file dialog and load file.
         const file: File | null = e.target.files?.[0] || null;
-        const reader = new FileReader();
-        if (file != null) {
-            const extension = file.name.split('.').pop()?.toLowerCase()
-            const isTIF = (extension === "tif" || extension === "tiff")
-            const isPNGJPG = (extension === "png" || extension === "jpg" || extension === "jpeg")
-            reader.onload = () => {
-                try {
-                    if (isTIF) {
-                        loadTIFF(reader.result as ArrayBuffer);
-                    } else if (isPNGJPG) {
-                        const href = reader.result as string;
-                        loadPNGJPEG(href);
-                    } else {
-                        throw `Unsupported file format .${extension}`;
-                    }
-                }
-                catch (e) {
-                    const error = e as Error;
-                    setErrorObject({ msg: "Failed to upload image - must be .tif, .tiff, .png or .jpg", stackTrace: error.toString() });
-                }
-            };
-            if (isTIF) {
-                reader.readAsArrayBuffer(file);
-            } else {
-                reader.readAsDataURL(file);
-            };
-        }
+        if (file != null) { loadFromFile(file); };
     }
 
     const icons: string[][] = [

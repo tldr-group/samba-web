@@ -40,15 +40,13 @@ export interface StageProps {
 }
 
 export interface TopbarProps {
-  loadTIFF: (result: ArrayBuffer) => void;
-  loadPNGJPEG: (href: string) => void;
+  loadFromFile: (file: File) => void;
   saveSeg: () => void;
   saveClassifier: () => void;
 }
 
 export interface DragDropProps {
-  loadTIFF: (result: ArrayBuffer) => void;
-  loadPNGJPEG: (href: string) => void;
+  loadFromFile: (file: File) => void;
 }
 
 export interface SidebarProps {

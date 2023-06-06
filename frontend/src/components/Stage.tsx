@@ -14,6 +14,7 @@ import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 import Toast from 'react-bootstrap/Toast'
 import ToastContainer from "react-bootstrap/ToastContainer";
+import InputGroup from "react-bootstrap/InputGroup";
 import Form from "react-bootstrap/Form"
 
 
@@ -191,8 +192,9 @@ const DragDrop = ({ loadDefault, loadFromFile }: DragDropProps) => {
 
   return (
     <div style={{
-      height: '800px', width: '800px', outline: '10px dashed #b5bab6', color: '#b5bab6',
-      fontSize: '2em', display: 'flex', justifyContent: 'center', alignItems: 'center'
+      height: '1024px', width: '1024px', outline: '10px dashed #b5bab6', color: '#b5bab6',
+      fontSize: '2em', display: 'flex', justifyContent: 'center', alignItems: 'center',
+      borderRadius: '10px'
     }}
       onDragOver={handleDrag}
       onDrop={handeDrop}
@@ -215,17 +217,19 @@ const PostSegToast = () => {
       <Toast show={showToast} onClose={toggleToast}>
         <Toast.Header className="roundedme-2"><strong className="me-auto">Share Segmentation?</strong></Toast.Header>
         <Toast.Body>
-          <p>Rate segmentation quality:</p>
-          <Form>
-            <Form.Check type="switch" id="share-seg" label="Happy to share segmentation in a future open dataset?"></Form.Check>
-            <Form.Check type="switch" id="share-gallery" label="Happy to share segmentation in the gallery page?"></Form.Check>
+          <InputGroup>
+            <InputGroup.Text>Segmentation quality:</InputGroup.Text>
+            <Form.Control type="number" min={0} max={10} defaultValue={5} width={1} size="sm"></Form.Control>
+          </InputGroup>
+
+          <Form style={{ margin: '10px' }}>
+            <Form.Check type="switch" id="share-seg" label="Share segmentation in a future open dataset?"></Form.Check>
+            <Form.Check type="switch" id="share-gallery" label="Share segmentation in the gallery page?"></Form.Check>
           </Form>
-          <Button variant="dark" onClick={toggleToast} style={{ margin: '10px' }}>
-            Send!
-          </Button>
+          <Button variant="dark" onClick={toggleToast} style={{ marginLeft: '16rem' }} >Send!</Button>
         </Toast.Body>
       </Toast>
-    </ToastContainer>
+    </ToastContainer >
 
   )
 }

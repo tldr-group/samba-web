@@ -84,6 +84,7 @@ const App = () => {
     labelClass: [labelClass],
     processing: [, setProcessing],
     errorObject: [errorObject, setErrorObject],
+    showToast: [, setShowToast]
   } = useContext(AppContext)!;
 
   const [model, setModel] = useState<InferenceSession | null>(null); // ONNX model
@@ -258,6 +259,7 @@ const App = () => {
       setErrorObject({ msg: "Failed to segment.", stackTrace: error.toString() });
     }
     setProcessing("None");
+    setShowToast(true)
   }
 
   const loadSegmentationsFromHTTP = (buffer: ArrayBuffer) => {

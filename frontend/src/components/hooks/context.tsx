@@ -42,7 +42,7 @@ const AppContextProvider = (props: {
 
   // Menus
   const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "", stackTrace: "" })
-  const [showToast, setShowToast] = useState<boolean>(true);
+  const [showToast, setShowToast] = useState<boolean>(false);
 
   return (
     <AppContext.Provider

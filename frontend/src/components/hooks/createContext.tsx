@@ -99,6 +99,10 @@ interface contextProps {
     errorObject: ErrorMessage,
     setErrorObject: (e: ErrorMessage) => void
   ];
+  showToast: [
+    showToast: boolean,
+    setShowToast: (e: boolean) => void,
+  ];
 }
 
 const AppContext = createContext<contextProps | null>(null);

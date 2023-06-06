@@ -42,6 +42,7 @@ const AppContextProvider = (props: {
 
   // Menus
   const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "", stackTrace: "" })
+  const [showToast, setShowToast] = useState<boolean>(true);
 
   return (
     <AppContext.Provider
@@ -71,6 +72,7 @@ const AppContextProvider = (props: {
         processing: [processing, setProcessing],
 
         errorObject: [errorObject, setErrorObject],
+        showToast: [showToast, setShowToast],
       }}
     >
       {props.children}

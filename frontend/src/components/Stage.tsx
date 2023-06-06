@@ -5,13 +5,17 @@ import Sidebar from "./Sidebar";
 import Canvas from "./Canvas"
 import AppContext from "./hooks/createContext";
 import { DragDropProps, StageProps } from "./helpers/Interfaces";
-import { imageDataToImage, getSplitInds, getXYfromI, getIfromXY } from "./helpers/canvasUtils";
+import { imageDataToImage, getSplitInds } from "./helpers/canvasUtils";
 
 const UTIF = require("./UTIF.js")
 
 import Accordion from 'react-bootstrap/Accordion';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
+import Toast from 'react-bootstrap/Toast'
+import ToastContainer from "react-bootstrap/ToastContainer";
+import Form from "react-bootstrap/Form"
+
 
 const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, changeToImage, saveSeg, saveClassifier }: StageProps) => {
   const {
@@ -130,9 +134,11 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, cha
         <Sidebar requestEmbedding={requestEmbedding} trainClassifier={trainClassifier} changeToImage={changeToImage} />
       </div>
       <ErrorMessage />
+      <PostSegToast />
     </div >
   );
 };
+
 
 const ErrorMessage = () => {
   const {
@@ -193,6 +199,34 @@ const DragDrop = ({ loadDefault, loadFromFile }: DragDropProps) => {
     >
       <span>Drag image file(s) or&nbsp; </span> <a style={{ cursor: "pointer", color: 'blue' }} onClick={loadDefault}> load default micrograph</a>
     </div>
+  )
+}
+
+
+const PostSegToast = () => {
+  const {
+    showToast: [showToast, setShowToast]
+  } = useContext(AppContext)!;
+
+  const toggleToast = () => { setShowToast(!showToast) }
+
+  return (
+    <ToastContainer className="p-5" position="bottom-end">
+      <Toast show={showToast} onClose={toggleToast}>
+        <Toast.Header className="roundedme-2"><strong className="me-auto">Share Segmentation?</strong></Toast.Header>
+        <Toast.Body>
+          <p>Rate segmentation quality:</p>
+          <Form>
+            <Form.Check type="switch" id="share-seg" label="Happy to share segmentation in a future open dataset?"></Form.Check>
+            <Form.Check type="switch" id="share-gallery" label="Happy to share segmentation in the gallery page?"></Form.Check>
+          </Form>
+          <Button variant="dark" onClick={toggleToast} style={{ margin: '10px' }}>
+            Send!
+          </Button>
+        </Toast.Body>
+      </Toast>
+    </ToastContainer>
+
   )
 }
 

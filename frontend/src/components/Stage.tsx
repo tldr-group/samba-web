@@ -13,7 +13,7 @@ import Accordion from 'react-bootstrap/Accordion';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 
-const Stage = ({ loadImages, requestEmbedding, trainClassifier, changeToImage, saveSeg, saveClassifier }: StageProps) => {
+const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, changeToImage, saveSeg, saveClassifier }: StageProps) => {
   const {
     image: [image,],
     imgType: [, setImgType],
@@ -124,7 +124,7 @@ const Stage = ({ loadImages, requestEmbedding, trainClassifier, changeToImage, s
       <Topbar loadFromFile={loadFromFile} saveSeg={saveSeg} saveClassifier={saveClassifier} />
       <div className={`flex`} style={{ margin: '1.5%' }}> {/*Canvas div on left, sidebar on right*/}
         <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`}>
-          {!image && <DragDrop loadFromFile={loadFromFile} />}
+          {!image && <DragDrop loadFromFile={loadFromFile} loadDefault={loadDefault} />}
           {image && <Canvas />}
         </div>
         <Sidebar requestEmbedding={requestEmbedding} trainClassifier={trainClassifier} changeToImage={changeToImage} />
@@ -170,7 +170,7 @@ const ErrorMessage = () => {
 }
 
 
-const DragDrop = ({ loadFromFile }: DragDropProps) => {
+const DragDrop = ({ loadDefault, loadFromFile }: DragDropProps) => {
   const handleDrag = (e: any) => { e.preventDefault(); }
   const handeDrop = (e: any) => {
     e.preventDefault();
@@ -191,7 +191,7 @@ const DragDrop = ({ loadFromFile }: DragDropProps) => {
       onDragOver={handleDrag}
       onDrop={handeDrop}
     >
-      <span>Drag image file(s) or&nbsp; </span> <a href='foo'> load default micrograph</a>
+      <span>Drag image file(s) or&nbsp; </span> <a style={{ cursor: "pointer", color: 'blue' }} onClick={loadDefault}> load default micrograph</a>
     </div>
   )
 }

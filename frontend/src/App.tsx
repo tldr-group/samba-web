@@ -23,6 +23,8 @@ import npyjs from "npyjs";
 
 
 const MODEL_DIR = "/model/sam_onnx_quantized_example.onnx";
+const DEFAULT_IMAGE = "/assets/data/default_image.png"
+const DEFAULT_EMBEDDING = "/assets/data/default_encoding.npy"
 
 // URLS of our API endpoints - change when live
 const ENCODE_ENDPOINT = "http://127.0.0.1:5000/encoding"
@@ -179,7 +181,15 @@ const App = () => {
     setTensor(newTensorArrs[newIdx])
   }
 
-  //TODO: add in a function that loads a default image (b64) and SAM encoding, sets them and sets brush type to smart labelling. Pass this as props to drag n drop 
+  const loadDefault = async () => {
+    const url = new URL(DEFAULT_IMAGE, location.origin);
+    await loadImages([url.href]);
+    let npLoader = new npyjs();
+    const npArray = await npLoader.load(DEFAULT_EMBEDDING);
+    const tensor = new ort.Tensor("float32", npArray.data, npArray.shape);
+    setTensor(tensor);
+    setLabelType('Smart Labelling');
+  }
 
   const requestFeatures = async (imgs: Array<HTMLImageElement>) => {
     const b64images: string[] = imgs.map((img, i) => getb64Image(img));
@@ -364,6 +374,7 @@ const App = () => {
 
   return <Stage
     loadImages={loadImages}
+    loadDefault={loadDefault}
     requestEmbedding={requestEmbedding}
     trainClassifier={trainClassifier}
     changeToImage={changeToImage}

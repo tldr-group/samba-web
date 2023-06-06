@@ -32,6 +32,7 @@ export interface ToolProps {
 
 export interface StageProps {
   loadImages: (hrefs: string[]) => void;
+  loadDefault: () => void;
   requestEmbedding: () => void;
   trainClassifier: () => void;
   changeToImage: (oldIdx: number, newIdx: number) => void;
@@ -46,6 +47,7 @@ export interface TopbarProps {
 }
 
 export interface DragDropProps {
+  loadDefault: () => void;
   loadFromFile: (file: File) => void;
 }
 

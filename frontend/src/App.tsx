@@ -23,6 +23,8 @@ import npyjs from "npyjs";
 
 
 const MODEL_DIR = "/model/sam_onnx_quantized_example.onnx";
+const DEFAULT_IMAGE = "/assets/data/default_image.png"
+const DEFAULT_EMBEDDING = "/assets/data/default_encoding.npy"
 
 // URLS of our API endpoints - change when live
 const ENCODE_ENDPOINT = "http://127.0.0.1:5000/encoding"
@@ -78,8 +80,11 @@ const App = () => {
     segArr: [segArr, setSegArr],
     maskImg: [, setMaskImg],
     maskIdx: [maskIdx],
+    labelType: [, setLabelType],
     labelClass: [labelClass],
-    processing: [, setProcessing]
+    processing: [, setProcessing],
+    errorObject: [errorObject, setErrorObject],
+    showToast: [, setShowToast]
   } = useContext(AppContext)!;
 
   const [model, setModel] = useState<InferenceSession | null>(null); // ONNX model
@@ -98,6 +103,8 @@ const App = () => {
         const model = await InferenceSession.create(URL);
         setModel(model);
       } catch (e) {
+        const error = e as Error
+        setErrorObject({ msg: "Failed to initialise model", stackTrace: error.toString() })
         console.log(e);
       }
     };
@@ -143,8 +150,10 @@ const App = () => {
           }
         };
       }
-    } catch (error) {
-      console.log(error);
+    } catch (e) {
+      const error = e as Error
+      setErrorObject({ msg: "Failed to load images from href", stackTrace: error.toString() })
+      console.log(e);
     }
   };
 
@@ -173,13 +182,28 @@ const App = () => {
     setTensor(newTensorArrs[newIdx])
   }
 
+  const loadDefault = async () => {
+    const url = new URL(DEFAULT_IMAGE, location.origin);
+    await loadImages([url.href]);
+    let npLoader = new npyjs();
+    const npArray = await npLoader.load(DEFAULT_EMBEDDING);
+    const tensor = new ort.Tensor("float32", npArray.data, npArray.shape);
+    setTensor(tensor);
+    setLabelType('Smart Labelling');
+  }
+
   const requestFeatures = async (imgs: Array<HTMLImageElement>) => {
     const b64images: string[] = imgs.map((img, i) => getb64Image(img));
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     console.log("Started Featurising");
-    await fetch(FEATURISE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "id": UID }) })
-    console.log("Finished Featurising");
+    try {
+      await fetch(FEATURISE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "id": UID }) });
+      console.log("Finished Featurising");
+    } catch (e) {
+      const error = e as Error;
+      setErrorObject({ msg: "Failed to featurise.", stackTrace: error.toString() });
+    }
   }
 
   const requestEmbedding = async () => {
@@ -194,12 +218,18 @@ const App = () => {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     // this works and I am so smart - basically took the parsing code that npyjs uses behind the scenes for files and applied it to my server (which returns a file in the right format)
-    const resp = await fetch(ENCODE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "message": b64image, "id": UID, "img_idx": imgIdx }) })
-    const arrayBuf = await resp.arrayBuffer();
-    const result = await npLoader.parse(arrayBuf);
-    const embedding = new ort.Tensor("float32", result.data, result.shape);
+    try {
+      const resp = await fetch(ENCODE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "message": b64image, "id": UID, "img_idx": imgIdx }) })
+      const arrayBuf = await resp.arrayBuffer();
+      const result = await npLoader.parse(arrayBuf);
+      const embedding = new ort.Tensor("float32", result.data, result.shape);
+      setTensor(embedding);
+    } catch (e) {
+      const error = e as Error;
+      setErrorObject({ msg: "Failed to encode image.", stackTrace: error.toString() });
+      setLabelType("Brush")
+    }
     setProcessing("None");
-    setTensor(embedding);
   };
 
   const trainClassifier = async () => {
@@ -220,10 +250,16 @@ const App = () => {
       largeH = largeImg.height
     }
     const msg = { "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType, "large_w": largeW, "large_h": largeH }
-    let resp = await fetch(SEGMENT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify(msg) })
-    const buffer = await resp.arrayBuffer();
-    loadSegmentationsFromHTTP(buffer);
+    try {
+      let resp = await fetch(SEGMENT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify(msg) })
+      const buffer = await resp.arrayBuffer();
+      loadSegmentationsFromHTTP(buffer);
+    } catch (e) {
+      const error = e as Error;
+      setErrorObject({ msg: "Failed to segment.", stackTrace: error.toString() });
+    }
     setProcessing("None");
+    setShowToast(true)
   }
 
   const loadSegmentationsFromHTTP = (buffer: ArrayBuffer) => {
@@ -256,30 +292,39 @@ const App = () => {
   }
 
   const onSaveClick = async () => {
+    // TODO: abstract this download with temp element and sending generic http request.
     if (image === null || segArr === null) { return; }
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
-    console.log("Started Featurising");
-    let resp = await fetch(SAVE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID }) })
-    const buffer = await resp.arrayBuffer();
-    const a = document.createElement("a")
-    a.download = "seg.tiff"
-    const file = new Blob([buffer], { type: "image/tiff" });
-    a.href = URL.createObjectURL(file);
-    a.click()
-    console.log("Finished Featurising");
+    try {
+      let resp = await fetch(SAVE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID }) })
+      const buffer = await resp.arrayBuffer();
+      const a = document.createElement("a")
+      a.download = "seg.tiff"
+      const file = new Blob([buffer], { type: "image/tiff" });
+      a.href = URL.createObjectURL(file);
+      a.click()
+    } catch (e) {
+      const error = e as Error;
+      setErrorObject({ msg: "Failed to dowload TIFF.", stackTrace: error.toString() });
+    }
   }
 
   const saveClassifier = async () => {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
-    let resp = await fetch(CLASSIFIER_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID }) })
-    const buffer = await resp.arrayBuffer();
-    const a = document.createElement("a")
-    a.download = "classifier.pkl"
-    const file = new Blob([buffer], { type: "application/octet-stream" });
-    a.href = URL.createObjectURL(file);
-    a.click()
+    try {
+      let resp = await fetch(CLASSIFIER_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID }) })
+      const buffer = await resp.arrayBuffer();
+      const a = document.createElement("a")
+      a.download = "classifier.pkl"
+      const file = new Blob([buffer], { type: "application/octet-stream" });
+      a.href = URL.createObjectURL(file);
+      a.click()
+    } catch (e) {
+      const error = e as Error;
+      setErrorObject({ msg: "Failed to dowload classifier.", stackTrace: error.toString() });
+    }
   }
 
   // Run the ONNX model every time clicks state changes - updated in Canvas
@@ -331,6 +376,7 @@ const App = () => {
 
   return <Stage
     loadImages={loadImages}
+    loadDefault={loadDefault}
     requestEmbedding={requestEmbedding}
     trainClassifier={trainClassifier}
     changeToImage={changeToImage}

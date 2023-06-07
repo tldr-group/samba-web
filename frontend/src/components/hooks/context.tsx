@@ -5,7 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import React, { useState } from "react";
-import { modelInputProps, Label } from "../helpers/Interfaces";
+import { modelInputProps, Label, ErrorMessage } from "../helpers/Interfaces";
 import AppContext from "./createContext";
 
 const AppContextProvider = (props: {
@@ -40,6 +40,10 @@ const AppContextProvider = (props: {
   const [segOpacity, setSegOpacity] = useState<number>(0.9 * 255);
   const [processing, setProcessing] = useState<"None" | "Encoding" | "Segmenting">("None");
 
+  // Menus
+  const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "", stackTrace: "" })
+  const [showToast, setShowToast] = useState<boolean>(false);
+
   return (
     <AppContext.Provider
       value={{
@@ -66,6 +70,9 @@ const AppContextProvider = (props: {
         labelOpacity: [labelOpacity, setLabelOpacity],
         segOpacity: [segOpacity, setSegOpacity],
         processing: [processing, setProcessing],
+
+        errorObject: [errorObject, setErrorObject],
+        showToast: [showToast, setShowToast],
       }}
     >
       {props.children}

@@ -5,7 +5,6 @@
 
 import React, { useRef, useContext } from "react";
 import AppContext from "./hooks/createContext";
-import { imageDataToImage, getSplitInds, getXYfromI, getIfromXY } from "./helpers/canvasUtils";
 import { TopbarProps } from "./helpers/Interfaces";
 
 import Container from 'react-bootstrap/Container';
@@ -15,7 +14,7 @@ import NavDropdown from 'react-bootstrap/NavDropdown';
 import Tooltip from "react-bootstrap/Tooltip";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 
-const UTIF = require("./UTIF.js")
+
 
 export const ToolTip = (str: string) => {
     return (
@@ -26,11 +25,7 @@ export const ToolTip = (str: string) => {
 }
 
 
-const Topbar = ({ loadImages, saveSeg, saveClassifier }: TopbarProps) => {
-    const {
-        largeImg: [, setLargeImg],
-        imgType: [, setImgType],
-    } = useContext(AppContext)!;
+const Topbar = ({ loadFromFile, saveSeg, saveClassifier }: TopbarProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Common pattern for opening file dialog w/ button: hidden <input> who is clicked when button is clicked.
@@ -40,96 +35,10 @@ const Topbar = ({ loadImages, saveSeg, saveClassifier }: TopbarProps) => {
         }
     }
 
-    const loadTIFF = (result: ArrayBuffer) => {
-        const tifs = UTIF.decode(result);
-        const hrefs: Array<string> = []
-        for (let tif of tifs) {
-            UTIF.decodeImage(result, tif);
-            const imgDataArr = new Uint8ClampedArray(UTIF.toRGBA8(tif));
-            const imgData = new ImageData(imgDataArr, tif.width, tif.height);
-            hrefs.push(imageDataToImage(imgData).src);
-        }
-        const isSmall = (tifs[0].width < 1024 && tifs[0].height < 1024)
-        if (tifs.length > 1 && isSmall) {
-            loadImages(hrefs);
-            setImgType("stack");
-        } else if (tifs.length == 1 && isSmall) {
-            loadImages(hrefs);
-            setImgType("single");
-        } else if (!isSmall) {
-            const img = new Image();
-            img.src = hrefs[0];
-            img.onload = () => {
-                loadLargeImage(img);
-                setImgType("large");
-            }
-        }
-    }
-
-    const loadPNGJPEG = (href: string) => {
-        const img = new Image();
-        img.src = href;
-        img.onload = () => {
-            if (img.width > 1024 || img.height > 1024) {
-                loadLargeImage(img); //load large image
-                setImgType("large")
-            }
-            else {
-                loadImages([href]);
-                setImgType("single")
-            }
-        }
-    }
-
-    const loadLargeImage = (img: HTMLImageElement) => {
-        const hrefs: string[] = [];
-        const inds = getSplitInds(img);
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d", { willReadFrequently: true });
-        if (ctx === null) { return; }
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-        const [widths, heights] = [inds.w, inds.h];
-        // need to add the ends of the image
-        widths.push(img.width);
-        heights.push(img.height);
-        for (let y = 0; y < heights.length - 1; y++) {
-            const [h0, h1] = [heights[y], heights[y + 1]];
-            for (let x = 0; x < widths.length - 1; x++) {
-                const [w0, w1] = [widths[x], widths[x + 1]];
-                const imgData = ctx.getImageData(w0, h0, w1 - w0, h1 - h0);
-                const cropImg = imageDataToImage(imgData);
-                hrefs.push(cropImg.src);
-            }
-        }
-        console.log(hrefs.length, widths, heights);
-        loadImages(hrefs);
-        setLargeImg(img);
-    }
-
     const handleFileUpload = (e: any) => {
         // Open file dialog and load file.
         const file: File | null = e.target.files?.[0] || null;
-        const reader = new FileReader();
-
-        if (file != null) {
-            const extension = file.name.split('.').pop()?.toLowerCase()
-            const isTIF = (extension === "tif" || extension === "tiff")
-            reader.onload = () => {
-                if (isTIF) {
-                    loadTIFF(reader.result as ArrayBuffer);
-                } else {
-                    const href = reader.result as string;
-                    loadPNGJPEG(href);
-                };
-            };
-            if (isTIF) {
-                reader.readAsArrayBuffer(file);
-            } else {
-                reader.readAsDataURL(file);
-            };
-        }
+        if (file != null) { loadFromFile(file); };
     }
 
     const icons: string[][] = [

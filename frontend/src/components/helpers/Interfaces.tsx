@@ -32,6 +32,7 @@ export interface ToolProps {
 
 export interface StageProps {
   loadImages: (hrefs: string[]) => void;
+  loadDefault: () => void;
   requestEmbedding: () => void;
   trainClassifier: () => void;
   changeToImage: (oldIdx: number, newIdx: number) => void;
@@ -40,9 +41,14 @@ export interface StageProps {
 }
 
 export interface TopbarProps {
-  loadImages: (hrefs: string[]) => void;
+  loadFromFile: (file: File) => void;
   saveSeg: () => void;
   saveClassifier: () => void;
+}
+
+export interface DragDropProps {
+  loadDefault: () => void;
+  loadFromFile: (file: File) => void;
 }
 
 export interface SidebarProps {
@@ -76,3 +82,8 @@ export const getHTTPRequest = (url: string) => {
   http.setRequestHeader("Content-type", "application/json;charset=utf-8")
   return http
 }
+
+export interface ErrorMessage {
+  msg: string;
+  stackTrace: string;
+} 

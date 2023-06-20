@@ -46,7 +46,7 @@ def _get_split_inds(w: int, h: int) -> dict:
     return inds
 
 
-def _save_as_tiff(
+async def _save_as_tiff(
     arr_list: List[np.ndarray], mode: str, UID: str, large_w: int = 0, large_h: int = 0
 ) -> None:
     remasked_arrs = np.array(arr_list)
@@ -72,13 +72,19 @@ def _save_as_tiff(
                 rescaled = (seg - 1) * delta
                 large_seg[y0:y1, x0:x1] = rescaled
                 img_count += 1
-        imwrite(f"{CWD}/{UID}/seg.tiff", large_seg)
+        await imwrite(f"{CWD}/{UID}/seg.tiff", large_seg)
     elif mode == "single":
         rescaled = ((remasked_arrs - 1) * delta).astype(np.uint8)
-        imwrite(f"{CWD}/{UID}/seg.tiff", rescaled)
+        await imwrite(f"{CWD}/{UID}/seg.tiff", rescaled)
 
 
-def segment(
+async def _save_classifier(model, CWD: str, UID: str):
+    with open(f"{CWD}/{UID}/classifier.pkl", "wb") as handle:
+        dump(model, handle)
+    return
+
+
+async def segment(
     images: List[Image.Image],
     labels_dicts: List[dict],
     UID: str,
@@ -102,7 +108,7 @@ def segment(
 
         label_arrs.append(label_arr)
     # Block until featurising thread done
-    _check_featurising_done(len(label_arrs), UID)
+    # _check_featurising_done(len(label_arrs), UID)
 
     remasked_arrs_list: List[np.ndarray] = []
     remasked_flattened_arrs: np.ndarray
@@ -119,8 +125,7 @@ def segment(
             remasked_flattened_arrs = np.concatenate(
                 (remasked_flattened_arrs, remasked.flatten()), axis=0, dtype=np.uint8
             )
-    _save_as_tiff(remasked_arrs_list, save_mode, UID, large_w, large_h)
-    with open(f"{CWD}/{UID}/classifier.pkl", "wb") as handle:
-        dump(model, handle)
+    await _save_as_tiff(remasked_arrs_list, save_mode, UID, large_w, large_h)
+    await _save_classifier(model, CWD, UID)
     print(remasked_flattened_arrs.shape, label_arrs[0].shape)
     return remasked_flattened_arrs

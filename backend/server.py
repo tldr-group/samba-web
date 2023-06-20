@@ -66,7 +66,7 @@ async def featurise_respond():
         except FileExistsError:
             pass
         images = [_get_image_from_b64(i) for i in request.json["images"]]
-        featurise(images, UID)
+        await featurise(images, UID)
         with open(f"{CWD}/{UID}/success.txt", "w+") as f:
             f.write("done")
         return _corsify_actual_response(jsonify(success=True))

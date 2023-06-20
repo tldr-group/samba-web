@@ -17,7 +17,7 @@ sam = sam_model_registry["vit_b"](checkpoint="sam_vit_b_01ec64.pth")
 sam_predictor = SamPredictor(sam)
 
 
-def encode(image: Image.Image, UID: str, img_id: int = 0) -> bytes:
+def encode(image: Image.Image) -> bytes:
     """Given image, encode with SAM vit model and save to their folder."""
     rgb_arr = np.array(image)
     sam_predictor.set_image(rgb_arr)
@@ -36,3 +36,4 @@ def featurise(
         img_arr = np.array(img.convert("L")) * 255
         feature_stack = multiscale_advanced_features(img_arr, selected_features)
         np.savez_compressed(f"{CWD}/{UID}/features_{i}", a=feature_stack)
+    return

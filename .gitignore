@@ -8,3 +8,9 @@ yarn.lock
 *.npy
 *backend/*.jpeg
 *backend/*.tif
+*azure/
+*dist*
+*functions*
+*vscode*
+*azure*
+*.venv*

@@ -1,11 +1,5 @@
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-// All rights reserved.
-
-// This source code is licensed under the license found in the
-// LICENSE file in the root directory of this source tree.
-
 import { createContext } from "react";
-import { modelInputProps, Label, ErrorMessage } from "../helpers/Interfaces";
+import { modelInputProps, Label, ErrorMessage, SegmentFeatureState } from "../helpers/Interfaces";
 
 interface contextProps {
   largeImg: [
@@ -94,6 +88,11 @@ interface contextProps {
     processing: "None" | "Encoding" | "Segmenting",
     setProcessing: (e: "None" | "Encoding" | "Segmenting") => void
   ];
+
+  segmentFeature: [
+    segmentFeature: SegmentFeatureState,
+    setSegmentFeature: (e: SegmentFeatureState) => void
+  ]
 
   errorObject: [
     errorObject: ErrorMessage,

@@ -86,4 +86,9 @@ export const getHTTPRequest = (url: string) => {
 export interface ErrorMessage {
   msg: string;
   stackTrace: string;
-} 
+}
+
+export interface SegmentFeatureState {
+  feature: boolean;
+  segment: boolean;
+}

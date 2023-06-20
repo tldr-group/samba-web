@@ -27,11 +27,13 @@ const DEFAULT_IMAGE = "/assets/data/default_image.png"
 const DEFAULT_EMBEDDING = "/assets/data/default_encoding.npy"
 
 // URLS of our API endpoints - change when live
-const ENCODE_ENDPOINT = "http://127.0.0.1:5000/encoding"
-const FEATURISE_ENDPOINT = "http://127.0.0.1:5000/featurising"
-const SEGMENT_ENDPOINT = "http://127.0.0.1:5000/segmenting"
-const SAVE_ENDPOINT = "http://127.0.0.1:5000/saving"
-const CLASSIFIER_ENDPOINT = "http://127.0.0.1:5000/classifier"
+//const PATH = "https://samba-web-demo.azurewebsites.net/" 
+const PATH = "http://127.0.0.1:5000"
+const ENCODE_ENDPOINT = PATH + "/encoding"
+const FEATURISE_ENDPOINT = PATH + "/featurising"
+const SEGMENT_ENDPOINT = PATH + "/segmenting"
+const SAVE_ENDPOINT = PATH + "/saving"
+const CLASSIFIER_ENDPOINT = PATH + "/classifier"
 
 const getb64Image = (img: HTMLImageElement): string => {
   // Convert HTML Image to b64 string encoding by drawing onto canvas. Used for sending over HTTP

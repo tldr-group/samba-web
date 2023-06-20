@@ -3,17 +3,31 @@ from segment_anything import SamPredictor, sam_model_registry
 import numpy as np
 from PIL import Image
 from typing import List
+import os
+from io import BytesIO
 
 from features import DEAFAULT_FEATURES, multiscale_advanced_features
 
+try:
+    CWD = os.environ["APP_PATH"]
+except KeyError:
+    CWD = ""
 
-def encode(image: Image.Image, UID: str, img_id: int = 0) -> None:
+sam = sam_model_registry["vit_b"](checkpoint="sam_vit_b_01ec64.pth")
+sam_predictor = SamPredictor(sam)
+
+
+def encode(image: Image.Image, UID: str, img_id: int = 0) -> bytes:
     """Given image, encode with SAM vit model and save to their folder."""
     rgb_arr = np.array(image)
-    sam = sam_model_registry["vit_b"](checkpoint="sam_vit_b_01ec64.pth")
-    sam_predictor = SamPredictor(sam)
+
     sam_predictor.set_image(rgb_arr)
-    np.save(f"{UID}/encoding_{img_id}.npy", sam_predictor.features)
+    file_bytes_io = BytesIO()
+    np.save(file_bytes_io, sam_predictor.features)
+    file_bytes_io.seek(0)
+    file_bytes = file_bytes_io.read()
+    return file_bytes
+    # np.save(f"{CWD}/{UID}/encoding_{img_id}.npy", sam_predictor.features)
 
 
 def featurise(
@@ -23,4 +37,4 @@ def featurise(
     for i, img in enumerate(images):
         img_arr = np.array(img.convert("L")) * 255
         feature_stack = multiscale_advanced_features(img_arr, selected_features)
-        np.savez_compressed(f"{UID}/features_{i}", a=feature_stack)
+        np.savez_compressed(f"{CWD}/{UID}/features_{i}", a=feature_stack)

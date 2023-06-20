@@ -1,15 +1,32 @@
 """Backend flask server. Has 2 endpoints: encoding and segmenting, both handled in different scripts."""
-from flask import Flask, request, make_response, jsonify, send_file, Response
+from flask import (
+    Flask,
+    request,
+    make_response,
+    jsonify,
+    send_file,
+    Response,
+    render_template,
+    send_from_directory,
+)
 import base64
 from io import BytesIO
-from PIL import Image
-from tifffile import imread
+
 import os
+
+try:
+    CWD = os.environ["APP_PATH"]
+except KeyError:
+    CWD = ""
+print(CWD, os.getcwd())
 
 from encode import encode, featurise
 from segment import segment
+from PIL import Image
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+)
 
 
 # these 2 functions from user Niels B on stack overflow: https://stackoverflow.com/questions/25594893/how-to-enable-cors-in-flask
@@ -33,6 +50,11 @@ def _get_image_from_b64(b64_with_prefix: str):
     return image
 
 
+@app.route("/")
+def hello_world():
+    return send_from_directory("", "index.html")
+
+
 @app.route("/featurising", methods=["POST", "GET", "OPTIONS"])
 def featurise_respond():
     if "OPTIONS" in request.method:  # CORS preflight
@@ -40,12 +62,12 @@ def featurise_respond():
     elif "POST" in request.method:
         UID = request.json["id"]
         try:
-            os.mkdir(UID)
+            os.mkdir(f"{CWD}/{UID}")
         except FileExistsError:
             pass
         images = [_get_image_from_b64(i) for i in request.json["images"]]
         featurise(images, UID)
-        with open(f"{UID}/success.txt", "w+") as f:
+        with open(f"{CWD}/{UID}/success.txt", "w+") as f:
             f.write("done")
         return _corsify_actual_response(jsonify(success=True))
 
@@ -58,8 +80,12 @@ def encode_respond():
         image = _get_image_from_b64(request.json["message"])
         image_id = int(request.json["img_idx"])
         UID = request.json["id"]
+        try:
+            os.mkdir(f"{CWD}/{UID}")
+        except FileExistsError:
+            pass
         encoded = encode(image, UID, image_id)
-        response = send_file(f"{UID}/encoding_{image_id}.npy")
+        response = send_file(f"{CWD}/{UID}/encoding_{image_id}.npy")
         return _corsify_actual_response(response)
     else:
         raise RuntimeError("Wrong HTTP method {}".format(request.method))
@@ -73,6 +99,10 @@ def segment_respond():
         images = [_get_image_from_b64(i) for i in request.json["images"]]
         labels_dicts = request.json["labels"]
         UID = request.json["id"]
+        try:
+            os.mkdir(f"{CWD}/{UID}")
+        except FileExistsError:
+            pass
         save_mode = request.json["save_mode"]
         large_w, large_h = request.json["large_w"], request.json["large_h"]
         print(save_mode, large_w, large_h)
@@ -91,7 +121,7 @@ def save_respond():
     elif "POST" in request.method:  # The actual request following the preflight
         UID = request.json["id"]
         response = send_file(
-            f"{UID}/seg.tiff", mimetype="image/tiff", download_name="seg.tiff"
+            f"{CWD}/{UID}/seg.tiff", mimetype="image/tiff", download_name="seg.tiff"
         )
         return _corsify_actual_response(response)
     else:
@@ -105,10 +135,14 @@ def classifier_respond():
     elif "POST" in request.method:  # The actual request following the preflight
         UID = request.json["id"]
         response = send_file(
-            f"{UID}/classifier.pkl",
+            f"{CWD}/{UID}/classifier.pkl",
             mimetype="application/octet-stream",
             download_name="classifier.pkl",
         )
         return _corsify_actual_response(response)
     else:
         raise RuntimeError("Wrong HTTP method {}".format(request.method))
+
+
+if __name__ == "__main__":
+    app.run()

@@ -10,6 +10,11 @@ from pickle import dump
 
 from forest_based import segment_with_features
 
+try:
+    CWD = os.environ["APP_PATH"]
+except KeyError:
+    CWD = ""
+
 
 def _check_featurising_done(n_imgs: int, UID: str):
     # TODO: ensure this doesn't block threads. Not sure this is a good idea.
@@ -67,10 +72,10 @@ def _save_as_tiff(
                 rescaled = (seg - 1) * delta
                 large_seg[y0:y1, x0:x1] = rescaled
                 img_count += 1
-        imwrite(f"{UID}/seg.tiff", large_seg)
+        imwrite(f"{CWD}/{UID}/seg.tiff", large_seg)
     elif mode == "single":
         rescaled = ((remasked_arrs - 1) * delta).astype(np.uint8)
-        imwrite(f"{UID}/seg.tiff", rescaled)
+        imwrite(f"{CWD}/{UID}/seg.tiff", rescaled)
 
 
 def segment(
@@ -115,7 +120,7 @@ def segment(
                 (remasked_flattened_arrs, remasked.flatten()), axis=0, dtype=np.uint8
             )
     _save_as_tiff(remasked_arrs_list, save_mode, UID, large_w, large_h)
-    with open(f"{UID}/classifier.pkl", "wb") as handle:
+    with open(f"{CWD}/{UID}/classifier.pkl", "wb") as handle:
         dump(model, handle)
     print(remasked_flattened_arrs.shape, label_arrs[0].shape)
     return remasked_flattened_arrs

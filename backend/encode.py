@@ -11,7 +11,7 @@ from features import DEAFAULT_FEATURES, multiscale_advanced_features
 try:
     CWD = os.environ["APP_PATH"]
 except KeyError:
-    CWD = ""
+    CWD = os.getcwd()
 
 sam = sam_model_registry["vit_b"](checkpoint="sam_vit_b_01ec64.pth")
 sam_predictor = SamPredictor(sam)
@@ -20,14 +20,12 @@ sam_predictor = SamPredictor(sam)
 def encode(image: Image.Image, UID: str, img_id: int = 0) -> bytes:
     """Given image, encode with SAM vit model and save to their folder."""
     rgb_arr = np.array(image)
-
     sam_predictor.set_image(rgb_arr)
     file_bytes_io = BytesIO()
     np.save(file_bytes_io, sam_predictor.features)
     file_bytes_io.seek(0)
     file_bytes = file_bytes_io.read()
     return file_bytes
-    # np.save(f"{CWD}/{UID}/encoding_{img_id}.npy", sam_predictor.features)
 
 
 def featurise(

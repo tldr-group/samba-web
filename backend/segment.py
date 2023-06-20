@@ -13,7 +13,7 @@ from forest_based import segment_with_features
 try:
     CWD = os.environ["APP_PATH"]
 except KeyError:
-    CWD = ""
+    CWD = os.getcwd()
 
 
 def _check_featurising_done(n_imgs: int, UID: str):

@@ -17,7 +17,7 @@ import os
 try:
     CWD = os.environ["APP_PATH"]
 except KeyError:
-    CWD = ""
+    CWD = os.getcwd()
 print(CWD, os.getcwd())
 
 from encode import encode, featurise
@@ -56,7 +56,7 @@ def hello_world():
 
 
 @app.route("/featurising", methods=["POST", "GET", "OPTIONS"])
-def featurise_respond():
+async def featurise_respond():
     if "OPTIONS" in request.method:  # CORS preflight
         return _build_cors_preflight_response()
     elif "POST" in request.method:
@@ -84,8 +84,9 @@ def encode_respond():
             os.mkdir(f"{CWD}/{UID}")
         except FileExistsError:
             pass
-        encoded = encode(image, UID, image_id)
-        response = send_file(f"{CWD}/{UID}/encoding_{image_id}.npy")
+        encoded_bytes = encode(image, UID, image_id)
+        response = Response(encoded_bytes)
+        response.headers.add("Content-Type", "application/octet-stream")
         return _corsify_actual_response(response)
     else:
         raise RuntimeError("Wrong HTTP method {}".format(request.method))

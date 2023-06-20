@@ -48,7 +48,7 @@ def _get_split_inds(w: int, h: int) -> dict:
 
 async def _save_as_tiff(
     arr_list: List[np.ndarray], mode: str, UID: str, large_w: int = 0, large_h: int = 0
-) -> None:
+) -> int:
     remasked_arrs = np.array(arr_list)
     max_class = np.amax(remasked_arrs)
     delta = floor(255 / (max_class - 1))
@@ -72,16 +72,17 @@ async def _save_as_tiff(
                 rescaled = (seg - 1) * delta
                 large_seg[y0:y1, x0:x1] = rescaled
                 img_count += 1
-        await imwrite(f"{CWD}/{UID}/seg.tiff", large_seg)
+        imwrite(f"{CWD}/{UID}/seg.tiff", large_seg)
     elif mode == "single":
         rescaled = ((remasked_arrs - 1) * delta).astype(np.uint8)
-        await imwrite(f"{CWD}/{UID}/seg.tiff", rescaled)
+        imwrite(f"{CWD}/{UID}/seg.tiff", rescaled)
+    return 0
 
 
-async def _save_classifier(model, CWD: str, UID: str):
+async def _save_classifier(model, CWD: str, UID: str) -> int:
     with open(f"{CWD}/{UID}/classifier.pkl", "wb") as handle:
         dump(model, handle)
-    return
+    return 0
 
 
 async def segment(

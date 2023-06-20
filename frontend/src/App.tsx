@@ -84,6 +84,7 @@ const App = () => {
     maskIdx: [maskIdx],
     labelType: [, setLabelType],
     labelClass: [labelClass],
+    segmentFeature: [segmentFeature, setSegmentFeature],
     processing: [, setProcessing],
     errorObject: [errorObject, setErrorObject],
     showToast: [, setShowToast]
@@ -202,6 +203,8 @@ const App = () => {
     try {
       await fetch(FEATURISE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "id": UID }) });
       console.log("Finished Featurising");
+      const segFeat = { feature: true, segment: segmentFeature.segment }
+      setSegmentFeature(segFeat)
     } catch (e) {
       const error = e as Error;
       setErrorObject({ msg: "Failed to featurise.", stackTrace: error.toString() });
@@ -233,6 +236,11 @@ const App = () => {
     }
     setProcessing("None");
   };
+
+  const trainPressed = () => {
+    const segFeat = { feature: segmentFeature.feature, segment: true }
+    setSegmentFeature(segFeat)
+  }
 
   const trainClassifier = async () => {
     // Ping our segment endpoint, send it our image and labels then await the array.
@@ -376,11 +384,17 @@ const App = () => {
     setSegArr(segArrs[imgIdx]);
   }, [segArrs])
 
+  useEffect(() => {
+    if (segmentFeature.feature == true && segmentFeature.segment == true) {
+      trainClassifier()
+    }
+  }, [segmentFeature])
+
   return <Stage
     loadImages={loadImages}
     loadDefault={loadDefault}
     requestEmbedding={requestEmbedding}
-    trainClassifier={trainClassifier}
+    trainClassifier={trainPressed}
     changeToImage={changeToImage}
     saveSeg={onSaveClick}
     saveClassifier={saveClassifier}

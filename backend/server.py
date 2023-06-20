@@ -66,7 +66,7 @@ async def featurise_respond():
         except FileExistsError:
             pass
         images = [_get_image_from_b64(i) for i in request.json["images"]]
-        await featurise(images, UID)
+        success = await featurise(images, UID)
         with open(f"{CWD}/{UID}/success.txt", "w+") as f:
             f.write("done")
         return _corsify_actual_response(jsonify(success=True))
@@ -93,7 +93,7 @@ def encode_respond():
 
 
 @app.route("/segmenting", methods=["POST", "GET", "OPTIONS"])
-def segment_respond():
+async def segment_respond():
     if "OPTIONS" in request.method:  # CORS preflight
         return _build_cors_preflight_response()
     elif "POST" in request.method:  # The actual request following the preflight
@@ -107,7 +107,9 @@ def segment_respond():
         save_mode = request.json["save_mode"]
         large_w, large_h = request.json["large_w"], request.json["large_h"]
         print(save_mode, large_w, large_h)
-        segmentation = segment(images, labels_dicts, UID, save_mode, large_w, large_h)
+        segmentation = await segment(
+            images, labels_dicts, UID, save_mode, large_w, large_h
+        )
         response = Response(segmentation.tobytes())
         response.headers.add("Content-Type", "application/octet-stream")
         return _corsify_actual_response(response)

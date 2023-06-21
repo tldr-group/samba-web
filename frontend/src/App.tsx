@@ -27,11 +27,13 @@ const DEFAULT_IMAGE = "/assets/data/default_image.png"
 const DEFAULT_EMBEDDING = "/assets/data/default_encoding.npy"
 
 // URLS of our API endpoints - change when live
-const ENCODE_ENDPOINT = "http://127.0.0.1:5000/encoding"
-const FEATURISE_ENDPOINT = "http://127.0.0.1:5000/featurising"
-const SEGMENT_ENDPOINT = "http://127.0.0.1:5000/segmenting"
-const SAVE_ENDPOINT = "http://127.0.0.1:5000/saving"
-const CLASSIFIER_ENDPOINT = "http://127.0.0.1:5000/classifier"
+const PATH = "https://samba-web-demo.azurewebsites.net"
+//const PATH = "http://127.0.0.1:5000"
+const ENCODE_ENDPOINT = PATH + "/encoding"
+const FEATURISE_ENDPOINT = PATH + "/featurising"
+const SEGMENT_ENDPOINT = PATH + "/segmenting"
+const SAVE_ENDPOINT = PATH + "/saving"
+const CLASSIFIER_ENDPOINT = PATH + "/classifier"
 
 const getb64Image = (img: HTMLImageElement): string => {
   // Convert HTML Image to b64 string encoding by drawing onto canvas. Used for sending over HTTP
@@ -82,6 +84,7 @@ const App = () => {
     maskIdx: [maskIdx],
     labelType: [, setLabelType],
     labelClass: [labelClass],
+    segmentFeature: [segmentFeature, setSegmentFeature],
     processing: [, setProcessing],
     errorObject: [errorObject, setErrorObject],
     showToast: [, setShowToast]
@@ -200,6 +203,8 @@ const App = () => {
     try {
       await fetch(FEATURISE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "id": UID }) });
       console.log("Finished Featurising");
+      const segFeat = { feature: true, segment: segmentFeature.segment }
+      setSegmentFeature(segFeat)
     } catch (e) {
       const error = e as Error;
       setErrorObject({ msg: "Failed to featurise.", stackTrace: error.toString() });
@@ -230,7 +235,13 @@ const App = () => {
       setLabelType("Brush")
     }
     setProcessing("None");
+    return
   };
+
+  const trainPressed = () => {
+    const segFeat = { feature: segmentFeature.feature, segment: true }
+    setSegmentFeature(segFeat)
+  }
 
   const trainClassifier = async () => {
     // Ping our segment endpoint, send it our image and labels then await the array.
@@ -374,11 +385,17 @@ const App = () => {
     setSegArr(segArrs[imgIdx]);
   }, [segArrs])
 
+  useEffect(() => {
+    if (segmentFeature.feature == true && segmentFeature.segment == true) {
+      trainClassifier()
+    }
+  }, [segmentFeature])
+
   return <Stage
     loadImages={loadImages}
     loadDefault={loadDefault}
     requestEmbedding={requestEmbedding}
-    trainClassifier={trainClassifier}
+    trainClassifier={trainPressed}
     changeToImage={changeToImage}
     saveSeg={onSaveClick}
     saveClassifier={saveClassifier}

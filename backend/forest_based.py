@@ -11,34 +11,22 @@ say a cloud function or as a smaller part of a threaded classifier object (which
 memoise things like feature computation) that is part of a GUI app.  
 """
 import numpy as np
-from PIL import Image
 from features import multiscale_advanced_features, N_ALLOWED_CPUS
 
-GPU_XGB: bool = False
-try:
-    import xgboost as xgb
-
-    GPU_XGB = True
-except ImportError:
-    print("Cannot import XGBoost, gpu accelerated XGB is unavailable.")
+print(N_ALLOWED_CPUS)
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import HistGradientBoostingClassifier
 
-from multiprocessing import Queue
-
 
 from typing import List, Tuple, TypeAlias, Literal
 
 EnsembleMethod: TypeAlias = (
-    RandomForestClassifier
-    | GradientBoostingClassifier
-    | HistGradientBoostingClassifier
-    | xgb.XGBClassifier
+    RandomForestClassifier | GradientBoostingClassifier | HistGradientBoostingClassifier
 )
 
-EnsembleMethodName: TypeAlias = Literal["FRF", "XGB", "XGB_gpu", "LGBM"]
+EnsembleMethodName: TypeAlias = Literal["FRF", "XGB", "LGBM"]
 
 
 def get_class_weights(target_data: np.ndarray) -> np.ndarray:
@@ -181,7 +169,7 @@ def apply_features_done(
 
 
 def get_model(
-    model_name: EnsembleMethodName = "XGB",
+    model_name: EnsembleMethodName = "FRF",
     n_trees: int = 200,
     n_features: int = 2,
     max_depth: int = 10,
@@ -203,14 +191,6 @@ def get_model(
         )
     elif model_name == "LGBM_cpu":
         model = HistGradientBoostingClassifier()
-    elif model_name == "XGB_gpu":
-        model = xgb.XGBClassifier(
-            tree_method="gpu_hist",
-            n_estimators=n_trees,
-            max_features=n_features,
-            max_depth=depth,
-            n_jobs=N_ALLOWED_CPUS - 1,
-        )
     return model
 
 

@@ -1,11 +1,5 @@
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-// All rights reserved.
-
-// This source code is licensed under the license found in the
-// LICENSE file in the root directory of this source tree.
-
 import React, { useState } from "react";
-import { modelInputProps, Label, ErrorMessage } from "../helpers/Interfaces";
+import { modelInputProps, Label, ErrorMessage, SegmentFeatureState } from "../helpers/Interfaces";
 import AppContext from "./createContext";
 
 const AppContextProvider = (props: {
@@ -40,6 +34,9 @@ const AppContextProvider = (props: {
   const [segOpacity, setSegOpacity] = useState<number>(0.9 * 255);
   const [processing, setProcessing] = useState<"None" | "Encoding" | "Segmenting">("None");
 
+  // Segment Feature stuff
+  const [segmentFeature, setSegmentFeature] = useState<SegmentFeatureState>({ feature: false, segment: false })
+
   // Menus
   const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "", stackTrace: "" })
   const [showToast, setShowToast] = useState<boolean>(false);
@@ -70,6 +67,8 @@ const AppContextProvider = (props: {
         labelOpacity: [labelOpacity, setLabelOpacity],
         segOpacity: [segOpacity, setSegOpacity],
         processing: [processing, setProcessing],
+
+        segmentFeature: [segmentFeature, setSegmentFeature],
 
         errorObject: [errorObject, setErrorObject],
         showToast: [showToast, setShowToast],

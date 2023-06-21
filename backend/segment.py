@@ -10,24 +10,10 @@ from pickle import dump
 
 from forest_based import segment_with_features
 
-
-def _check_featurising_done(n_imgs: int, UID: str):
-    # TODO: ensure this doesn't block threads. Not sure this is a good idea.
-    quit = False
-    finished_writing = False
-    while quit is False:
-        n_feature_files = 0
-        files = os.listdir(UID)
-        for fname in files:
-            if "features" in fname:
-                n_feature_files += 1
-            if "success" in fname:
-                finished_writing = True
-        if n_feature_files == n_imgs and finished_writing:
-            quit = True
-            print("Featurising done!")
-        else:
-            sleep(0.25)
+try:
+    CWD = os.environ["APP_PATH"]
+except KeyError:
+    CWD = os.getcwd()
 
 
 def _get_split_inds(w: int, h: int) -> dict:
@@ -41,9 +27,9 @@ def _get_split_inds(w: int, h: int) -> dict:
     return inds
 
 
-def _save_as_tiff(
+async def _save_as_tiff(
     arr_list: List[np.ndarray], mode: str, UID: str, large_w: int = 0, large_h: int = 0
-) -> None:
+) -> int:
     remasked_arrs = np.array(arr_list)
     max_class = np.amax(remasked_arrs)
     delta = floor(255 / (max_class - 1))
@@ -67,13 +53,20 @@ def _save_as_tiff(
                 rescaled = (seg - 1) * delta
                 large_seg[y0:y1, x0:x1] = rescaled
                 img_count += 1
-        imwrite(f"{UID}/seg.tiff", large_seg)
+        imwrite(f"{CWD}/{UID}/seg.tiff", large_seg)
     elif mode == "single":
         rescaled = ((remasked_arrs - 1) * delta).astype(np.uint8)
-        imwrite(f"{UID}/seg.tiff", rescaled)
+        imwrite(f"{CWD}/{UID}/seg.tiff", rescaled)
+    return 0
 
 
-def segment(
+async def _save_classifier(model, CWD: str, UID: str) -> int:
+    with open(f"{CWD}/{UID}/classifier.pkl", "wb") as handle:
+        dump(model, handle)
+    return 0
+
+
+async def segment(
     images: List[Image.Image],
     labels_dicts: List[dict],
     UID: str,
@@ -96,8 +89,6 @@ def segment(
         label_arr = np.array(labels_list).reshape(image.height, image.width)
 
         label_arrs.append(label_arr)
-    # Block until featurising thread done
-    _check_featurising_done(len(label_arrs), UID)
 
     remasked_arrs_list: List[np.ndarray] = []
     remasked_flattened_arrs: np.ndarray
@@ -114,8 +105,7 @@ def segment(
             remasked_flattened_arrs = np.concatenate(
                 (remasked_flattened_arrs, remasked.flatten()), axis=0, dtype=np.uint8
             )
-    _save_as_tiff(remasked_arrs_list, save_mode, UID, large_w, large_h)
-    with open(f"{UID}/classifier.pkl", "wb") as handle:
-        dump(model, handle)
+    await _save_as_tiff(remasked_arrs_list, save_mode, UID, large_w, large_h)
+    await _save_classifier(model, CWD, UID)
     print(remasked_flattened_arrs.shape, label_arrs[0].shape)
     return remasked_flattened_arrs

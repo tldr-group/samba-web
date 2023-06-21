@@ -1,9 +1,3 @@
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-// All rights reserved.
-
-// This source code is licensed under the license found in the
-// LICENSE file in the root directory of this source tree.
-
 import { Tensor } from "onnxruntime-web";
 
 export type Label = "Smart Labelling" | "Polygon" | "Brush" | "Erase"
@@ -86,4 +80,9 @@ export const getHTTPRequest = (url: string) => {
 export interface ErrorMessage {
   msg: string;
   stackTrace: string;
-} 
+}
+
+export interface SegmentFeatureState {
+  feature: boolean;
+  segment: boolean;
+}

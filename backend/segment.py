@@ -16,25 +16,6 @@ except KeyError:
     CWD = os.getcwd()
 
 
-def _check_featurising_done(n_imgs: int, UID: str):
-    # TODO: ensure this doesn't block threads. Not sure this is a good idea.
-    quit = False
-    finished_writing = False
-    while quit is False:
-        n_feature_files = 0
-        files = os.listdir(UID)
-        for fname in files:
-            if "features" in fname:
-                n_feature_files += 1
-            if "success" in fname:
-                finished_writing = True
-        if n_feature_files == n_imgs and finished_writing:
-            quit = True
-            print("Featurising done!")
-        else:
-            sleep(0.25)
-
-
 def _get_split_inds(w: int, h: int) -> dict:
     nW = ceil(w / 1024)
     nH = ceil(h / 1024)
@@ -108,8 +89,6 @@ async def segment(
         label_arr = np.array(labels_list).reshape(image.height, image.width)
 
         label_arrs.append(label_arr)
-    # Block until featurising thread done
-    # _check_featurising_done(len(label_arrs), UID)
 
     remasked_arrs_list: List[np.ndarray] = []
     remasked_flattened_arrs: np.ndarray

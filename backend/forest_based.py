@@ -13,6 +13,8 @@ memoise things like feature computation) that is part of a GUI app.
 import numpy as np
 from features import multiscale_advanced_features, N_ALLOWED_CPUS
 
+print(N_ALLOWED_CPUS)
+
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import HistGradientBoostingClassifier

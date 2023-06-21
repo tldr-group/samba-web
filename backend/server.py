@@ -84,7 +84,7 @@ def encode_respond():
             os.mkdir(f"{CWD}/{UID}")
         except FileExistsError:
             pass
-        encoded_bytes = encode(image, UID, image_id)
+        encoded_bytes = encode(image)
         response = Response(encoded_bytes)
         response.headers.add("Content-Type", "application/octet-stream")
         return _corsify_actual_response(response)

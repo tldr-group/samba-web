@@ -17,6 +17,8 @@ import ToastContainer from "react-bootstrap/ToastContainer";
 import InputGroup from "react-bootstrap/InputGroup";
 import Form from "react-bootstrap/Form"
 
+const MAX_FILE_SIZE_BYTES = 1024 * 1024 * 50 // 50MB
+
 
 const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, changeToImage, saveSeg, saveClassifier }: StageProps) => {
   const {
@@ -101,6 +103,10 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, cha
     const isTIF = (extension === "tif" || extension === "tiff");
     const isPNGJPG = (extension === "png" || extension === "jpg" || extension === "jpeg");
     reader.onload = () => {
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        setErrorObject({ msg: `File size too large, please upload smaller image (<50MB).`, stackTrace: `File size .${file.size} > .${MAX_FILE_SIZE_BYTES}` });
+        return
+      }
       try {
         if (isTIF) {
           loadTIFF(reader.result as ArrayBuffer);

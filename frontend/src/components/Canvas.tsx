@@ -185,7 +185,9 @@ const MultiCanvas = () => {
             // Perform desired actions for number key press
             console.log('Number key pressed:', e.key);
             setLabelClass(parseInt(e.key));
-            updateSAM();
+            if (labelType === "Smart Labelling") {
+                updateSAM();
+            }
         } else if (e.key === 'Escape') {
             resetLabels()
         } else {

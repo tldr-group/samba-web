@@ -107,10 +107,11 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
             </Card.Body>
             <Card.Body>
                 Class <p style={{ margin: "0px" }}></p>
-                <ButtonGroup style={{ paddingLeft: "4%", marginLeft: '5%' }}>
+                <ButtonGroup style={{ paddingLeft: "3%", marginLeft: '0%' }}>
                     {classes.map(i => <Button key={i} variant="light" onClick={(e) => setLabelClass(i)} style={{
                         backgroundColor: _getCSSColour(i, labelClass, "", labelClass),
-                        border: _getCSSColour(i, labelClass, "2px solid", labelClass),
+                        border: _getCSSColour(i, i, "2px solid", i),
+                        margin: '1px 1px 1px 1px'
                     }}>{i}</Button>)}
                 </ButtonGroup>
             </Card.Body>

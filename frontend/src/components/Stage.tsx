@@ -199,7 +199,7 @@ const DragDrop = ({ loadDefault, loadFromFile }: DragDropProps) => {
       onDragOver={handleDrag}
       onDrop={handeDrop}
     >
-      <span>Drag image file(s) or&nbsp; </span> <a style={{ cursor: "pointer", color: 'blue' }} onClick={loadDefault}> load default micrograph</a>
+      <span>Drag image file(s) or&nbsp; </span> <a style={{ cursor: "pointer", color: 'blue' }} onClick={loadDefault}> view example image</a>
     </div>
   )
 }

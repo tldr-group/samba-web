@@ -20,7 +20,7 @@ import Form from "react-bootstrap/Form"
 const MAX_FILE_SIZE_BYTES = 1024 * 1024 * 50 // 50MB
 
 
-const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, changeToImage, saveSeg, saveClassifier }: StageProps) => {
+const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, changeToImage, saveSeg, saveLabels, saveClassifier }: StageProps) => {
   const {
     image: [image,],
     imgType: [, setImgType],
@@ -132,7 +132,7 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, cha
 
   return (
     <div className={`w-full h-full`} >
-      <Topbar loadFromFile={loadFromFile} saveSeg={saveSeg} saveClassifier={saveClassifier} />
+      <Topbar loadFromFile={loadFromFile} saveSeg={saveSeg} saveLabels={saveLabels} saveClassifier={saveClassifier} />
       <div className={`flex`} style={{ margin: '1.5%' }}> {/*Canvas div on left, sidebar on right*/}
         <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`}>
           {!image && <DragDrop loadFromFile={loadFromFile} loadDefault={loadDefault} />}

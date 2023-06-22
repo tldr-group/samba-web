@@ -25,7 +25,7 @@ export const ToolTip = (str: string) => {
 }
 
 
-const Topbar = ({ loadFromFile, saveSeg, saveClassifier }: TopbarProps) => {
+const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier }: TopbarProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Common pattern for opening file dialog w/ button: hidden <input> who is clicked when button is clicked.
@@ -74,8 +74,7 @@ const Topbar = ({ loadFromFile, saveSeg, saveClassifier }: TopbarProps) => {
                             </NavDropdown.Item>
                         </NavDropdown>
                         <NavDropdown title="Labels" id="data-dropdown">
-                            <NavDropdown.Item>Save</NavDropdown.Item>
-                            <NavDropdown.Item>Load</NavDropdown.Item>
+                            <NavDropdown.Item onClick={saveLabels}>Save</NavDropdown.Item>
                             <NavDropdown.Divider />
                             <NavDropdown.Item>
                                 Save Encoding

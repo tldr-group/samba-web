@@ -31,12 +31,14 @@ export interface StageProps {
   trainClassifier: () => void;
   changeToImage: (oldIdx: number, newIdx: number) => void;
   saveSeg: () => void;
+  saveLabels: () => void;
   saveClassifier: () => void;
 }
 
 export interface TopbarProps {
   loadFromFile: (file: File) => void;
   saveSeg: () => void;
+  saveLabels: () => void;
   saveClassifier: () => void;
 }
 

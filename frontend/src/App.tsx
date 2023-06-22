@@ -34,6 +34,7 @@ const FEATURISE_ENDPOINT = PATH + "/featurising"
 const SEGMENT_ENDPOINT = PATH + "/segmenting"
 const SAVE_ENDPOINT = PATH + "/saving"
 const CLASSIFIER_ENDPOINT = PATH + "/classifier"
+const SAVE_LABEL_ENDPOINT = PATH + "/slabel"
 
 const getb64Image = (img: HTMLImageElement): string => {
   // Convert HTML Image to b64 string encoding by drawing onto canvas. Used for sending over HTTP
@@ -302,16 +303,14 @@ const App = () => {
     console.log("Finished segmenting");
   }
 
-  const onSaveClick = async () => {
-    // TODO: abstract this download with temp element and sending generic http request.
-    if (image === null || segArr === null) { return; }
+  const saveArrAsTIFF = async (ENDPOINT: string, body_text: any, fname: string) => {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     try {
-      let resp = await fetch(SAVE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID }) })
+      let resp = await fetch(ENDPOINT, { method: 'POST', headers: headers, body: body_text })
       const buffer = await resp.arrayBuffer();
       const a = document.createElement("a")
-      a.download = "seg.tiff"
+      a.download = fname
       const file = new Blob([buffer], { type: "image/tiff" });
       a.href = URL.createObjectURL(file);
       a.click()
@@ -319,6 +318,26 @@ const App = () => {
       const error = e as Error;
       setErrorObject({ msg: "Failed to dowload TIFF.", stackTrace: error.toString() });
     }
+  }
+
+  const onSaveClick = async () => {
+    if (image === null || segArr === null) { return; }
+    saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID }), "seg.tiff")
+  }
+
+  const saveLabels = async () => {
+    if (image === null || labelArr === null) { return; }
+    const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
+    setLabelArrs(newLabelArrs);
+    const b64images: string[] = imgArrs.map((img, i) => getb64Image(img));
+    let [largeW, largeH]: Array<number> = [0, 0]
+    if (imgType === "large" && largeImg !== null) {
+      largeW = largeImg.width
+      largeH = largeImg.height
+    }
+    const dict = { "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType, "large_w": largeW, "large_h": largeH }
+    const msg = JSON.stringify(dict)
+    saveArrAsTIFF(SAVE_LABEL_ENDPOINT, msg, "label.tiff")
   }
 
   const saveClassifier = async () => {
@@ -398,6 +417,7 @@ const App = () => {
     trainClassifier={trainPressed}
     changeToImage={changeToImage}
     saveSeg={onSaveClick}
+    saveLabels={saveLabels}
     saveClassifier={saveClassifier}
   />;
 };

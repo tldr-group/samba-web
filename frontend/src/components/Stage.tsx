@@ -136,7 +136,7 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, cha
       </div>
       <ErrorMessage />
       <PostSegToast />
-      <BigModal />
+      <BigModal requestEmbedding={requestEmbedding} />
     </div >
   );
 };

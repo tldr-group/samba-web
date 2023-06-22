@@ -5,7 +5,7 @@ The three large modals: Welcome, Settings, Features, the smaller error modal and
 
 import React, { useContext, useEffect, useRef, useState } from "react";
 import AppContext from "./hooks/createContext";
-import { closeModal } from "./helpers/Interfaces"
+import { Features, closeModal, LabelFrameProps, FeatureModalProps } from "./helpers/Interfaces"
 
 
 import Accordion from 'react-bootstrap/Accordion';
@@ -18,7 +18,7 @@ import InputGroup from "react-bootstrap/InputGroup";
 import Form from "react-bootstrap/Form"
 import { FormCheck } from "react-bootstrap";
 
-const BigModal = () => {
+const BigModal = ({ requestEmbedding }: LabelFrameProps) => {
     const {
         modalShow: [modalShow, setModalShow]
     } = useContext(AppContext)!;
@@ -28,7 +28,7 @@ const BigModal = () => {
     return (
         <Modal show={modalShow.welcome || modalShow.settings || modalShow.features} onHide={handleClose} size="lg">
             {(modalShow.welcome && <WelcomeModalContent />)}
-            {(modalShow.features) && <FeatureModalContent closeModal={handleClose} />}
+            {(modalShow.features) && <FeatureModalContent closeModal={handleClose} requestEmbedding={requestEmbedding} />}
         </Modal>
     )
 }
@@ -60,28 +60,40 @@ const WelcomeModalContent = () => {
     )
 }
 
-const FeatureModalContent = ({ closeModal }: closeModal) => {
+const FeatureModalContent = ({ closeModal, requestEmbedding }: FeatureModalProps) => {
     const {
         features: [features, setFeatures]
     } = useContext(AppContext)!;
 
     const updateClose = () => {
         closeModal()
+        requestEmbedding()
     }
+
+    const updateFeatures = (prev: any, newKey: string, newVal: string) => {
+        const newFeats = prev
+        newFeats[newKey] = parseFloat(newVal)
+        setFeatures(newFeats as Features)
+    }
+
+    const change = (e: any, feats: Features, newKey: string, newVal: string) => {
+        updateFeatures(feats, newKey, newVal)
+    }
+
 
     const getElemForDict = (key: string, value: string, i: number) => {
         const numeric = ["Membrane Thickness", "Membrane Patch Size", "Minimum Sigma", "Maximum Sigma"]
         const startVal = 14
-        const vals: number[][] = [[1, 5, 1, 1], [5, 25, 17, 1], [0, 64, 0.5, 0.5], [0, 64, 16, 0.5]]
-        console.log(key)
+        const vals: number[][] = [[1, 5, 1, 1], [5, 25, 17, 2], [0, 64, 0.5, 0.5], [0, 64, 16, 0.5]]
         if (numeric.includes(key)) {
             let [a, b, c, d] = vals[i - startVal]
-            return (<InputGroup>
+            return (<InputGroup key={i}>
                 <InputGroup.Text>{key}</InputGroup.Text>
-                <Form.Control type="number" width={3} key={key} min={a} max={b} value={parseFloat(value)} step={d}></Form.Control >
+                <Form.Control type="number" width={3}
+                    key={key} min={a} max={b} defaultValue={parseFloat(value)} step={d} onChange={(e) => change(e, features, key, e.target.value)}></Form.Control >
             </InputGroup>)
         } else {
-            return <Form.Check type="checkbox" label={key} key={key} style={{ gridColumn: (i % 2) + 1 }} checked={parseInt(value) as unknown as boolean} />
+            return <Form.Check type="checkbox" label={key} key={key} onChange={(e) => change(e, features, key, e.target.value)} style={{ gridColumn: (i % 2) + 1 }} defaultChecked={parseInt(value) as unknown as boolean} />
         }
     }
 

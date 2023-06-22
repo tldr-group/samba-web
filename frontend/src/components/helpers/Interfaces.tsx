@@ -95,8 +95,14 @@ export interface ModalShow {
   features: boolean;
 }
 
+
 export interface closeModal {
   closeModal: () => void;
+}
+
+export interface FeatureModalProps {
+  closeModal: () => void;
+  requestEmbedding: () => void;
 }
 
 export interface Features {

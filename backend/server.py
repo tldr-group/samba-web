@@ -61,12 +61,13 @@ async def featurise_respond():
         return _build_cors_preflight_response()
     elif "POST" in request.method:
         UID = request.json["id"]
+        features = request.json["features"]
         try:
             os.mkdir(f"{CWD}/{UID}")
         except FileExistsError:
             pass
         images = [_get_image_from_b64(i) for i in request.json["images"]]
-        success = await featurise(images, UID)
+        success = await featurise(images, UID, selected_features=features)
         with open(f"{CWD}/{UID}/success.txt", "w+") as f:
             f.write("done")
         return _corsify_actual_response(jsonify(success=True))
@@ -78,7 +79,6 @@ def encode_respond():
         return _build_cors_preflight_response()
     elif "POST" in request.method:  # The actual request following the preflight
         image = _get_image_from_b64(request.json["message"])
-        image_id = int(request.json["img_idx"])
         UID = request.json["id"]
         try:
             os.mkdir(f"{CWD}/{UID}")
@@ -106,6 +106,7 @@ async def segment_respond():
             pass
         save_mode = request.json["save_mode"]
         large_w, large_h = request.json["large_w"], request.json["large_h"]
+        print(request.json["features"])
         segmentation = await segment(
             images, labels_dicts, UID, save_mode, large_w, large_h
         )

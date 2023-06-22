@@ -20,6 +20,7 @@ import AppContext from "./components/hooks/createContext";
 const ort = require("onnxruntime-web");
 /* @ts-ignore */
 import npyjs from "npyjs";
+import { features } from "process";
 
 
 const MODEL_DIR = "/model/sam_onnx_quantized_example.onnx";
@@ -86,10 +87,11 @@ const App = () => {
     labelType: [, setLabelType],
     labelClass: [labelClass],
     segmentFeature: [segmentFeature, setSegmentFeature],
+    features: [features,],
     processing: [, setProcessing],
     errorObject: [errorObject, setErrorObject],
     showToast: [, setShowToast],
-    modalShow: [, setModalShow]
+    modalShow: [, setModalShow],
   } = useContext(AppContext)!;
 
   const [model, setModel] = useState<InferenceSession | null>(null); // ONNX model
@@ -207,7 +209,7 @@ const App = () => {
     headers.append('Content-Type', 'application/json;charset=utf-8');
     console.log("Started Featurising");
     try {
-      await fetch(FEATURISE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "id": UID }) });
+      await fetch(FEATURISE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "id": UID, "features": features }) });
       console.log("Finished Featurising");
       const segFeat = { feature: true, segment: segmentFeature.segment }
       setSegmentFeature(segFeat)

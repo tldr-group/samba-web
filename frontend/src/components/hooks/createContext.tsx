@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { modelInputProps, Label, ErrorMessage, SegmentFeatureState, ModalShow } from "../helpers/Interfaces";
+import { modelInputProps, Label, ErrorMessage, SegmentFeatureState, ModalShow, Features } from "../helpers/Interfaces";
 
 interface contextProps {
   largeImg: [
@@ -92,6 +92,10 @@ interface contextProps {
   segmentFeature: [
     segmentFeature: SegmentFeatureState,
     setSegmentFeature: (e: SegmentFeatureState) => void
+  ]
+  features: [
+    features: Features,
+    setFeatures: (e: Features) => void
   ]
 
   errorObject: [

@@ -94,3 +94,49 @@ export interface ModalShow {
   settings: boolean;
   features: boolean;
 }
+
+export interface closeModal {
+  closeModal: () => void;
+}
+
+export interface Features {
+  "Gaussian Blur": number;
+  "Sobel Filter": number;
+  "Hessian": number;
+  "Difference of Gaussians": number;
+  "Membrane Projections": number;
+  "Mean": number;
+  "Minimum": number;
+  "Maximum": number;
+  "Median": number;
+  "Bilateral": number;
+  "Derivatives": number;
+  "Structure": number;
+  "Entropy": number;
+  "Neighbours": number;
+  "Membrane Thickness": number;
+  "Membrane Patch Size": number;
+  "Minimum Sigma": number;
+  "Maximum Sigma": number;
+}
+
+export const defaultFeatures = {
+  "Gaussian Blur": 1,
+  "Sobel Filter": 1,
+  "Hessian": 1,
+  "Difference of Gaussians": 1,
+  "Membrane Projections": 1,
+  "Mean": 0,
+  "Minimum": 0,
+  "Maximum": 0,
+  "Median": 0,
+  "Bilateral": 0,
+  "Derivatives": 0,
+  "Structure": 0,
+  "Entropy": 0,
+  "Neighbours": 1,
+  "Membrane Thickness": 1,
+  "Membrane Patch Size": 17,
+  "Minimum Sigma": 0.5,
+  "Maximum Sigma": 16,
+}

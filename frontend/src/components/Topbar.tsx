@@ -55,7 +55,10 @@ const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier }: TopbarPro
         if (i === "Settings") {
             const newModalShow: ModalShow = { welcome: false, settings: true, features: false }
             setModalShow(newModalShow)
-        };
+        } else if (i === "Features") {
+            const newModalShow: ModalShow = { welcome: false, settings: false, features: true }
+            setModalShow(newModalShow)
+        }
     };
 
     return (
@@ -80,7 +83,7 @@ const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier }: TopbarPro
                             <NavDropdown.Item onClick={saveClassifier}>Save</NavDropdown.Item>
                             <NavDropdown.Item >Load</NavDropdown.Item>
                             <NavDropdown.Divider />
-                            <NavDropdown.Item>
+                            <NavDropdown.Item onClick={(e) => iconClick(e, "Features")}>
                                 Features
                             </NavDropdown.Item>
                         </NavDropdown>

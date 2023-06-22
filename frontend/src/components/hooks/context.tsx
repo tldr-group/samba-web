@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { modelInputProps, Label, ErrorMessage, SegmentFeatureState, ModalShow } from "../helpers/Interfaces";
+import { modelInputProps, Label, ErrorMessage, SegmentFeatureState, ModalShow, Features, defaultFeatures } from "../helpers/Interfaces";
 import AppContext from "./createContext";
 
 const AppContextProvider = (props: {
@@ -36,6 +36,7 @@ const AppContextProvider = (props: {
 
   // Segment Feature stuff
   const [segmentFeature, setSegmentFeature] = useState<SegmentFeatureState>({ feature: false, segment: false })
+  const [features, setFeatures] = useState<Features>(defaultFeatures)
 
   // Menus
   const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "", stackTrace: "" })
@@ -70,6 +71,7 @@ const AppContextProvider = (props: {
         processing: [processing, setProcessing],
 
         segmentFeature: [segmentFeature, setSegmentFeature],
+        features: [features, setFeatures],
 
         errorObject: [errorObject, setErrorObject],
         showToast: [showToast, setShowToast],

@@ -90,6 +90,28 @@ const MultiCanvas = () => {
         return arr
     }
 
+    const finishPolygon = (polygon: Array<Offset>, labelIdx: number, labelImg: HTMLImageElement, ctx: CanvasRenderingContext2D) => {
+        const c = colours[labelClass];
+        const hex = rgbaToHex(c[0], c[1], c[2], 255);
+        drawPolygon(ctx, polygon, hex, true)
+        const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr)
+        if (arr !== undefined) { setLabelArr(arr); }
+        polyPoints.current = []
+    }
+
+    const checkSnap = (x: number, y: number, points: Array<Offset>) => {
+        if (points.length <= 1) {
+            return { success: false, x: -1, y: -1 };
+        }
+        const x0 = points[0].x;
+        const y0 = points[0].y;
+        if ((x - x0) ** 2 + (y - y0) ** 2 < 250) {
+            return { success: true, x: x0, y: y0 };
+        } else {
+            return { success: false, x: -1, y: -1 };
+        };
+    };
+
     const handleClickEnd = (e: any) => {
         // Once a click finishes, get current labelling state and apply correct action
         const drawing = (labelType == "Brush" || labelType == "Erase");
@@ -121,18 +143,19 @@ const MultiCanvas = () => {
             clearctx(animatedCanvasRef);
             //setLabelArr(arr);
         } else if (labelType === "Polygon" && leftClick) {
-            const newPoly = appendArr(polyPoints.current, mousePos.current);
-            polyPoints.current = newPoly;
+            const snap = checkSnap(mousePos.current.x, mousePos.current.y, polyPoints.current)
+            if (snap.success) {
+                finishPolygon(polyPoints.current, labelClass, labelImg, ctx)
+                clearctx(animatedCanvasRef)
+            } else {
+                const newPoly = appendArr(polyPoints.current, mousePos.current);
+                polyPoints.current = newPoly;
+            }
         } else if (labelType === "Polygon" && rightClick) {
             const animctx = getctx(animatedOverlayRef)
             if (animctx === null) { return }
             const newPoly = appendArr(polyPoints.current, mousePos.current);
-            const c = colours[labelClass];
-            const hex = rgbaToHex(c[0], c[1], c[2], 255);
-            drawPolygon(ctx, newPoly, hex, true)
-            const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr)
-            if (arr !== undefined) { setLabelArr(arr); }
-            polyPoints.current = []
+            finishPolygon(newPoly, labelClass, labelImg, ctx)
             clearctx(animatedCanvasRef)
         }
     };
@@ -248,9 +271,14 @@ const MultiCanvas = () => {
         } else if (labelType === "Erase") {
             drawErase(ctx, mousePos.current.x, mousePos.current.y, brushWidth, false);
         } else if (labelType === "Polygon") {
-            if (polyPoints.current.length > 0) {
+            const pointsPlaced = (polyPoints.current.length > 0)
+            if (pointsPlaced) {
                 drawPolygon(ctx, polyPoints.current, hex);
-                drawPolygon(ctx, [polyPoints.current[polyPoints.current.length - 1], mousePos.current], hex)
+                drawPolygon(ctx, [polyPoints.current[polyPoints.current.length - 1], mousePos.current], hex);
+                const snap = checkSnap(mousePos.current.x, mousePos.current.y, polyPoints.current)
+                if (snap.success) {
+                    draw(ctx, snap.x, snap.y, 10, hex, false);
+                }
             }
         }
         animationRef.current = requestAnimationFrame(animation);

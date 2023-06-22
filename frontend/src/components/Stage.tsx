@@ -104,7 +104,7 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, cha
     const isPNGJPG = (extension === "png" || extension === "jpg" || extension === "jpeg");
     reader.onload = () => {
       if (file.size > MAX_FILE_SIZE_BYTES) {
-        setErrorObject({ msg: `File size too large, please upload smaller image (<50MB).`, stackTrace: `File size .${file.size} > .${MAX_FILE_SIZE_BYTES}` });
+        setErrorObject({ msg: `File size too large, please upload smaller image (<50MB).`, stackTrace: `File size ${file.size} > ${MAX_FILE_SIZE_BYTES}` });
         return
       }
       try {

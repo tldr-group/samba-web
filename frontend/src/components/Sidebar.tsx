@@ -23,6 +23,25 @@ import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import * as _ from "underscore";
 
 
+const _getCSSColour = (currentStateVal: any, targetStateVal: any, successPrefix: string, colourIdx: number): string => {
+    // Boring function to map a success to current labelling colour. Used for GUI elements.
+    const c = colours[colourIdx];
+    const hex = rgbaToHex(c[0], c[1], c[2], 255);
+    const matches: boolean = (currentStateVal === targetStateVal);
+    const erase: boolean = (targetStateVal === "Erase" && matches);
+
+    let outlineStr: string;
+    if (erase) {
+        outlineStr = successPrefix + "#ffffff";
+    } else if (matches) {
+        outlineStr = successPrefix + hex;
+    } else {
+        outlineStr = "";
+    }
+    return outlineStr;
+}
+
+
 const Sidebar = ({ requestEmbedding, trainClassifier, changeToImage }: SidebarProps) => {
     // holds all the stuff on the side of the screen: train button, label frame, overlay frame and a hidden spin wheel that displays when encoding or segmenting
     return (
@@ -63,23 +82,7 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
         };
     };
     const _setWidth = (e: any) => { setBrushWidth(e.target.value) }
-    const _getCSSColour = (currentStateVal: any, targetStateVal: any, successPrefix: string, colourIdx: number): string => {
-        // Boring function to map a success to current labelling colour. Used for GUI elements.
-        const c = colours[colourIdx];
-        const hex = rgbaToHex(c[0], c[1], c[2], 255);
-        const matches: boolean = (currentStateVal === targetStateVal);
-        const erase: boolean = (targetStateVal === "Erase" && matches);
 
-        let outlineStr: string;
-        if (erase) {
-            outlineStr = successPrefix + "#ffffff";
-        } else if (matches) {
-            outlineStr = successPrefix + hex;
-        } else {
-            outlineStr = "";
-        }
-        return outlineStr;
-    }
 
     return (
         <Card className="bg-dark text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }}>
@@ -187,9 +190,23 @@ const SpinWheel = () => {
             <Button disabled style={{
                 backgroundColor: hex, borderColor: hex, width: '18rem', margin: '15%'
             }}>
-                < Spinner as='span' animation="border" />
+                {(processing === "Encoding" &&
+                    <div style={{ display: 'grid', placeItems: 'center' }} >
+                        < Spinner as='span' animation="grow" role="status" style={{
+                            gridColumn: 1, gridRow: 1
+                        }} />
+                        <img src={"../assets/icons/smart.png"} style={
+                            {
+                                backgroundColor: _getCSSColour("foo", "foo", "3px solid ", labelClass), width: '30px',
+                                gridColumn: 1, gridRow: 1, zIndex: 2
+                            }
+                        }></img>
+                    </div>
+                )
+                }
+                {processing === "Segmenting" && < Spinner as='span' animation="border" />}
                 <p style={{ marginBottom: '-4px' }}>{processing}</p>
-            </Button>
+            </Button >
         </div >)
     }
 

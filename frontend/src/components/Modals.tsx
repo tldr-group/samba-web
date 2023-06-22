@@ -31,6 +31,15 @@ const BigModal = () => {
 }
 
 const WelcomeModalContent = () => {
+    const setNoShow = (e: any) => {
+        console.log(e.target.checked)
+        if (e.target.checked == true) {
+            localStorage.setItem("showHelp", "false")
+        } else {
+            localStorage.setItem("showHelp", "true")
+        }
+    }
+
     return (
         <>
             <Modal.Header closeButton>
@@ -42,7 +51,7 @@ const WelcomeModalContent = () => {
                 <p>Once you've labelled an example of each class, press <b>"Train Classifier"</b> to segment the image. If you still need help, check out the <a href="https://github.com/tldr-group/samba-web/manual.md">manual</a> or watch a <a href="coming-soon">video tutorial</a>. Have fun!</p>
             </Modal.Body>
             <Modal.Footer>
-                <Form.Check type="checkbox" label="Do not show again" />
+                <Form.Check type="checkbox" label="Do not show again" onChange={setNoShow} />
             </Modal.Footer>
         </>
     )

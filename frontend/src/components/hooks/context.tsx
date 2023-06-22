@@ -40,7 +40,7 @@ const AppContextProvider = (props: {
   // Menus
   const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "", stackTrace: "" })
   const [showToast, setShowToast] = useState<boolean>(false);
-  const [modalShow, setModalShow] = useState<ModalShow>({ welcome: true, settings: false, features: false })
+  const [modalShow, setModalShow] = useState<ModalShow>({ welcome: false, settings: false, features: false })
 
   return (
     <AppContext.Provider

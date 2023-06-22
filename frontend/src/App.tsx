@@ -88,7 +88,8 @@ const App = () => {
     segmentFeature: [segmentFeature, setSegmentFeature],
     processing: [, setProcessing],
     errorObject: [errorObject, setErrorObject],
-    showToast: [, setShowToast]
+    showToast: [, setShowToast],
+    modalShow: [, setModalShow]
   } = useContext(AppContext)!;
 
   const [model, setModel] = useState<InferenceSession | null>(null); // ONNX model
@@ -113,6 +114,10 @@ const App = () => {
       }
     };
     initModel();
+    const showHelp = localStorage.getItem("showHelp")
+    if (showHelp === null || showHelp === "true") {
+      setModalShow({ welcome: true, settings: false, features: false })
+    }
   }, []);
 
   const loadImages = async (hrefs: string[]) => {

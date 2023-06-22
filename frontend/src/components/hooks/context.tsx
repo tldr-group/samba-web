@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { modelInputProps, Label, ErrorMessage, SegmentFeatureState } from "../helpers/Interfaces";
+import { modelInputProps, Label, ErrorMessage, SegmentFeatureState, ModalShow } from "../helpers/Interfaces";
 import AppContext from "./createContext";
 
 const AppContextProvider = (props: {
@@ -40,6 +40,7 @@ const AppContextProvider = (props: {
   // Menus
   const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "", stackTrace: "" })
   const [showToast, setShowToast] = useState<boolean>(false);
+  const [modalShow, setModalShow] = useState<ModalShow>({ welcome: true, settings: false, features: false })
 
   return (
     <AppContext.Provider
@@ -72,6 +73,7 @@ const AppContextProvider = (props: {
 
         errorObject: [errorObject, setErrorObject],
         showToast: [showToast, setShowToast],
+        modalShow: [modalShow, setModalShow],
       }}
     >
       {props.children}

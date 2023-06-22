@@ -88,3 +88,9 @@ export interface SegmentFeatureState {
   feature: boolean;
   segment: boolean;
 }
+
+export interface ModalShow {
+  welcome: boolean;
+  settings: boolean;
+  features: boolean;
+}

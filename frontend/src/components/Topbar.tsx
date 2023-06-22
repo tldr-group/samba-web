@@ -5,7 +5,7 @@
 
 import React, { useRef, useContext } from "react";
 import AppContext from "./hooks/createContext";
-import { TopbarProps } from "./helpers/Interfaces";
+import { TopbarProps, ModalShow } from "./helpers/Interfaces";
 
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
@@ -26,6 +26,9 @@ export const ToolTip = (str: string) => {
 
 
 const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier }: TopbarProps) => {
+    const {
+        modalShow: [modalShow, setModalShow]
+    } = useContext(AppContext)!;
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Common pattern for opening file dialog w/ button: hidden <input> who is clicked when button is clicked.
@@ -42,10 +45,18 @@ const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier }: TopbarPro
     }
 
     const icons: string[][] = [
+        ["Settings", "settings.png", ""],
         ["Paper", "paper.png", "coming_soon"],
         ["Help", "help.png", "https://github.com/tldr-group/samba-web"],
         ["TLDR Group", "tldr.png", "https://tldr-group.github.io/#/"]
     ]
+
+    const iconClick = (e: any, i: string) => {
+        if (i === "Settings") {
+            const newModalShow: ModalShow = { welcome: false, settings: true, features: false }
+            setModalShow(newModalShow)
+        };
+    };
 
     return (
         <Navbar bg="dark" variant="dark" expand="lg" style={{ boxShadow: "1px 1px  1px grey" }}>
@@ -73,13 +84,7 @@ const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier }: TopbarPro
                                 Features
                             </NavDropdown.Item>
                         </NavDropdown>
-                        <NavDropdown title="Labels" id="data-dropdown">
-                            <NavDropdown.Item onClick={saveLabels}>Save</NavDropdown.Item>
-                            <NavDropdown.Divider />
-                            <NavDropdown.Item>
-                                Save Encoding
-                            </NavDropdown.Item>
-                        </NavDropdown>
+                        <Nav.Link onClick={saveLabels}>Save Labels</Nav.Link>
                         <Nav.Link onClick={saveSeg}>Save Segmentation</Nav.Link>
                     </Nav>
                 </Navbar.Collapse>
@@ -98,6 +103,7 @@ const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier }: TopbarPro
                         height="30"
                         className="d-inline-block align-top"
                         style={{ backgroundColor: '#ffffff', borderRadius: '20px' }}
+                        onClick={(e) => iconClick(e, i[0])}
                     />
                 </Navbar.Brand>
             </OverlayTrigger>

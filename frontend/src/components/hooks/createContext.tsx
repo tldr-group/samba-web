@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { modelInputProps, Label, ErrorMessage, SegmentFeatureState } from "../helpers/Interfaces";
+import { modelInputProps, Label, ErrorMessage, SegmentFeatureState, ModalShow } from "../helpers/Interfaces";
 
 interface contextProps {
   largeImg: [
@@ -101,6 +101,10 @@ interface contextProps {
   showToast: [
     showToast: boolean,
     setShowToast: (e: boolean) => void,
+  ];
+  modalShow: [
+    modalShow: ModalShow,
+    setModalShow: (e: ModalShow) => void,
   ];
 }
 

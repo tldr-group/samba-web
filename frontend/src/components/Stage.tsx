@@ -1,21 +1,15 @@
-// Not entirely sure I need this file anymore - could just be part of app really.
 import React, { useContext } from "react";
 import Topbar from "./Topbar";
 import Sidebar from "./Sidebar";
 import Canvas from "./Canvas"
+import { BigModal, PostSegToast, ErrorMessage } from "./Modals"
 import AppContext from "./hooks/createContext";
 import { DragDropProps, StageProps } from "./helpers/Interfaces";
 import { imageDataToImage, getSplitInds } from "./helpers/canvasUtils";
 
+
 const UTIF = require("./UTIF.js")
 
-import Accordion from 'react-bootstrap/Accordion';
-import Button from 'react-bootstrap/Button';
-import Modal from 'react-bootstrap/Modal';
-import Toast from 'react-bootstrap/Toast'
-import ToastContainer from "react-bootstrap/ToastContainer";
-import InputGroup from "react-bootstrap/InputGroup";
-import Form from "react-bootstrap/Form"
 
 const MAX_FILE_SIZE_BYTES = 1024 * 1024 * 50 // 50MB
 
@@ -142,45 +136,10 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, cha
       </div>
       <ErrorMessage />
       <PostSegToast />
+      <BigModal />
     </div >
   );
 };
-
-
-const ErrorMessage = () => {
-  const {
-    errorObject: [errorObject, setErrorObject]
-  } = useContext(AppContext)!;
-
-
-  const handleClose = () => { setErrorObject({ msg: "", stackTrace: "" }) };
-
-  return (
-    <>
-      <Modal show={errorObject.msg !== ""} onHide={handleClose}>
-        <Modal.Header style={{ backgroundColor: '#eb4034', color: '#ffffff' }} closeVariant="white" closeButton>
-          <Modal.Title>Error</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>{errorObject.msg}</Modal.Body>
-        <Modal.Body>
-          <Accordion defaultActiveKey="0">
-            <Accordion.Item eventKey="1">
-              <Accordion.Header>Stack trace</Accordion.Header>
-              <Accordion.Body>
-                {errorObject.stackTrace}
-              </Accordion.Body>
-            </Accordion.Item>
-          </Accordion>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="dark" onClick={handleClose}>
-            Understood!
-          </Button>
-        </Modal.Footer>
-      </Modal >
-    </>
-  );
-}
 
 
 const DragDrop = ({ loadDefault, loadFromFile }: DragDropProps) => {
@@ -211,33 +170,5 @@ const DragDrop = ({ loadDefault, loadFromFile }: DragDropProps) => {
 }
 
 
-const PostSegToast = () => {
-  const {
-    showToast: [showToast, setShowToast]
-  } = useContext(AppContext)!;
-
-  const toggleToast = () => { setShowToast(!showToast) }
-
-  return (
-    <ToastContainer className="p-5" position="bottom-end">
-      <Toast show={showToast} onClose={toggleToast}>
-        <Toast.Header className="roundedme-2"><strong className="me-auto">Share Segmentation?</strong></Toast.Header>
-        <Toast.Body>
-          <InputGroup>
-            <InputGroup.Text>Segmentation quality:</InputGroup.Text>
-            <Form.Control type="number" min={0} max={10} defaultValue={5} width={1} size="sm"></Form.Control>
-          </InputGroup>
-
-          <Form style={{ margin: '10px' }}>
-            <Form.Check type="switch" id="share-seg" label="Share segmentation in a future open dataset?"></Form.Check>
-            <Form.Check type="switch" id="share-gallery" label="Share segmentation in the gallery page?"></Form.Check>
-          </Form>
-          <Button variant="dark" onClick={toggleToast} style={{ marginLeft: '16rem' }} >Send!</Button>
-        </Toast.Body>
-      </Toast>
-    </ToastContainer >
-
-  )
-}
 
 export default Stage;

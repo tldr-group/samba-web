@@ -32,10 +32,10 @@ async def _save_as_tiff(
 ) -> int:
     remasked_arrs = np.array(arr_list)
     max_class = np.amax(remasked_arrs)
-    delta = floor(255 / (max_class - 1))
+    delta = floor(255 / (max_class))
     if mode == "stack":
         print(remasked_arrs.shape)
-        rescaled = ((remasked_arrs - 1) * delta).astype(np.uint8)
+        rescaled = ((remasked_arrs) * delta).astype(np.uint8)
         imwrite(f"{UID}/seg.tiff", rescaled)
     elif mode == "large":
         large_seg = np.zeros((large_h, large_w), dtype=np.uint8)
@@ -55,7 +55,7 @@ async def _save_as_tiff(
                 img_count += 1
         imwrite(f"{CWD}/{UID}/seg.tiff", large_seg)
     elif mode == "single":
-        rescaled = ((remasked_arrs - 1) * delta).astype(np.uint8)
+        rescaled = ((remasked_arrs) * delta).astype(np.uint8)
         imwrite(f"{CWD}/{UID}/seg.tiff", rescaled)
     return 0
 

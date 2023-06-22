@@ -67,10 +67,18 @@ const Topbar = ({ loadFromFile, saveSeg, saveClassifier }: TopbarProps) => {
                         </NavDropdown>
                         <NavDropdown title="Classifier" id="data-dropdown">
                             <NavDropdown.Item onClick={saveClassifier}>Save</NavDropdown.Item>
-                            <NavDropdown.Item href="#action/3.2">Load</NavDropdown.Item>
+                            <NavDropdown.Item >Load</NavDropdown.Item>
                             <NavDropdown.Divider />
-                            <NavDropdown.Item href="#action/3.4">
+                            <NavDropdown.Item>
                                 Features
+                            </NavDropdown.Item>
+                        </NavDropdown>
+                        <NavDropdown title="Labels" id="data-dropdown">
+                            <NavDropdown.Item>Save</NavDropdown.Item>
+                            <NavDropdown.Item>Load</NavDropdown.Item>
+                            <NavDropdown.Divider />
+                            <NavDropdown.Item>
+                                Save Encoding
                             </NavDropdown.Item>
                         </NavDropdown>
                         <Nav.Link onClick={saveSeg}>Save Segmentation</Nav.Link>

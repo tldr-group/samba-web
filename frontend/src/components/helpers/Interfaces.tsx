@@ -146,3 +146,12 @@ export const defaultFeatures = {
   "Minimum Sigma": 0.5,
   "Maximum Sigma": 16,
 }
+
+export type Theme = "default" | "dark" | "blue" | "grey" | "green" | "yellow" | "red" | "light-blue"
+export type ThemeObj = { name: string, colour: string }
+// in form name: [bootstrap name, bg colour]
+export const themeBGs = {
+  "default": ["dark", "#ffffff"], "dark": ["dark", "#303030"], "blue": ["primary", "#D7DAE5"],
+  "red": ["danger", "#ECE2D0"], "green": ["success", "#CCDDB7"], "yellow": ["warning", "#ffffff"],
+  "grey": ["secondary", "#ffffff"], "light-blue": ["info", "#F6E8EA"]
+}

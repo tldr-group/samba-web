@@ -11,7 +11,7 @@ of a large image which when clicked will change focus to that sub-image
 import React, { useContext, useEffect, useRef, useState } from "react";
 import AppContext from "./hooks/createContext";
 import { colours, rgbaToHex, getSplitInds, getctx, getxy } from "./helpers/canvasUtils";
-import { Label, LabelFrameProps, NavigationProps, SidebarProps } from "./helpers/Interfaces";
+import { Label, LabelFrameProps, NavigationProps, SidebarProps, themeBGs, Theme } from "./helpers/Interfaces";
 
 import { ToolTip } from "./Topbar";
 import Card from 'react-bootstrap/Card';
@@ -23,7 +23,7 @@ import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import * as _ from "underscore";
 
 
-const _getCSSColour = (currentStateVal: any, targetStateVal: any, successPrefix: string, colourIdx: number): string => {
+const _getCSSColour = (currentStateVal: any, targetStateVal: any, successPrefix: string, colourIdx: number, theme: Theme): string => {
     // Boring function to map a success to current labelling colour. Used for GUI elements.
     const c = colours[colourIdx];
     const hex = rgbaToHex(c[0], c[1], c[2], 255);
@@ -36,17 +36,21 @@ const _getCSSColour = (currentStateVal: any, targetStateVal: any, successPrefix:
     } else if (matches) {
         outlineStr = successPrefix + hex;
     } else {
-        outlineStr = "";
+        outlineStr = themeBGs[theme][1];
     }
     return outlineStr;
 }
 
 
 const Sidebar = ({ requestEmbedding, trainClassifier, changeToImage }: SidebarProps) => {
+    const {
+        theme: [theme,],
+    } = useContext(AppContext)!;
+
     // holds all the stuff on the side of the screen: train button, label frame, overlay frame and a hidden spin wheel that displays when encoding or segmenting
     return (
         <div className="items-center" style={{ padding: '10px 10px', alignItems: 'center' }}>
-            <Button onClick={trainClassifier} variant="dark" style={{ marginLeft: '28%', boxShadow: "1px 1px  1px grey" }}>Train Classifier!</Button>{' '}
+            <Button onClick={trainClassifier} variant={themeBGs[theme][0]} style={{ marginLeft: '28%', boxShadow: "1px 1px  1px grey", color: "#ffffff" }}>Train Classifier!</Button>{' '}
             <div className={`h-full w-[20%]`}>
                 <LabelFrame requestEmbedding={requestEmbedding} />
                 <OverlaysFrame />
@@ -63,6 +67,7 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
         labelClass: [labelClass, setLabelClass],
         brushWidth: [brushWidth, setBrushWidth],
         maskIdx: [maskIdx, setMaskIdx],
+        theme: [theme,],
     } = useContext(AppContext)!;
 
     const prefix = "../assets/icons/";
@@ -85,7 +90,7 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
 
 
     return (
-        <Card className="bg-dark text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }}>
+        <Card className="text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }} bg={themeBGs[theme][0]}>
             <Card.Header as="h5">Label</Card.Header>
             <Card.Body className={`flex`}>
                 <>
@@ -97,9 +102,9 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                             overlay={ToolTip(l.name)}>
                             <img src={prefix + l.path} style={
                                 {
-                                    backgroundColor: 'white', borderRadius: '3px',
+                                    backgroundColor: themeBGs[theme][1], borderRadius: '3px',
                                     marginLeft: '7%', width: '40px', boxShadow: '2px 2px 2px black',
-                                    outline: _getCSSColour(l.name, labelType, "3px solid ", labelClass)
+                                    outline: _getCSSColour(l.name, labelType, "3px solid ", labelClass, theme)
                                 }
                             }
                                 onClick={(e) => _setLabel(e, l.name)}></img>
@@ -112,8 +117,8 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                 Class <p style={{ margin: "0px" }}></p>
                 <ButtonGroup style={{ paddingLeft: "3%", marginLeft: '0%' }}>
                     {classes.map(i => <Button key={i} variant="light" onClick={(e) => setLabelClass(i)} style={{
-                        backgroundColor: _getCSSColour(i, labelClass, "", labelClass),
-                        border: _getCSSColour(i, i, "2px solid", i),
+                        backgroundColor: _getCSSColour(i, labelClass, "", labelClass, theme),
+                        border: _getCSSColour(i, i, "2px solid", i, theme),
                         margin: '1px 1px 1px 1px'
                     }}>{i}</Button>)}
                 </ButtonGroup>
@@ -126,8 +131,8 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                 Smart Label Region
                 <ButtonGroup style={{ paddingLeft: "4%" }}>
                     {regionSizes.map((size, i) => <Button key={i} variant="light" onClick={(e) => setMaskIdx(3 - i)} style={{
-                        backgroundColor: _getCSSColour(3 - i, maskIdx, "", labelClass),
-                        borderColor: _getCSSColour(3 - i, maskIdx, "", labelClass)
+                        backgroundColor: _getCSSColour(3 - i, maskIdx, "", labelClass, theme),
+                        borderColor: _getCSSColour(3 - i, maskIdx, "", labelClass, theme)
                     }}>{size}</Button>)}
                 </ButtonGroup>
             </Card.Body>
@@ -140,6 +145,7 @@ const OverlaysFrame = () => {
         overlayType: [overlayType, setOverlayType],
         segOpacity: [, setSegOpacity],
         labelOpacity: [, setLabelOpacity],
+        theme: [theme,],
     } = useContext(AppContext)!;
     // Throttled to avoid over rendering and slowing down too much
     const changeOpacity = _.throttle((e: any) => {
@@ -158,10 +164,10 @@ const OverlaysFrame = () => {
     };
 
     return (
-        <Card className="bg-dark text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }}>
+        <Card className="text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }} bg={themeBGs[theme][0]}>
             <Card.Header as="h5">Overlay</Card.Header>
             <Card.Body className="flex">
-                <Form.Select onChange={e => _setOverlayType(e.target.value)}>
+                <Form.Select onChange={e => _setOverlayType(e.target.value)} style={{ backgroundColor: themeBGs[theme][1] }}>
                     <option >Overlay type</option>
                     <option value="Segmentation">Segmentation</option>
                     <option value="Label">Labels</option>
@@ -180,6 +186,7 @@ const SpinWheel = () => {
     const {
         processing: [processing,],
         labelClass: [labelClass,],
+        theme: [theme,],
     } = useContext(AppContext)!;
 
     const c = colours[labelClass];
@@ -197,7 +204,7 @@ const SpinWheel = () => {
                         }} />
                         <img src={"../assets/icons/smart.png"} style={
                             {
-                                backgroundColor: _getCSSColour("foo", "foo", "3px solid ", labelClass), width: '30px',
+                                backgroundColor: _getCSSColour("foo", "foo", "3px solid ", labelClass, theme), width: '30px',
                                 gridColumn: 1, gridRow: 1, zIndex: 2
                             }
                         }></img>

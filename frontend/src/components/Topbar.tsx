@@ -5,7 +5,7 @@
 
 import React, { useRef, useContext } from "react";
 import AppContext from "./hooks/createContext";
-import { TopbarProps, ModalShow } from "./helpers/Interfaces";
+import { TopbarProps, ModalShow, themeBGs } from "./helpers/Interfaces";
 
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
@@ -27,7 +27,8 @@ export const ToolTip = (str: string) => {
 
 const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier }: TopbarProps) => {
     const {
-        modalShow: [modalShow, setModalShow]
+        modalShow: [modalShow, setModalShow],
+        theme: [theme,],
     } = useContext(AppContext)!;
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -62,7 +63,8 @@ const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier }: TopbarPro
     };
 
     return (
-        <Navbar bg="dark" variant="dark" expand="lg" style={{ boxShadow: "1px 1px  1px grey" }}>
+        <Navbar bg={themeBGs[theme][0]} variant="dark" expand="lg" style={{ boxShadow: "1px 1px  1px grey" }
+        }>
             <Container>
                 <Navbar.Brand style={{ fontSize: "2em", padding: "0px", marginRight: "5px" }}>&#128378;</Navbar.Brand>
                 <Navbar.Brand>SAMBA</Navbar.Brand>
@@ -93,25 +95,27 @@ const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier }: TopbarPro
                 </Navbar.Collapse>
             </Container>
 
-            {icons.map(i => <OverlayTrigger
-                key={i[0]}
-                placement="bottom"
-                delay={{ show: 250, hide: 400 }}
-                overlay={ToolTip(i[0])}
-            >
-                <Navbar.Brand href={i[2]}>
-                    <img
-                        src={"/assets/icons/" + i[1]}
-                        width="30"
-                        height="30"
-                        className="d-inline-block align-top"
-                        style={{ backgroundColor: '#ffffff', borderRadius: '20px' }}
-                        onClick={(e) => iconClick(e, i[0])}
-                    />
-                </Navbar.Brand>
-            </OverlayTrigger>
-            )}
-        </Navbar>
+            {
+                icons.map(i => <OverlayTrigger
+                    key={i[0]}
+                    placement="bottom"
+                    delay={{ show: 250, hide: 400 }}
+                    overlay={ToolTip(i[0])}
+                >
+                    <Navbar.Brand href={i[2]}>
+                        <img
+                            src={"/assets/icons/" + i[1]}
+                            width="30"
+                            height="30"
+                            className="d-inline-block align-top"
+                            style={{ backgroundColor: themeBGs[theme][1], borderRadius: '20px' }}
+                            onClick={(e) => iconClick(e, i[0])}
+                        />
+                    </Navbar.Brand>
+                </OverlayTrigger>
+                )
+            }
+        </Navbar >
     );
 }
 

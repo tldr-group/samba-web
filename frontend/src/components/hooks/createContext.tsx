@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { modelInputProps, Label, ErrorMessage, SegmentFeatureState, ModalShow, Features } from "../helpers/Interfaces";
+import { modelInputProps, Label, ErrorMessage, SegmentFeatureState, ModalShow, Features, Theme } from "../helpers/Interfaces";
 
 interface contextProps {
   largeImg: [
@@ -110,6 +110,10 @@ interface contextProps {
     modalShow: ModalShow,
     setModalShow: (e: ModalShow) => void,
   ];
+  theme: [
+    theme: Theme,
+    setTheme: (e: Theme) => void
+  ]
 }
 
 const AppContext = createContext<contextProps | null>(null);

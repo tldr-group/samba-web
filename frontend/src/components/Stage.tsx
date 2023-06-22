@@ -4,7 +4,7 @@ import Sidebar from "./Sidebar";
 import Canvas from "./Canvas"
 import { BigModal, PostSegToast, ErrorMessage } from "./Modals"
 import AppContext from "./hooks/createContext";
-import { DragDropProps, StageProps } from "./helpers/Interfaces";
+import { DragDropProps, StageProps, themeBGs } from "./helpers/Interfaces";
 import { imageDataToImage, getSplitInds } from "./helpers/canvasUtils";
 
 
@@ -19,7 +19,8 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, cha
     image: [image,],
     imgType: [, setImgType],
     largeImg: [, setLargeImg],
-    errorObject: [, setErrorObject]
+    errorObject: [, setErrorObject],
+    theme: [theme,]
   } = useContext(AppContext)!;
   const flexCenterClasses = "flex items-center justify-center";
 
@@ -125,9 +126,9 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, cha
 
 
   return (
-    <div className={`w-full h-full`} >
+    <div className={`w-full h-full`} style={{ background: themeBGs[theme][1] }}  >
       <Topbar loadFromFile={loadFromFile} saveSeg={saveSeg} saveLabels={saveLabels} saveClassifier={saveClassifier} />
-      <div className={`flex`} style={{ margin: '1.5%' }}> {/*Canvas div on left, sidebar on right*/}
+      <div className={`flex`} style={{ margin: '1.5%', background: themeBGs[theme][1] }} > {/*Canvas div on left, sidebar on right*/}
         <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`}>
           {!image && <DragDrop loadFromFile={loadFromFile} loadDefault={loadDefault} />}
           {image && <Canvas />}

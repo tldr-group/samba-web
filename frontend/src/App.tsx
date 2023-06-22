@@ -20,7 +20,6 @@ import AppContext from "./components/hooks/createContext";
 const ort = require("onnxruntime-web");
 /* @ts-ignore */
 import npyjs from "npyjs";
-import { features } from "process";
 
 
 const MODEL_DIR = "/model/sam_onnx_quantized_example.onnx";
@@ -119,6 +118,10 @@ const App = () => {
     const showHelp = localStorage.getItem("showHelp")
     if (showHelp === null || showHelp === "true") {
       setModalShow({ welcome: true, settings: false, features: false })
+    }
+    const body = document.getElementById("root")
+    if (body != null) {
+      //document.body.style.backgroundColor = "#000000;"
     }
   }, []);
 

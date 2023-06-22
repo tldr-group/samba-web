@@ -103,8 +103,8 @@ const FeatureModalContent = ({ closeModal, requestEmbedding }: FeatureModalProps
                 <Modal.Title>Features</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                <p>Choose features for the random forest segmenter. <b>Sigma</b> controls the minimum and maximum scale parameters.</p>
-                <div style={{ display: "grid", gridTemplateColumns: "2 1fr" }}>
+                <p>Choose features for the random forest segmenter. <b>Sigma</b> controls the minimum and maximum scale parameters. <span style={{ color: "#eb4034" }}><b>Warning:</b> more features means slower training!</span></p>
+                <div style={{ display: "grid", gridTemplateColumns: "2 1fr", gap: "10px" }}>
                     {Object.entries(features).map(([key, value], i) => getElemForDict(key as string, value as string, i))}
                 </div>
             </Modal.Body >
@@ -114,6 +114,10 @@ const FeatureModalContent = ({ closeModal, requestEmbedding }: FeatureModalProps
         </>
     )
 }
+
+
+
+
 
 const ErrorMessage = () => {
     const {

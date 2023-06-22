@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { modelInputProps, Label, ErrorMessage, SegmentFeatureState, ModalShow, Features, defaultFeatures } from "../helpers/Interfaces";
+import { modelInputProps, Label, ErrorMessage, SegmentFeatureState, ModalShow, Features, defaultFeatures, Theme, themeBGs } from "../helpers/Interfaces";
 import AppContext from "./createContext";
 
 const AppContextProvider = (props: {
@@ -42,6 +42,7 @@ const AppContextProvider = (props: {
   const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "", stackTrace: "" })
   const [showToast, setShowToast] = useState<boolean>(false);
   const [modalShow, setModalShow] = useState<ModalShow>({ welcome: false, settings: false, features: false })
+  const [theme, setTheme] = useState<Theme>("green")
 
   return (
     <AppContext.Provider
@@ -76,6 +77,7 @@ const AppContextProvider = (props: {
         errorObject: [errorObject, setErrorObject],
         showToast: [showToast, setShowToast],
         modalShow: [modalShow, setModalShow],
+        theme: [theme, setTheme],
       }}
     >
       {props.children}

@@ -1,4 +1,5 @@
 import { Tensor } from "onnxruntime-web";
+import internal from "stream";
 
 export type Label = "Smart Labelling" | "Polygon" | "Brush" | "Erase"
 
@@ -148,10 +149,15 @@ export const defaultFeatures = {
 }
 
 export type Theme = "default" | "dark" | "blue" | "grey" | "green" | "yellow" | "red" | "light-blue"
-export type ThemeObj = { name: string, colour: string }
 // in form name: [bootstrap name, bg colour, button color (=bg color for all but dark)]
 export const themeBGs = {
   "default": ["dark", "#ffffff", "#ffffff"], "dark": ["dark", "#303030", "#ffffff"], "blue": ["primary", "#D7DAE5", "#D7DAE5"],
   "red": ["danger", "#ECE2D0", "#ECE2D0"], "green": ["success", "#CCDDB7", "#CCDDB7"], "yellow": ["warning", "#ffffff", "#ffffff"],
   "grey": ["secondary", "#ffffff", "#ffffff"], "light-blue": ["info", "#F6E8EA", "#F6E8EA"]
+}
+
+export interface Settings {
+  nPoints: number;
+  trainAll: boolean;
+  rescale: boolean;
 }

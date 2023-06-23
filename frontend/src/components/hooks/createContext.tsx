@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { modelInputProps, Label, ErrorMessage, SegmentFeatureState, ModalShow, Features, Theme } from "../helpers/Interfaces";
+import { modelInputProps, Label, ErrorMessage, SegmentFeatureState, ModalShow, Features, Theme, Settings } from "../helpers/Interfaces";
 
 interface contextProps {
   largeImg: [
@@ -113,6 +113,10 @@ interface contextProps {
   theme: [
     theme: Theme,
     setTheme: (e: Theme) => void
+  ]
+  settings: [
+    settings: Settings,
+    setSettings: (e: Settings) => void
   ]
 }
 

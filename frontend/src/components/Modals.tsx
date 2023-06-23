@@ -5,7 +5,7 @@ The three large modals: Welcome, Settings, Features, the smaller error modal and
 
 import React, { useContext, useEffect, useRef, useState } from "react";
 import AppContext from "./hooks/createContext";
-import { Features, closeModal, LabelFrameProps, FeatureModalProps, themeBGs, Theme } from "./helpers/Interfaces"
+import { Features, closeModal, LabelFrameProps, FeatureModalProps, themeBGs, Theme, Settings } from "./helpers/Interfaces"
 
 
 import Accordion from 'react-bootstrap/Accordion';
@@ -92,7 +92,8 @@ const FeatureModalContent = ({ closeModal, requestEmbedding }: FeatureModalProps
             return (<InputGroup key={i}>
                 <InputGroup.Text>{key}</InputGroup.Text>
                 <Form.Control type="number" width={3}
-                    key={key} min={a} max={b} defaultValue={parseFloat(value)} step={d} onChange={(e) => change(e, features, key, e.target.value)}></Form.Control >
+                    key={key} min={a} max={b} defaultValue={parseFloat(value)} step={d} onChange={(e) => change(e, features, key, e.target.value)}>
+                </Form.Control >
             </InputGroup>)
         } else {
             return <Form.Check type="checkbox" label={key} key={key} onChange={(e) => change(e, features, key, e.target.value)} style={{ gridColumn: (i % 2) + 1 }} defaultChecked={parseInt(value) as unknown as boolean} />
@@ -120,11 +121,24 @@ const FeatureModalContent = ({ closeModal, requestEmbedding }: FeatureModalProps
 
 const SettingsModalContent = () => {
     const {
-        theme: [theme, setTheme]
+        theme: [theme, setTheme],
+        settings: [settings, setSettings],
     } = useContext(AppContext)!;
 
     const themes = Object.keys(themeBGs)
     const change = (e: any) => { setTheme(e.target.value as Theme) }
+    const setN = (e: any) => {
+        console.log(typeof (e.target.value))
+        setSettings({ nPoints: parseInt(e.target.value), trainAll: settings.trainAll, rescale: settings.rescale })
+    }
+    const setAll = (e: any) => {
+        const state = e.target.value == "on" ? true : false
+        setSettings({ nPoints: settings.nPoints, trainAll: state, rescale: settings.rescale })
+    }
+    const setRescale = (e: any) => {
+        const state = e.target.value == "on" ? true : false
+        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: state })
+    }
     return (
         <>
             <Modal.Header closeButton>
@@ -138,6 +152,22 @@ const SettingsModalContent = () => {
                     </Form.Select>
                 </InputGroup>
             </Modal.Body >
+            <Modal.Body>
+                <InputGroup onChange={(e) => setN(e)} >
+                    <InputGroup.Text>Number of training points:</InputGroup.Text>
+                    <Form.Control type="number" min={1000} max={1000000} step={5000} defaultValue={settings.nPoints}></Form.Control>
+                </InputGroup>
+            </Modal.Body >
+            <Modal.Body>
+                <Form.Check type="checkbox" label="Train on all data" defaultChecked={settings.trainAll} onChange={e => setAll(e)}></Form.Check>
+            </Modal.Body>
+            <Modal.Body>
+                <Form.Check type="checkbox" label="Rescale segmentations & labels" defaultChecked={settings.rescale} onChange={e => setRescale(e)}></Form.Check>
+            </Modal.Body>
+            <Modal.Body>
+                {(settings.trainAll == true || settings.nPoints > 40000) && <p style={{ color: "#eb4034" }}><b>Warning:</b> more data points means slower training!</p>}
+            </Modal.Body>
+
         </>
     )
 }

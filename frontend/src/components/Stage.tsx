@@ -126,7 +126,7 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, cha
 
 
   return (
-    <div className={`w-full h-full`} style={{ background: themeBGs[theme][1] }}  >
+    <div className={`w-full h-full`} style={{ background: themeBGs[theme][1] }}>
       <Topbar loadFromFile={loadFromFile} saveSeg={saveSeg} saveLabels={saveLabels} saveClassifier={saveClassifier} />
       <div className={`flex`} style={{ margin: '1.5%', background: themeBGs[theme][1] }} > {/*Canvas div on left, sidebar on right*/}
         <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`}>

@@ -21,7 +21,7 @@ except KeyError:
 print(CWD, os.getcwd())
 
 from encode import encode, featurise
-from segment import segment, save_labels
+from segment import segment, save_labels, load_classifier_from_http
 from PIL import Image
 
 app = Flask(
@@ -157,6 +157,25 @@ def classifier_respond():
             mimetype="application/octet-stream",
             download_name="classifier.pkl",
         )
+        return _corsify_actual_response(response)
+    else:
+        raise RuntimeError("Wrong HTTP method {}".format(request.method))
+
+
+@app.route("/lclassifier", methods=["POST", "GET", "OPTIONS"])
+async def load_classifier_respond():
+    if "OPTIONS" in request.method:  # CORS preflight
+        return _build_cors_preflight_response()
+    elif "POST" in request.method:  # The actual request following the preflight
+        UID = request.json["id"]
+        try:
+            os.mkdir(f"{CWD}/{UID}")
+        except FileExistsError:
+            pass
+        classifier_bytes = base64.standard_b64decode(request.json["bytes"])
+        print("uhhhh")
+        await load_classifier_from_http(classifier_bytes, CWD, UID)
+        response = Response("{'foo': 'bar'}", status=200)
         return _corsify_actual_response(response)
     else:
         raise RuntimeError("Wrong HTTP method {}".format(request.method))

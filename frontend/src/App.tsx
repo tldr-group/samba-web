@@ -34,6 +34,7 @@ const FEATURISE_ENDPOINT = PATH + "/featurising"
 const SEGMENT_ENDPOINT = PATH + "/segmenting"
 const SAVE_ENDPOINT = PATH + "/saving"
 const CLASSIFIER_ENDPOINT = PATH + "/classifier"
+const LOAD_CLASSIFIER_ENDPOINT = PATH + "/lclassifier"
 const SAVE_LABEL_ENDPOINT = PATH + "/slabel"
 
 const getb64Image = (img: HTMLImageElement): string => {
@@ -383,6 +384,38 @@ const App = () => {
     }
   }
 
+  const loadClassifier = async (file: File) => {
+    const headers = new Headers();
+    const reader = new FileReader();
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    const isSkops = (extension == "skops");
+    reader.readAsArrayBuffer(file)
+
+    reader.onload = () => {
+      console.log("loading classifier")
+      if (isSkops) {
+        headers.append('Content-Type', 'application/json;charset=utf-8');
+        try {
+          const arrayBuffer = reader.result as ArrayBuffer;
+          const bytes = new Uint8Array(arrayBuffer.byteLength)
+          const dataView = new DataView(arrayBuffer)
+          for (let i = 0; i < arrayBuffer.byteLength; i++) {
+            bytes[i] = dataView.getUint8(i)
+          }
+          const binString = Array.from(bytes, (x) => String.fromCodePoint(x)).join("");
+          const b64 = window.btoa(binString)
+          let resp = fetch(LOAD_CLASSIFIER_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "bytes": b64 }) });
+        } catch (error: any) {
+          setErrorObject({ msg: "Failed to load classifier", stackTrace: error.message as string });
+        }
+      } else {
+        setErrorObject({ msg: "Must load a .skops file for classifier.", stackTrace: ".pkl files are insecure and so won't be loaded serverside" });
+        return
+      }
+    }
+
+  }
+
   // Run the ONNX model every time clicks state changes - updated in Canvas
   useEffect(() => {
     runONNX();
@@ -443,6 +476,7 @@ const App = () => {
     saveSeg={onSaveClick}
     saveLabels={saveLabels}
     saveClassifier={saveClassifier}
+    loadClassifier={loadClassifier}
   />;
 };
 

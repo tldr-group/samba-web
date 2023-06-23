@@ -165,7 +165,7 @@ const SettingsModalContent = () => {
                 <Form.Check type="checkbox" label="Rescale segmentations & labels" defaultChecked={settings.rescale} onChange={e => setRescale(e)}></Form.Check>
             </Modal.Body>
             <Modal.Body>
-                {(settings.trainAll == true || settings.nPoints > 40000) && <p style={{ color: "#eb4034" }}><b>Warning:</b> more data points means slower training!</p>}
+                {(settings.trainAll == true || settings.nPoints > 100000) && <p style={{ color: "#eb4034" }}><b>Warning:</b> more data points means slower training!</p>}
             </Modal.Body>
 
         </>

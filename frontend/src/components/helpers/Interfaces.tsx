@@ -34,6 +34,7 @@ export interface StageProps {
   saveSeg: () => void;
   saveLabels: () => void;
   saveClassifier: () => void;
+  loadClassifier: (file: File) => void;
 }
 
 export interface TopbarProps {
@@ -41,6 +42,7 @@ export interface TopbarProps {
   saveSeg: () => void;
   saveLabels: () => void;
   saveClassifier: () => void;
+  loadClassifier: (file: File) => void;
 }
 
 export interface DragDropProps {

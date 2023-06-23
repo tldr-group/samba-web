@@ -7,6 +7,7 @@ from typing import List
 from math import floor, ceil
 from pickle import dump
 from io import BytesIO
+from skops.io import dumps, loads
 
 from forest_based import segment_with_features
 
@@ -112,7 +113,15 @@ def save_labels(
 async def _save_classifier(model, CWD: str, UID: str) -> int:
     with open(f"{CWD}/{UID}/classifier.pkl", "wb") as handle:
         dump(model, handle)
+    with open(f"{CWD}/{UID}/classifier.skops", "wb") as handle:
+        handle.write(dumps(model))
     return 0
+
+
+async def load_classifier_from_http(file_bytes: bytes, CWD: str, UID: str) -> None:
+    with open(f"{CWD}/{UID}/classifier.skops", "wb") as handle:
+        handle.write(file_bytes)
+    print("Loaded skops successfully")
 
 
 async def segment(

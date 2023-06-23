@@ -64,10 +64,26 @@ def _create_composite_tiff(
 
 
 async def _save_as_tiff(
-    arr_list: List[np.ndarray], mode: str, UID: str, large_w: int = 0, large_h: int = 0
+    arr_list: List[np.ndarray],
+    mode: str,
+    UID: str,
+    large_w: int = 0,
+    large_h: int = 0,
+    score: float | None = None,
 ) -> int:
     out = _create_composite_tiff(arr_list, mode, large_w=large_w, large_h=large_h)
-    imwrite(f"{CWD}/{UID}/seg.tiff", out, photometric="minisblack")
+    sw_name: str = "SAMBA"
+    if score != None:
+        sw_name = f"SAMBA, val. score={score:.3f}"
+
+    imwrite(
+        f"{CWD}/{UID}/seg.tiff",
+        out,
+        photometric="minisblack",
+        description="foo".encode("utf-8"),
+        datetime=True,
+        software=sw_name,
+    )
     return 0
 
 
@@ -127,7 +143,7 @@ async def segment(
 
     remasked_arrs_list: List[np.ndarray] = []
     remasked_flattened_arrs: np.ndarray
-    probs, model = segment_with_features(
+    probs, model, score = segment_with_features(
         label_arrs, UID, n_points=n_points, train_all=train_all
     )
 
@@ -142,7 +158,7 @@ async def segment(
             remasked_flattened_arrs = np.concatenate(
                 (remasked_flattened_arrs, remasked.flatten()), axis=0, dtype=np.uint8
             )
-    await _save_as_tiff(remasked_arrs_list, save_mode, UID, large_w, large_h)
+    await _save_as_tiff(remasked_arrs_list, save_mode, UID, large_w, large_h, score)
     await _save_classifier(model, CWD, UID)
     print(remasked_flattened_arrs.shape, label_arrs[0].shape)
     return remasked_flattened_arrs

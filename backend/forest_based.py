@@ -191,6 +191,7 @@ def get_model(
             max_features=n_features,
             max_depth=depth,
             n_jobs=N_ALLOWED_CPUS - 1,
+            oob_score=True,
         )
     elif model_name == "XGB":
         model = GradientBoostingClassifier(
@@ -208,7 +209,7 @@ def segment_with_features(
     n_points: int = 40000,
     balance_classes: bool = True,
     train_all: bool = False,
-) -> Tuple[List[np.ndarray], EnsembleMethod]:
+) -> Tuple[List[np.ndarray], EnsembleMethod, float]:
     """Assuming a list of feature stacks are saved at the folder, get training data then fit then apply."""
     fit_data, target_data = get_training_data_features_done(labels, UID)
     model = get_model(model_name)
@@ -228,5 +229,6 @@ def segment_with_features(
         )
         new_weights, _ = get_class_weights(sample_target_data)
     model = fit(model, sample_fit_data, sample_target_data, new_weights)
+    print(model.oob_score_)
     out_data = apply_features_done(model, UID, len(labels))
-    return out_data, model
+    return out_data, model, model.oob_score_

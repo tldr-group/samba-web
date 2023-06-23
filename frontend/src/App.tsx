@@ -253,8 +253,18 @@ const App = () => {
     return
   };
 
+  const checkToSegment = (featFlag: boolean, segFlag: boolean) => {
+    if (featFlag == true && segFlag == true) {
+      trainClassifier()
+    }
+  }
+
   const trainPressed = () => {
-    setSegmentFlag(true)
+    if (segmentFlag === true) {
+      checkToSegment(featureFlag, true)
+    } else {
+      setSegmentFlag(true)
+    }
     setProcessing("Segmenting");
   }
 
@@ -421,9 +431,7 @@ const App = () => {
   }, [segArrs])
 
   useEffect(() => {
-    if (featureFlag == true && segmentFlag == true) {
-      trainClassifier()
-    }
+    checkToSegment(segmentFlag, featureFlag)
   }, [segmentFlag, featureFlag])
 
   return <Stage

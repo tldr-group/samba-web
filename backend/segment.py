@@ -3,10 +3,10 @@ import numpy as np
 from PIL import Image
 from tifffile import imwrite
 import os
-from time import sleep
 from typing import List
 from math import floor, ceil
 from pickle import dump
+from io import BytesIO
 
 from forest_based import segment_with_features
 
@@ -27,16 +27,17 @@ def _get_split_inds(w: int, h: int) -> dict:
     return inds
 
 
-async def _save_as_tiff(
-    arr_list: List[np.ndarray], mode: str, UID: str, large_w: int = 0, large_h: int = 0
-) -> int:
+def _create_composite_tiff(
+    arr_list: List[np.ndarray], mode: str, large_w: int = 0, large_h: int = 0
+) -> np.ndarray:
+    out: np.ndarray
     remasked_arrs = np.array(arr_list)
     max_class = np.amax(remasked_arrs)
-    delta = floor(255 / (max_class - 1))
+    delta = floor(255 / (max_class))
+    print(mode, remasked_arrs.shape)
     if mode == "stack":
-        print(remasked_arrs.shape)
-        rescaled = ((remasked_arrs - 1) * delta).astype(np.uint8)
-        imwrite(f"{UID}/seg.tiff", rescaled)
+        rescaled = ((remasked_arrs) * delta).astype(np.uint8)
+        out = rescaled
     elif mode == "large":
         large_seg = np.zeros((large_h, large_w), dtype=np.uint8)
         inds = _get_split_inds(large_w, large_h)
@@ -50,14 +51,46 @@ async def _save_as_tiff(
                 h, w = seg.shape
                 x0, x1 = w_inds[i], w_inds[i] + w
                 y0, y1 = h_inds[j], h_inds[j] + h
-                rescaled = (seg - 1) * delta
+                rescaled = (seg) * delta
                 large_seg[y0:y1, x0:x1] = rescaled
                 img_count += 1
-        imwrite(f"{CWD}/{UID}/seg.tiff", large_seg)
+        out = large_seg
     elif mode == "single":
-        rescaled = ((remasked_arrs - 1) * delta).astype(np.uint8)
-        imwrite(f"{CWD}/{UID}/seg.tiff", rescaled)
+        rescaled = ((remasked_arrs) * delta).astype(np.uint8)
+        out = rescaled
+    else:
+        raise Exception("wrong tiff mode")
+    return out
+
+
+async def _save_as_tiff(
+    arr_list: List[np.ndarray], mode: str, UID: str, large_w: int = 0, large_h: int = 0
+) -> int:
+    out = _create_composite_tiff(arr_list, mode, large_w=large_w, large_h=large_h)
+    imwrite(f"{CWD}/{UID}/seg.tiff", out, photometric="minisblack")
     return 0
+
+
+def save_labels(
+    images: List[Image.Image],
+    labels_dicts: List[dict],
+    mode: str,
+    large_w: int = 0,
+    large_h: int = 0,
+) -> bytes:
+    label_arrs: List[np.ndarray] = []
+    for i in range(len(images)):
+        image = images[i]
+        label_dict = labels_dicts[i]
+        labels_list = [item for keys, item in label_dict.items()]
+        label_arr = np.array(labels_list).reshape(image.height, image.width)
+        label_arrs.append(label_arr)
+    label_out = _create_composite_tiff(label_arrs, mode, large_w, large_h)
+    file_bytes_io = BytesIO()
+    imwrite(file_bytes_io, label_out, photometric="minisblack")
+    file_bytes_io.seek(0)
+    file_bytes = file_bytes_io.read()
+    return file_bytes
 
 
 async def _save_classifier(model, CWD: str, UID: str) -> int:

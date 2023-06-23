@@ -21,7 +21,7 @@ except KeyError:
 print(CWD, os.getcwd())
 
 from encode import encode, featurise
-from segment import segment
+from segment import segment, save_labels
 from PIL import Image
 
 app = Flask(
@@ -61,12 +61,13 @@ async def featurise_respond():
         return _build_cors_preflight_response()
     elif "POST" in request.method:
         UID = request.json["id"]
+        features = request.json["features"]
         try:
             os.mkdir(f"{CWD}/{UID}")
         except FileExistsError:
             pass
         images = [_get_image_from_b64(i) for i in request.json["images"]]
-        success = await featurise(images, UID)
+        success = await featurise(images, UID, selected_features=features)
         with open(f"{CWD}/{UID}/success.txt", "w+") as f:
             f.write("done")
         return _corsify_actual_response(jsonify(success=True))
@@ -78,7 +79,6 @@ def encode_respond():
         return _build_cors_preflight_response()
     elif "POST" in request.method:  # The actual request following the preflight
         image = _get_image_from_b64(request.json["message"])
-        image_id = int(request.json["img_idx"])
         UID = request.json["id"]
         try:
             os.mkdir(f"{CWD}/{UID}")
@@ -106,7 +106,6 @@ async def segment_respond():
             pass
         save_mode = request.json["save_mode"]
         large_w, large_h = request.json["large_w"], request.json["large_h"]
-        print(save_mode, large_w, large_h)
         segmentation = await segment(
             images, labels_dicts, UID, save_mode, large_w, large_h
         )
@@ -126,6 +125,23 @@ def save_respond():
         response = send_file(
             f"{CWD}/{UID}/seg.tiff", mimetype="image/tiff", download_name="seg.tiff"
         )
+        return _corsify_actual_response(response)
+    else:
+        raise RuntimeError("Wrong HTTP method {}".format(request.method))
+
+
+@app.route("/slabel", methods=["POST", "GET", "OPTIONS"])
+def save_labels_respond():
+    if "OPTIONS" in request.method:  # CORS preflight
+        return _build_cors_preflight_response()
+    elif "POST" in request.method:  # The actual request following the preflight
+        images = [_get_image_from_b64(i) for i in request.json["images"]]
+        labels_dicts = request.json["labels"]
+        save_mode = request.json["save_mode"]
+        large_w, large_h = request.json["large_w"], request.json["large_h"]
+        labels_bytes = save_labels(images, labels_dicts, save_mode, large_w, large_h)
+        response = Response(labels_bytes)
+        response.headers.add("Content-Type", "application/octet-stream")
         return _corsify_actual_response(response)
     else:
         raise RuntimeError("Wrong HTTP method {}".format(request.method))

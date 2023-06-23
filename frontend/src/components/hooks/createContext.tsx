@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { modelInputProps, Label, ErrorMessage, SegmentFeatureState } from "../helpers/Interfaces";
+import { modelInputProps, Label, ErrorMessage, SegmentFeatureState, ModalShow, Features, Theme, Settings } from "../helpers/Interfaces";
 
 interface contextProps {
   largeImg: [
@@ -93,6 +93,10 @@ interface contextProps {
     segmentFeature: SegmentFeatureState,
     setSegmentFeature: (e: SegmentFeatureState) => void
   ]
+  features: [
+    features: Features,
+    setFeatures: (e: Features) => void
+  ]
 
   errorObject: [
     errorObject: ErrorMessage,
@@ -102,6 +106,18 @@ interface contextProps {
     showToast: boolean,
     setShowToast: (e: boolean) => void,
   ];
+  modalShow: [
+    modalShow: ModalShow,
+    setModalShow: (e: ModalShow) => void,
+  ];
+  theme: [
+    theme: Theme,
+    setTheme: (e: Theme) => void
+  ]
+  settings: [
+    settings: Settings,
+    setSettings: (e: Settings) => void
+  ]
 }
 
 const AppContext = createContext<contextProps | null>(null);

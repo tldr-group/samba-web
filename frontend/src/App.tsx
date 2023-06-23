@@ -27,13 +27,14 @@ const DEFAULT_IMAGE = "/assets/data/default_image.png"
 const DEFAULT_EMBEDDING = "/assets/data/default_encoding.npy"
 
 // URLS of our API endpoints - change when live
-const PATH = "https://samba-web-demo.azurewebsites.net"
-//const PATH = "http://127.0.0.1:5000"
+//const PATH = "https://samba-web-demo.azurewebsites.net"
+const PATH = "http://127.0.0.1:5000"
 const ENCODE_ENDPOINT = PATH + "/encoding"
 const FEATURISE_ENDPOINT = PATH + "/featurising"
 const SEGMENT_ENDPOINT = PATH + "/segmenting"
 const SAVE_ENDPOINT = PATH + "/saving"
 const CLASSIFIER_ENDPOINT = PATH + "/classifier"
+const SAVE_LABEL_ENDPOINT = PATH + "/slabel"
 
 const getb64Image = (img: HTMLImageElement): string => {
   // Convert HTML Image to b64 string encoding by drawing onto canvas. Used for sending over HTTP
@@ -85,9 +86,11 @@ const App = () => {
     labelType: [, setLabelType],
     labelClass: [labelClass],
     segmentFeature: [segmentFeature, setSegmentFeature],
+    features: [features,],
     processing: [, setProcessing],
     errorObject: [errorObject, setErrorObject],
-    showToast: [, setShowToast]
+    showToast: [, setShowToast],
+    modalShow: [, setModalShow],
   } = useContext(AppContext)!;
 
   const [model, setModel] = useState<InferenceSession | null>(null); // ONNX model
@@ -112,6 +115,14 @@ const App = () => {
       }
     };
     initModel();
+    const showHelp = localStorage.getItem("showHelp")
+    if (showHelp === null || showHelp === "true") {
+      setModalShow({ welcome: true, settings: false, features: false })
+    }
+    const body = document.getElementById("root")
+    if (body != null) {
+      //document.body.style.backgroundColor = "#000000;"
+    }
   }, []);
 
   const loadImages = async (hrefs: string[]) => {
@@ -201,7 +212,7 @@ const App = () => {
     headers.append('Content-Type', 'application/json;charset=utf-8');
     console.log("Started Featurising");
     try {
-      await fetch(FEATURISE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "id": UID }) });
+      await fetch(FEATURISE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "id": UID, "features": features }) });
       console.log("Finished Featurising");
       const segFeat = { feature: true, segment: segmentFeature.segment }
       setSegmentFeature(segFeat)
@@ -302,16 +313,14 @@ const App = () => {
     console.log("Finished segmenting");
   }
 
-  const onSaveClick = async () => {
-    // TODO: abstract this download with temp element and sending generic http request.
-    if (image === null || segArr === null) { return; }
+  const saveArrAsTIFF = async (ENDPOINT: string, body_text: any, fname: string) => {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     try {
-      let resp = await fetch(SAVE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID }) })
+      let resp = await fetch(ENDPOINT, { method: 'POST', headers: headers, body: body_text })
       const buffer = await resp.arrayBuffer();
       const a = document.createElement("a")
-      a.download = "seg.tiff"
+      a.download = fname
       const file = new Blob([buffer], { type: "image/tiff" });
       a.href = URL.createObjectURL(file);
       a.click()
@@ -319,6 +328,26 @@ const App = () => {
       const error = e as Error;
       setErrorObject({ msg: "Failed to dowload TIFF.", stackTrace: error.toString() });
     }
+  }
+
+  const onSaveClick = async () => {
+    if (image === null || segArr === null) { return; }
+    saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID }), "seg.tiff")
+  }
+
+  const saveLabels = async () => {
+    if (image === null || labelArr === null) { return; }
+    const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
+    setLabelArrs(newLabelArrs);
+    const b64images: string[] = imgArrs.map((img, i) => getb64Image(img));
+    let [largeW, largeH]: Array<number> = [0, 0]
+    if (imgType === "large" && largeImg !== null) {
+      largeW = largeImg.width
+      largeH = largeImg.height
+    }
+    const dict = { "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType, "large_w": largeW, "large_h": largeH }
+    const msg = JSON.stringify(dict)
+    saveArrAsTIFF(SAVE_LABEL_ENDPOINT, msg, "label.tiff")
   }
 
   const saveClassifier = async () => {
@@ -398,6 +427,7 @@ const App = () => {
     trainClassifier={trainPressed}
     changeToImage={changeToImage}
     saveSeg={onSaveClick}
+    saveLabels={saveLabels}
     saveClassifier={saveClassifier}
   />;
 };

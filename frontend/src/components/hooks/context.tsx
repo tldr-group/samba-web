@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { modelInputProps, Label, ErrorMessage, SegmentFeatureState } from "../helpers/Interfaces";
+import { modelInputProps, Label, ErrorMessage, SegmentFeatureState, ModalShow, Features, defaultFeatures, Theme, themeBGs, Settings } from "../helpers/Interfaces";
 import AppContext from "./createContext";
 
 const AppContextProvider = (props: {
@@ -23,7 +23,7 @@ const AppContextProvider = (props: {
   // Labelling stuff
   const [clicks, setClicks] = useState<Array<modelInputProps> | null>(null);
   const [maskImg, setMaskImg] = useState<HTMLImageElement | null>(null);
-  const [maskIdx, setMaskIdx] = useState<number>(1);
+  const [maskIdx, setMaskIdx] = useState<number>(2);
   const [labelClass, setLabelClass] = useState<number>(1);
   const [labelType, setLabelType] = useState<Label>("Brush");
   const [brushWidth, setBrushWidth] = useState<number>(1);
@@ -36,10 +36,14 @@ const AppContextProvider = (props: {
 
   // Segment Feature stuff
   const [segmentFeature, setSegmentFeature] = useState<SegmentFeatureState>({ feature: false, segment: false })
+  const [features, setFeatures] = useState<Features>(defaultFeatures)
 
   // Menus
   const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "", stackTrace: "" })
   const [showToast, setShowToast] = useState<boolean>(false);
+  const [modalShow, setModalShow] = useState<ModalShow>({ welcome: false, settings: false, features: false })
+  const [theme, setTheme] = useState<Theme>("default")
+  const [settings, setSettings] = useState<Settings>({ nPoints: 20000, trainAll: false, rescale: true })
 
   return (
     <AppContext.Provider
@@ -69,9 +73,13 @@ const AppContextProvider = (props: {
         processing: [processing, setProcessing],
 
         segmentFeature: [segmentFeature, setSegmentFeature],
+        features: [features, setFeatures],
 
         errorObject: [errorObject, setErrorObject],
         showToast: [showToast, setShowToast],
+        modalShow: [modalShow, setModalShow],
+        theme: [theme, setTheme],
+        settings: [settings, setSettings],
       }}
     >
       {props.children}

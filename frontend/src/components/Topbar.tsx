@@ -5,7 +5,7 @@
 
 import React, { useRef, useContext } from "react";
 import AppContext from "./hooks/createContext";
-import { TopbarProps } from "./helpers/Interfaces";
+import { TopbarProps, ModalShow, themeBGs } from "./helpers/Interfaces";
 
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
@@ -25,7 +25,11 @@ export const ToolTip = (str: string) => {
 }
 
 
-const Topbar = ({ loadFromFile, saveSeg, saveClassifier }: TopbarProps) => {
+const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier }: TopbarProps) => {
+    const {
+        modalShow: [modalShow, setModalShow],
+        theme: [theme,],
+    } = useContext(AppContext)!;
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Common pattern for opening file dialog w/ button: hidden <input> who is clicked when button is clicked.
@@ -42,13 +46,25 @@ const Topbar = ({ loadFromFile, saveSeg, saveClassifier }: TopbarProps) => {
     }
 
     const icons: string[][] = [
+        ["Settings", "settings.png", ""],
         ["Paper", "paper.png", "coming_soon"],
         ["Help", "help.png", "https://github.com/tldr-group/samba-web"],
         ["TLDR Group", "tldr.png", "https://tldr-group.github.io/#/"]
     ]
 
+    const iconClick = (e: any, i: string) => {
+        if (i === "Settings") {
+            const newModalShow: ModalShow = { welcome: false, settings: true, features: false }
+            setModalShow(newModalShow)
+        } else if (i === "Features") {
+            const newModalShow: ModalShow = { welcome: false, settings: false, features: true }
+            setModalShow(newModalShow)
+        }
+    };
+
     return (
-        <Navbar bg="dark" variant="dark" expand="lg" style={{ boxShadow: "1px 1px  1px grey" }}>
+        <Navbar bg={themeBGs[theme][0]} variant="dark" expand="lg" style={{ boxShadow: "1px 1px  1px grey" }
+        }>
             <Container>
                 <Navbar.Brand style={{ fontSize: "2em", padding: "0px", marginRight: "5px" }}>&#128378;</Navbar.Brand>
                 <Navbar.Brand>SAMBA</Navbar.Brand>
@@ -67,35 +83,39 @@ const Topbar = ({ loadFromFile, saveSeg, saveClassifier }: TopbarProps) => {
                         </NavDropdown>
                         <NavDropdown title="Classifier" id="data-dropdown">
                             <NavDropdown.Item onClick={saveClassifier}>Save</NavDropdown.Item>
-                            <NavDropdown.Item href="#action/3.2">Load</NavDropdown.Item>
+                            <NavDropdown.Item >Load</NavDropdown.Item>
                             <NavDropdown.Divider />
-                            <NavDropdown.Item href="#action/3.4">
+                            <NavDropdown.Item onClick={(e) => iconClick(e, "Features")}>
                                 Features
                             </NavDropdown.Item>
                         </NavDropdown>
+                        <Nav.Link onClick={saveLabels}>Save Labels</Nav.Link>
                         <Nav.Link onClick={saveSeg}>Save Segmentation</Nav.Link>
                     </Nav>
                 </Navbar.Collapse>
             </Container>
 
-            {icons.map(i => <OverlayTrigger
-                key={i[0]}
-                placement="bottom"
-                delay={{ show: 250, hide: 400 }}
-                overlay={ToolTip(i[0])}
-            >
-                <Navbar.Brand href={i[2]}>
-                    <img
-                        src={"/assets/icons/" + i[1]}
-                        width="30"
-                        height="30"
-                        className="d-inline-block align-top"
-                        style={{ backgroundColor: '#ffffff', borderRadius: '20px' }}
-                    />
-                </Navbar.Brand>
-            </OverlayTrigger>
-            )}
-        </Navbar>
+            {
+                icons.map(i => <OverlayTrigger
+                    key={i[0]}
+                    placement="bottom"
+                    delay={{ show: 250, hide: 400 }}
+                    overlay={ToolTip(i[0])}
+                >
+                    <Navbar.Brand href={i[2]} target="_blank">
+                        <img
+                            src={"/assets/icons/" + i[1]}
+                            width="30"
+                            height="30"
+                            className="d-inline-block align-top"
+                            style={{ backgroundColor: themeBGs[theme][2], borderRadius: '20px' }}
+                            onClick={(e) => iconClick(e, i[0])}
+                        />
+                    </Navbar.Brand>
+                </OverlayTrigger>
+                )
+            }
+        </Navbar >
     );
 }
 

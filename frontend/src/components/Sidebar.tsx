@@ -123,11 +123,11 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                     }}>{i}</Button>)}
                 </ButtonGroup>
             </Card.Body>
-            <Card.Body>
-                Brush Width
+            {(labelType == "Brush" || labelType == "Erase") && <Card.Body>
+                {labelType} Width
                 <Form.Range onChange={(e) => _setWidth(e)} min="1" max="100" value={brushWidth} />
-            </Card.Body>
-            <Card.Body>
+            </Card.Body>}
+            {labelType == "Smart Labelling" && <Card.Body>
                 Smart Label Region
                 <ButtonGroup style={{ paddingLeft: "4%" }}>
                     {regionSizes.map((size, i) => <Button key={i} variant="light" onClick={(e) => setMaskIdx(3 - i)} style={{
@@ -135,7 +135,7 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                         borderColor: _getCSSColour(3 - i, maskIdx, "", labelClass, theme)
                     }}>{size}</Button>)}
                 </ButtonGroup>
-            </Card.Body>
+            </Card.Body>}
         </Card >
     );
 }

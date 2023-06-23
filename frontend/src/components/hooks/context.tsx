@@ -26,7 +26,7 @@ const AppContextProvider = (props: {
   const [maskIdx, setMaskIdx] = useState<number>(2);
   const [labelClass, setLabelClass] = useState<number>(1);
   const [labelType, setLabelType] = useState<Label>("Brush");
-  const [brushWidth, setBrushWidth] = useState<number>(1);
+  const [brushWidth, setBrushWidth] = useState<number>(20);
 
   // Canvas display stuff
   const [overlayType, setOverlayType] = useState<"Segmentation" | "Label">("Segmentation");

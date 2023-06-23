@@ -94,6 +94,8 @@ const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier, loadClassif
                                 style={{ display: 'none' }}
                                 onChange={e => handleFileUpload(e, "image")} />
                             <NavDropdown.Item>Remove</NavDropdown.Item>
+                            <NavDropdown.Divider />
+                            <NavDropdown.Item>Clear All</NavDropdown.Item>
                         </NavDropdown>
                         <NavDropdown title="Classifier" id="data-dropdown">
                             <NavDropdown.Item onClick={saveClassifier}>Save</NavDropdown.Item>
@@ -104,6 +106,7 @@ const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier, loadClassif
                                 ref={loadClassifierRef}
                                 style={{ display: 'none' }}
                                 onChange={e => handleFileUpload(e, "classifier")} />
+                            <NavDropdown.Item >Apply</NavDropdown.Item>
                             <NavDropdown.Divider />
                             <NavDropdown.Item onClick={(e) => iconClick(e, "Features")}>
                                 Features

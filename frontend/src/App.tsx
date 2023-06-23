@@ -8,7 +8,7 @@ of the SAM model (with the image encoding part run on the backed.).
 */
 
 import { InferenceSession, Tensor } from "onnxruntime-web";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import "./assets/scss/App.scss";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { handleImageScale } from "./components/helpers/scaleHelper";
@@ -85,7 +85,6 @@ const App = () => {
     maskIdx: [maskIdx],
     labelType: [, setLabelType],
     labelClass: [labelClass],
-    segmentFeature: [segmentFeature, setSegmentFeature],
     features: [features,],
     processing: [, setProcessing],
     errorObject: [errorObject, setErrorObject],
@@ -100,6 +99,9 @@ const App = () => {
   // The ONNX model expects the input to be rescaled to 1024. 
   // The modelScale state variable keeps track of the scale values.
   const [modelScale, setModelScale] = useState<modelScaleProps | null>(null);
+
+  const [segmentFlag, setSegmentFlag] = useState<boolean>(false)
+  const [featureFlag, setFeatureFlag] = useState<boolean>(false)
 
   useEffect(() => {
     // Initialize the ONNX model on load
@@ -215,8 +217,9 @@ const App = () => {
     try {
       await fetch(FEATURISE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "id": UID, "features": features }) });
       console.log("Finished Featurising");
-      const segFeat = { feature: true, segment: segmentFeature.segment }
-      setSegmentFeature(segFeat)
+      //const segFeat = { feature: true, segment: segmentFeature.segment }
+      //setSegmentFeature(segFeat)
+      setFeatureFlag(true)
     } catch (e) {
       const error = e as Error;
       setErrorObject({ msg: "Failed to featurise.", stackTrace: error.toString() });
@@ -251,8 +254,8 @@ const App = () => {
   };
 
   const trainPressed = () => {
-    const segFeat = { feature: segmentFeature.feature, segment: true }
-    setSegmentFeature(segFeat)
+    setSegmentFlag(true)
+    setProcessing("Segmenting");
   }
 
   const trainClassifier = async () => {
@@ -262,7 +265,6 @@ const App = () => {
     }
     const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
     setLabelArrs(newLabelArrs);
-    setProcessing("Segmenting");
     const b64images: string[] = imgArrs.map((img, i) => getb64Image(img));
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
@@ -419,11 +421,10 @@ const App = () => {
   }, [segArrs])
 
   useEffect(() => {
-    console.log(segmentFeature)
-    if (segmentFeature.feature == true && segmentFeature.segment == true) {
+    if (featureFlag == true && segmentFlag == true) {
       trainClassifier()
     }
-  }, [segmentFeature])
+  }, [segmentFlag, featureFlag])
 
   return <Stage
     loadImages={loadImages}

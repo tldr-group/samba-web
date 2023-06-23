@@ -35,7 +35,6 @@ const AppContextProvider = (props: {
   const [processing, setProcessing] = useState<"None" | "Encoding" | "Segmenting">("None");
 
   // Segment Feature stuff
-  const [segmentFeature, setSegmentFeature] = useState<SegmentFeatureState>({ feature: false, segment: false })
   const [features, setFeatures] = useState<Features>(defaultFeatures)
 
   // Menus
@@ -72,7 +71,6 @@ const AppContextProvider = (props: {
         segOpacity: [segOpacity, setSegOpacity],
         processing: [processing, setProcessing],
 
-        segmentFeature: [segmentFeature, setSegmentFeature],
         features: [features, setFeatures],
 
         errorObject: [errorObject, setErrorObject],

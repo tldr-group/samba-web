@@ -89,10 +89,6 @@ interface contextProps {
     setProcessing: (e: "None" | "Encoding" | "Segmenting") => void
   ];
 
-  segmentFeature: [
-    segmentFeature: SegmentFeatureState,
-    setSegmentFeature: (e: SegmentFeatureState) => void
-  ]
   features: [
     features: Features,
     setFeatures: (e: Features) => void

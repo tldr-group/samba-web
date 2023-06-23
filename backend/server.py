@@ -68,8 +68,6 @@ async def featurise_respond():
             pass
         images = [_get_image_from_b64(i) for i in request.json["images"]]
         success = await featurise(images, UID, selected_features=features)
-        with open(f"{CWD}/{UID}/success.txt", "w+") as f:
-            f.write("done")
         return _corsify_actual_response(jsonify(success=True))
 
 

@@ -67,32 +67,6 @@ def get_training_data(
     return fit_data, target_data
 
 
-def get_training_data_multiple_images(
-    imgs: List[np.ndarray], labels: List[np.ndarray], selected_features: dict
-) -> Tuple[List[np.ndarray], np.ndarray, np.ndarray]:
-    """For each image, featurise. Then check if it's labelled and if it is get the training data and concat."""
-    feature_stacks: List[np.ndarray] = []
-    fit_data_set = False
-    all_fit_data: np.ndarray
-    all_target_data: np.ndarray
-    for i in range(len(imgs)):
-        img, label = imgs[i], labels[i]
-        feature_stack = multiscale_advanced_features(img, selected_features)
-        feature_stacks.append(feature_stack)
-        is_labelled = np.sum(label) >= 1
-        # print(i, is_labelled, fit_data_set, np.sum(label))
-        if is_labelled:
-            fit_data, target_data = get_training_data(feature_stack, label)
-            if fit_data_set is False:
-                all_fit_data = fit_data
-                all_target_data = target_data
-                fit_data_set = True
-            else:
-                all_fit_data = np.concatenate((all_fit_data, fit_data), axis=0)
-                all_target_data = np.concatenate((all_target_data, target_data), axis=0)
-    return (feature_stacks, all_fit_data, all_target_data)
-
-
 def get_training_data_features_done(
     labels: List[np.ndarray], UID: str
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -127,25 +101,6 @@ def fit(
     else:
         model.fit(train_data, target_data, weights)
     return model
-
-
-def apply(
-    model: EnsembleMethod, feature_stacks: List[np.ndarray], reorder: bool = True
-) -> List[np.ndarray]:
-    """Given $model, apply it to each feature stack in $feature stacks."""
-    out: List[np.ndarray] = []
-    for feature_stack in feature_stacks:
-        h, w, feat = feature_stack.shape
-        flat_apply_data = feature_stack.reshape((h * w, feat))
-        out_probs = model.predict_proba(flat_apply_data)
-        _, n_classes = out_probs.shape
-        # gui expects arr in form (n_classes, h, w)
-        if reorder:
-            out_probs_arr = out_probs.T.reshape((n_classes, h, w))
-        else:
-            out_probs_arr = out_probs
-        out.append(out_probs_arr)
-    return out
 
 
 def apply_features_done(
@@ -192,30 +147,6 @@ def get_model(
     elif model_name == "LGBM_cpu":
         model = HistGradientBoostingClassifier()
     return model
-
-
-def featurise_then_segment(
-    imgs: List[np.ndarray],
-    selected_features: dict,
-    labels: List[np.ndarray],
-    model_name: EnsembleMethodName = "FRF",
-    balance_classes: bool = True,
-) -> Tuple[List[np.ndarray], EnsembleMethod]:
-    """Perform each step of classification: featurising, get data, get model, fit, apply."""
-    # TODO: fix out of memory errors by only computing feature stacks of labelled images and then computing and applying on demand?
-    # compute one at a time, saving to a file each time? how would this work w/out loading the whole thing into memory?
-    # will it matter how much memory the VM/cloud instance if it's shared between users (i.e could one user use too much memory?)
-    feature_stacks, fit_data, target_data = get_training_data_multiple_images(
-        imgs, labels, selected_features
-    )  # get_training_data(feature_stack, labels)
-    model = get_model(model_name)
-    if balance_classes:
-        weights = get_class_weights(target_data)
-    else:
-        weights = None
-    model = fit(model, fit_data, target_data, weights)
-    out_data = apply(model, feature_stacks)
-    return out_data, model
 
 
 def segment_with_features(

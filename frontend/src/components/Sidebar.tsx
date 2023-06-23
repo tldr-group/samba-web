@@ -223,12 +223,15 @@ const SpinWheel = () => {
 }
 
 const NavigationFrame = ({ changeToImage }: NavigationProps) => {
-    const { imgType: [imgType,] } = useContext(AppContext)!;
+    const {
+        imgType: [imgType,],
+        theme: [theme]
+    } = useContext(AppContext)!;
     const nImages = 2
 
     if (nImages > 1 && imgType != "single") {
         return (
-            <Card className="bg-dark text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }}>
+            <Card className="text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }} bg={themeBGs[theme][0]}>
                 <Card.Header as="h5">Navigation</Card.Header>
                 <Card.Body>
                     <ImgSelect changeToImage={changeToImage} />
@@ -249,6 +252,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
         labelClass: [labelClass,],
         imgIdx: [imgIdx, setImgIdx],
         imgType: [imgType,],
+        theme: [theme,],
     } = useContext(AppContext)!;
     // Reference stord to update later.
     const canvRef = useRef<HTMLCanvasElement>(null);
@@ -367,7 +371,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
             <div>
                 <div className={`flex`}>Piece: <input type="number" min={1} max={imgArrs.length}
                     value={imgIdx + 1} onChange={e => changeImageIdx(e)}
-                    style={{ marginLeft: '8px', color: 'black', borderRadius: '4px', marginBottom: '10px' }} />
+                    style={{ marginLeft: '8px', color: 'black', borderRadius: '4px', marginBottom: '10px', backgroundColor: themeBGs[theme][2] }} />
                 </div>
                 <div id="container" style={{ display: 'grid', width: "100%", height: "100%" }}>
                     {(largeImg !== null) ? <img src={largeImg.src} style={{ gridColumn: 1, gridRow: 1, width: "100%", height: "100%" }}></img> : <></>}
@@ -384,7 +388,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
     } else if (imgType === "stack" || imgType === "multi") {
         return (
             <div>
-                Image: <input type="number" min={1} max={imgArrs.length} value={imgIdx + 1} onChange={e => changeImageIdx(e)} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px' }} />
+                Image: <input type="number" min={1} max={imgArrs.length} value={imgIdx + 1} onChange={e => changeImageIdx(e)} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px', backgroundColor: themeBGs[theme][2] }} />
                 <Form.Range min={1} value={imgIdx} max={imgArrs.length} onChange={e => changeImageIdx(e)} />
             </div>
         )

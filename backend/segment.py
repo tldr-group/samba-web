@@ -106,6 +106,8 @@ async def segment(
     save_mode: str,
     large_w: int = 0,
     large_h: int = 0,
+    n_points: int = 50000,
+    train_all: bool = True,
 ) -> np.ndarray:
     """
     Perform FRF segmentation.
@@ -125,7 +127,9 @@ async def segment(
 
     remasked_arrs_list: List[np.ndarray] = []
     remasked_flattened_arrs: np.ndarray
-    probs, model = segment_with_features(label_arrs, UID)
+    probs, model = segment_with_features(
+        label_arrs, UID, n_points=n_points, train_all=train_all
+    )
 
     for i in range(len(probs)):
         label_arr = label_arrs[i]

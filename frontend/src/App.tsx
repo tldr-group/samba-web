@@ -91,6 +91,7 @@ const App = () => {
     errorObject: [errorObject, setErrorObject],
     showToast: [, setShowToast],
     modalShow: [, setModalShow],
+    settings: [settings,],
   } = useContext(AppContext)!;
 
   const [model, setModel] = useState<InferenceSession | null>(null); // ONNX model
@@ -271,7 +272,10 @@ const App = () => {
       largeW = largeImg.width
       largeH = largeImg.height
     }
-    const msg = { "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType, "large_w": largeW, "large_h": largeH }
+    const msg = {
+      "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
+      "large_w": largeW, "large_h": largeH, "n_points": settings.nPoints, "train_all": settings.trainAll
+    }
     try {
       let resp = await fetch(SEGMENT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify(msg) })
       const buffer = await resp.arrayBuffer();
@@ -415,6 +419,7 @@ const App = () => {
   }, [segArrs])
 
   useEffect(() => {
+    console.log(segmentFeature)
     if (segmentFeature.feature == true && segmentFeature.segment == true) {
       trainClassifier()
     }

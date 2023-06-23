@@ -29,7 +29,7 @@ EnsembleMethod: TypeAlias = (
 EnsembleMethodName: TypeAlias = Literal["FRF", "XGB", "LGBM"]
 
 
-def get_class_weights(target_data: np.ndarray) -> np.ndarray:
+def get_class_weights(target_data: np.ndarray) -> Tuple[np.ndarray, List[int]]:
     """
     Get class weights array.
 
@@ -48,7 +48,7 @@ def get_class_weights(target_data: np.ndarray) -> np.ndarray:
 
     for i, class_val in enumerate(unique_classes):
         weights_arr = np.where(target_data == class_val, class_weights[i], weights_arr)
-    return weights_arr
+    return weights_arr, class_freqs
 
 
 def get_training_data(
@@ -87,6 +87,58 @@ def get_training_data_features_done(
                 all_fit_data = np.concatenate((all_fit_data, fit_data), axis=0)
                 all_target_data = np.concatenate((all_target_data, target_data), axis=0)
     return (all_fit_data, all_target_data)
+
+
+def _shuffle_fit_target(
+    fit: np.ndarray, target: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray]:
+    all_shuffle_inds = np.arange(0, target.shape[0], 1)
+    np.random.shuffle(all_shuffle_inds)
+    print(f"sampled and shuffled {len(all_shuffle_inds)} points")
+    return fit[all_shuffle_inds], target[all_shuffle_inds]
+
+
+def sample_training_data(
+    fit_data: np.ndarray,
+    target_data: np.ndarray,
+    class_counts: List[int],
+    n_points: int,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Sample training data randomly up to n_points.
+
+    Given flat arrays of fit and target data, class frequencies and desired number of points, loop through each class,
+    sample class_freq * n_points randomly of each class, put into array then shuffle once all classes sampled from.
+    """
+    sampled_fit_data: np.ndarray
+    sampled_target_data: np.ndarray
+    class_freqs = [i / sum(class_counts) for i in class_counts]
+    for i, freq in enumerate(class_freqs):
+        class_val = i + 1
+        n_points_per_class = int(n_points * freq)
+
+        matching_inds = np.nonzero(np.where(target_data == class_val, 1, 0))
+        class_filtered_fit = fit_data[matching_inds]
+        class_filtered_target = (
+            np.zeros(shape=(class_filtered_fit.shape[0],)) + class_val
+        )
+        print(f"sampling up to {n_points_per_class} points for class {class_val}")
+
+        shuffle_inds = np.arange(0, len(class_filtered_fit), 1)
+        np.random.shuffle(shuffle_inds)
+        shuffled_fit = class_filtered_fit[shuffle_inds]
+
+        sampled_fit = shuffled_fit[:n_points_per_class]
+        sampled_target: np.ndarray = class_filtered_target[:n_points_per_class]
+        if i == 0:
+            sampled_fit_data = sampled_fit
+            sampled_target_data = sampled_target
+        else:
+            sampled_fit_data = np.concatenate((sampled_fit_data, sampled_fit), axis=0)
+            sampled_target_data = np.concatenate(
+                (sampled_target_data, sampled_target), axis=0
+            )
+    # now globally shuffle our data
+    return _shuffle_fit_target(sampled_fit_data, sampled_target_data)
 
 
 def fit(
@@ -153,15 +205,28 @@ def segment_with_features(
     labels: List[np.ndarray],
     UID: str,
     model_name: EnsembleMethodName = "FRF",
+    n_points: int = 40000,
     balance_classes: bool = True,
+    train_all: bool = False,
 ) -> Tuple[List[np.ndarray], EnsembleMethod]:
     """Assuming a list of feature stacks are saved at the folder, get training data then fit then apply."""
     fit_data, target_data = get_training_data_features_done(labels, UID)
     model = get_model(model_name)
-    if balance_classes:
-        weights = get_class_weights(target_data)
-    else:
+    weights: np.ndarray | None
+    weights, class_counts = get_class_weights(target_data)
+    if balance_classes is False:
         weights = None
-    model = fit(model, fit_data, target_data, weights)
+    if train_all or target_data.shape[0] < n_points:
+        sample_fit_data, sample_target_data = _shuffle_fit_target(
+            fit_data,
+            target_data,
+        )
+        new_weights = weights
+    else:
+        sample_fit_data, sample_target_data = sample_training_data(
+            fit_data, target_data, class_counts, n_points
+        )
+        new_weights, _ = get_class_weights(sample_target_data)
+    model = fit(model, sample_fit_data, sample_target_data, new_weights)
     out_data = apply_features_done(model, UID, len(labels))
     return out_data, model

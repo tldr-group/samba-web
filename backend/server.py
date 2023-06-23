@@ -104,8 +104,9 @@ async def segment_respond():
             pass
         save_mode = request.json["save_mode"]
         large_w, large_h = request.json["large_w"], request.json["large_h"]
+        n_points, train_all = request.json["n_points"], request.json["train_all"]
         segmentation = await segment(
-            images, labels_dicts, UID, save_mode, large_w, large_h
+            images, labels_dicts, UID, save_mode, large_w, large_h, n_points, train_all
         )
         response = Response(segmentation.tobytes())
         response.headers.add("Content-Type", "application/octet-stream")

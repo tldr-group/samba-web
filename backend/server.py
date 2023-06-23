@@ -106,7 +106,6 @@ async def segment_respond():
             pass
         save_mode = request.json["save_mode"]
         large_w, large_h = request.json["large_w"], request.json["large_h"]
-        print(request.json["features"])
         segmentation = await segment(
             images, labels_dicts, UID, save_mode, large_w, large_h
         )

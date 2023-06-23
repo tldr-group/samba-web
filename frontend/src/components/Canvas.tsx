@@ -7,6 +7,7 @@ import {
     imageDataToImage, erase, drawErase, drawPolygon
 } from "./helpers/canvasUtils"
 import * as _ from "underscore";
+import '../assets/scss/styles.css'
 
 
 const MAX_ZOOM = 10
@@ -47,6 +48,9 @@ const MultiCanvas = () => {
     const zoom = useRef<number>(1);
     const cameraOffset = useRef<Offset>({ x: 0, y: 0 })
     const mousePos = useRef<Offset>({ x: 0, y: 0 })
+
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [canvSize, setCanvSize] = useState<Offset>({ x: 300, y: 150 })
 
     const [labelImg, setLabelImg] = useState<HTMLImageElement | null>(null);
     const [segImg, setSegImg] = useState<HTMLImageElement | null>(null);
@@ -349,6 +353,29 @@ const MultiCanvas = () => {
         resetLabels()
     }, [labelType]) // clear animated canvas when switching
 
+    useEffect(() => {
+        for (let ref of refs) {
+            const canv = ref.current
+            if (canv) {
+                canv.width = canvSize.x
+                canv.height = canvSize.y
+            }
+        }
+        drawAllCanvases(zoom.current, cameraOffset.current)
+    }, [canvSize])
+
+    useEffect(() => {
+        const resizeCanvs = () => {
+            const container = containerRef.current
+            if (container) {
+                const newCanvSize = { x: container.clientWidth, y: container.clientHeight }
+                setCanvSize(newCanvSize)
+            }
+        }
+        resizeCanvs()
+        window.addEventListener('resize', resizeCanvs)
+    }, [])
+
     useEffect(() => { resetAnimation() }, [labelType, brushWidth, labelClass])
 
 
@@ -361,9 +388,14 @@ const MultiCanvas = () => {
             onMouseLeave={e => resetLabels()}
             onKeyDown={e => handleKeyPress(e)}
             tabIndex={0}
-            onWheel={e => handleScroll(e)}>
-            {refs.map((r, i) => <canvas key={i} ref={r} height={1024} width={1024} style={{ position: 'absolute', left: '0', top: '0' }}></canvas>)}
-        </div>)
+            onWheel={e => handleScroll(e)}
+            style={{ height: '80vh', width: '75vw' }}
+            ref={containerRef}
+            id="canvContainer"
+            className="container"
+        >
+            {refs.map((r, i) => <canvas key={i} ref={r} style={{ position: 'absolute', left: '0', top: '0' }}></canvas>)}
+        </div>) //was height={1024} width={1024}
 }
 
 export default MultiCanvas

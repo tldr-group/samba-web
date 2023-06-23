@@ -129,7 +129,7 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, cha
     <div className={`w-full h-full`} style={{ background: themeBGs[theme][1] }}>
       <Topbar loadFromFile={loadFromFile} saveSeg={saveSeg} saveLabels={saveLabels} saveClassifier={saveClassifier} />
       <div className={`flex`} style={{ margin: '1.5%', background: themeBGs[theme][1] }} > {/*Canvas div on left, sidebar on right*/}
-        <div className={`${flexCenterClasses} relative w-[70%] h-[70%]`}>
+        <div className={`${flexCenterClasses} relative w-[90%] h-[80%]`}>
           {!image && <DragDrop loadFromFile={loadFromFile} loadDefault={loadDefault} />}
           {image && <Canvas />}
         </div>
@@ -155,12 +155,13 @@ const DragDrop = ({ loadDefault, loadFromFile }: DragDropProps) => {
       };
     };
   };
-
+  //height: '750px', width: '750px'
   return (
     <div style={{
-      height: '1024px', width: '1024px', outline: '10px dashed #b5bab6', color: '#b5bab6',
-      fontSize: '2em', display: 'flex', justifyContent: 'center', alignItems: 'center',
-      borderRadius: '10px'
+      height: '80vh', width: '75vw',
+      outline: '10px dashed #b5bab6', color: '#b5bab6',
+      fontSize: '2em', justifyContent: 'center', alignItems: 'center',
+      borderRadius: '10px', padding: '10px'
     }}
       onDragOver={handleDrag}
       onDrop={handeDrop}

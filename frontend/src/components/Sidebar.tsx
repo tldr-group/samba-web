@@ -36,7 +36,7 @@ const _getCSSColour = (currentStateVal: any, targetStateVal: any, successPrefix:
     } else if (matches) {
         outlineStr = successPrefix + hex;
     } else {
-        outlineStr = themeBGs[theme][1];
+        outlineStr = themeBGs[theme][2];
     }
     return outlineStr;
 }
@@ -102,7 +102,7 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                             overlay={ToolTip(l.name)}>
                             <img src={prefix + l.path} style={
                                 {
-                                    backgroundColor: themeBGs[theme][1], borderRadius: '3px',
+                                    backgroundColor: themeBGs[theme][2], borderRadius: '3px',
                                     marginLeft: '7%', width: '40px', boxShadow: '2px 2px 2px black',
                                     outline: _getCSSColour(l.name, labelType, "3px solid ", labelClass, theme)
                                 }
@@ -167,7 +167,7 @@ const OverlaysFrame = () => {
         <Card className="text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }} bg={themeBGs[theme][0]}>
             <Card.Header as="h5">Overlay</Card.Header>
             <Card.Body className="flex">
-                <Form.Select onChange={e => _setOverlayType(e.target.value)} style={{ backgroundColor: themeBGs[theme][1] }}>
+                <Form.Select onChange={e => _setOverlayType(e.target.value)} style={{ backgroundColor: themeBGs[theme][2] }}>
                     <option >Overlay type</option>
                     <option value="Segmentation">Segmentation</option>
                     <option value="Label">Labels</option>

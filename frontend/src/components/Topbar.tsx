@@ -102,13 +102,13 @@ const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier }: TopbarPro
                     delay={{ show: 250, hide: 400 }}
                     overlay={ToolTip(i[0])}
                 >
-                    <Navbar.Brand href={i[2]}>
+                    <Navbar.Brand href={i[2]} target="_blank">
                         <img
                             src={"/assets/icons/" + i[1]}
                             width="30"
                             height="30"
                             className="d-inline-block align-top"
-                            style={{ backgroundColor: themeBGs[theme][1], borderRadius: '20px' }}
+                            style={{ backgroundColor: themeBGs[theme][2], borderRadius: '20px' }}
                             onClick={(e) => iconClick(e, i[0])}
                         />
                     </Navbar.Brand>

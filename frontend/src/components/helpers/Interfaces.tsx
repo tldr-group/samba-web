@@ -149,9 +149,9 @@ export const defaultFeatures = {
 
 export type Theme = "default" | "dark" | "blue" | "grey" | "green" | "yellow" | "red" | "light-blue"
 export type ThemeObj = { name: string, colour: string }
-// in form name: [bootstrap name, bg colour]
+// in form name: [bootstrap name, bg colour, button color (=bg color for all but dark)]
 export const themeBGs = {
-  "default": ["dark", "#ffffff"], "dark": ["dark", "#303030"], "blue": ["primary", "#D7DAE5"],
-  "red": ["danger", "#ECE2D0"], "green": ["success", "#CCDDB7"], "yellow": ["warning", "#ffffff"],
-  "grey": ["secondary", "#ffffff"], "light-blue": ["info", "#F6E8EA"]
+  "default": ["dark", "#ffffff", "#ffffff"], "dark": ["dark", "#303030", "#ffffff"], "blue": ["primary", "#D7DAE5", "#D7DAE5"],
+  "red": ["danger", "#ECE2D0", "#ECE2D0"], "green": ["success", "#CCDDB7", "#CCDDB7"], "yellow": ["warning", "#ffffff", "#ffffff"],
+  "grey": ["secondary", "#ffffff", "#ffffff"], "light-blue": ["info", "#F6E8EA", "#F6E8EA"]
 }

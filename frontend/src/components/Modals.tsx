@@ -5,7 +5,7 @@ The three large modals: Welcome, Settings, Features, the smaller error modal and
 
 import React, { useContext, useEffect, useRef, useState } from "react";
 import AppContext from "./hooks/createContext";
-import { Features, closeModal, LabelFrameProps, FeatureModalProps } from "./helpers/Interfaces"
+import { Features, closeModal, LabelFrameProps, FeatureModalProps, themeBGs, Theme } from "./helpers/Interfaces"
 
 
 import Accordion from 'react-bootstrap/Accordion';
@@ -20,15 +20,17 @@ import { FormCheck } from "react-bootstrap";
 
 const BigModal = ({ requestEmbedding }: LabelFrameProps) => {
     const {
-        modalShow: [modalShow, setModalShow]
+        modalShow: [modalShow, setModalShow],
+        theme: [theme,]
     } = useContext(AppContext)!;
 
     const handleClose = () => { setModalShow({ welcome: false, settings: false, features: false }) }
 
     return (
-        <Modal show={modalShow.welcome || modalShow.settings || modalShow.features} onHide={handleClose} size="lg">
+        <Modal show={modalShow.welcome || modalShow.settings || modalShow.features} onHide={handleClose} size="lg" >
             {(modalShow.welcome && <WelcomeModalContent />)}
             {(modalShow.features) && <FeatureModalContent closeModal={handleClose} requestEmbedding={requestEmbedding} />}
+            {(modalShow.settings) && <SettingsModalContent />}
         </Modal>
     )
 }
@@ -115,6 +117,30 @@ const FeatureModalContent = ({ closeModal, requestEmbedding }: FeatureModalProps
     )
 }
 
+
+const SettingsModalContent = () => {
+    const {
+        theme: [theme, setTheme]
+    } = useContext(AppContext)!;
+
+    const themes = Object.keys(themeBGs)
+    const change = (e: any) => { setTheme(e.target.value as Theme) }
+    return (
+        <>
+            <Modal.Header closeButton>
+                <Modal.Title>Settings</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <InputGroup>
+                    <InputGroup.Text>Theme:</InputGroup.Text>
+                    <Form.Select onChange={e => change(e)} defaultValue={theme}>
+                        {themes.map((x, i) => <option value={x} key={i} >{x}</option>)}
+                    </Form.Select>
+                </InputGroup>
+            </Modal.Body >
+        </>
+    )
+}
 
 
 

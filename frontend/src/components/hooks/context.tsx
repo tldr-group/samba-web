@@ -42,7 +42,7 @@ const AppContextProvider = (props: {
   const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "", stackTrace: "" })
   const [showToast, setShowToast] = useState<boolean>(false);
   const [modalShow, setModalShow] = useState<ModalShow>({ welcome: false, settings: false, features: false })
-  const [theme, setTheme] = useState<Theme>("green")
+  const [theme, setTheme] = useState<Theme>("red")
 
   return (
     <AppContext.Provider

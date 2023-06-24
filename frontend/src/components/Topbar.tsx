@@ -25,7 +25,7 @@ export const ToolTip = (str: string) => {
 }
 
 
-const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier, loadClassifier }: TopbarProps) => {
+const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier, loadClassifier, applyClassifier }: TopbarProps) => {
     const {
         modalShow: [modalShow, setModalShow],
         theme: [theme,],
@@ -106,7 +106,7 @@ const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier, loadClassif
                                 ref={loadClassifierRef}
                                 style={{ display: 'none' }}
                                 onChange={e => handleFileUpload(e, "classifier")} />
-                            <NavDropdown.Item >Apply</NavDropdown.Item>
+                            <NavDropdown.Item onClick={applyClassifier} >Apply</NavDropdown.Item>
                             <NavDropdown.Divider />
                             <NavDropdown.Item onClick={(e) => iconClick(e, "Features")}>
                                 Features

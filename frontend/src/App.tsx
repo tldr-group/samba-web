@@ -32,6 +32,7 @@ const PATH = "http://127.0.0.1:5000"
 const ENCODE_ENDPOINT = PATH + "/encoding"
 const FEATURISE_ENDPOINT = PATH + "/featurising"
 const SEGMENT_ENDPOINT = PATH + "/segmenting"
+const APPLY_ENDPOINT = PATH + "/applying"
 const SAVE_ENDPOINT = PATH + "/saving"
 const CLASSIFIER_ENDPOINT = PATH + "/classifier"
 const LOAD_CLASSIFIER_ENDPOINT = PATH + "/lclassifier"
@@ -103,6 +104,7 @@ const App = () => {
 
   const [segmentFlag, setSegmentFlag] = useState<boolean>(false)
   const [featureFlag, setFeatureFlag] = useState<boolean>(false)
+  const [applyFlag, setApplyFlag] = useState<boolean>(false)
 
   useEffect(() => {
     // Initialize the ONNX model on load
@@ -122,10 +124,6 @@ const App = () => {
     const showHelp = localStorage.getItem("showHelp")
     if (showHelp === null || showHelp === "true") {
       setModalShow({ welcome: true, settings: false, features: false })
-    }
-    const body = document.getElementById("root")
-    if (body != null) {
-      //document.body.style.backgroundColor = "#000000;"
     }
   }, []);
 
@@ -254,51 +252,80 @@ const App = () => {
     return
   };
 
-  const checkToSegment = (featFlag: boolean, segFlag: boolean) => {
+  const checkToSegment = (featFlag: boolean, segFlag: boolean, appFlag: boolean) => {
     if (featFlag == true && segFlag == true) {
       trainClassifier()
+    } else if (featFlag == true && appFlag == true) {
+      trainClassifier(true)
     }
   }
 
   const trainPressed = () => {
     if (segmentFlag === true) {
-      checkToSegment(featureFlag, true)
+      checkToSegment(featureFlag, true, false)
     } else {
       setSegmentFlag(true)
     }
     setProcessing("Segmenting");
   }
 
-  const trainClassifier = async () => {
+  const applyPressed = () => {
+    if (applyFlag === true) {
+      checkToSegment(featureFlag, false, true)
+    } else {
+      setApplyFlag(true)
+    }
+    setProcessing("Applying");
+  }
+
+  const trainClassifier = async (apply: boolean = false) => {
     // Ping our segment endpoint, send it our image and labels then await the array.
-    if (image === null || labelArr === null) {
+    if (image === null) {
       return;
     }
-    const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
-    setLabelArrs(newLabelArrs);
     const b64images: string[] = imgArrs.map((img, i) => getb64Image(img));
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     console.log("Started Segementing");
-    let [largeW, largeH]: Array<number> = [0, 0]
+    let [largeW, largeH]: Array<number> = [0, 0];
     if (imgType === "large" && largeImg !== null) {
-      largeW = largeImg.width
-      largeH = largeImg.height
+      largeW = largeImg.width;
+      largeH = largeImg.height;
     }
-    const msg = {
-      "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
-      "large_w": largeW, "large_h": largeH, "n_points": settings.nPoints, "train_all": settings.trainAll
+
+    let msg
+    let ENDPOINT: string
+    if (apply == false && labelArr != null) {
+      const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
+      setLabelArrs(newLabelArrs);
+      msg = {
+        "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
+        "large_w": largeW, "large_h": largeH, "n_points": settings.nPoints, "train_all": settings.trainAll
+      };
+      ENDPOINT = SEGMENT_ENDPOINT;
+    } else {
+      msg = {
+        "images": b64images, "id": UID, "save_mode": imgType,
+        "large_w": largeW, "large_h": largeH, "n_points": settings.nPoints, "train_all": settings.trainAll
+      };
+      ENDPOINT = APPLY_ENDPOINT;
     }
+
     try {
-      let resp = await fetch(SEGMENT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify(msg) })
+      let resp = await fetch(ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify(msg) })
       const buffer = await resp.arrayBuffer();
       loadSegmentationsFromHTTP(buffer);
     } catch (e) {
       const error = e as Error;
       setErrorObject({ msg: "Failed to segment.", stackTrace: error.toString() });
     }
+    if (apply === false) {
+      setSegmentFlag(false)
+    } else {
+      setApplyFlag(false)
+    }
     setProcessing("None");
-    setShowToast(true)
+    setShowToast(true);
   }
 
   const loadSegmentationsFromHTTP = (buffer: ArrayBuffer) => {
@@ -389,21 +416,14 @@ const App = () => {
     const reader = new FileReader();
     const extension = file.name.split('.').pop()?.toLowerCase();
     const isSkops = (extension == "skops");
-    reader.readAsArrayBuffer(file)
+    reader.readAsDataURL(file)
 
     reader.onload = () => {
       console.log("loading classifier")
       if (isSkops) {
         headers.append('Content-Type', 'application/json;charset=utf-8');
         try {
-          const arrayBuffer = reader.result as ArrayBuffer;
-          const bytes = new Uint8Array(arrayBuffer.byteLength)
-          const dataView = new DataView(arrayBuffer)
-          for (let i = 0; i < arrayBuffer.byteLength; i++) {
-            bytes[i] = dataView.getUint8(i)
-          }
-          const binString = Array.from(bytes, (x) => String.fromCodePoint(x)).join("");
-          const b64 = window.btoa(binString)
+          const b64 = reader.result
           let resp = fetch(LOAD_CLASSIFIER_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "bytes": b64 }) });
         } catch (error: any) {
           setErrorObject({ msg: "Failed to load classifier", stackTrace: error.message as string });
@@ -464,14 +484,15 @@ const App = () => {
   }, [segArrs])
 
   useEffect(() => {
-    checkToSegment(segmentFlag, featureFlag)
-  }, [segmentFlag, featureFlag])
+    checkToSegment(featureFlag, segmentFlag, applyFlag)
+  }, [segmentFlag, featureFlag, applyFlag])
 
   return <Stage
     loadImages={loadImages}
     loadDefault={loadDefault}
     requestEmbedding={requestEmbedding}
     trainClassifier={trainPressed}
+    applyClassifier={applyPressed}
     changeToImage={changeToImage}
     saveSeg={onSaveClick}
     saveLabels={saveLabels}

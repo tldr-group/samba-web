@@ -32,7 +32,7 @@ const AppContextProvider = (props: {
   const [overlayType, setOverlayType] = useState<"Segmentation" | "Label">("Segmentation");
   const [labelOpacity, setLabelOpacity] = useState<number>(0.6 * 255);
   const [segOpacity, setSegOpacity] = useState<number>(0.9 * 255);
-  const [processing, setProcessing] = useState<"None" | "Encoding" | "Segmenting">("None");
+  const [processing, setProcessing] = useState<"None" | "Encoding" | "Segmenting" | "Applying">("None");
 
   // Segment Feature stuff
   const [features, setFeatures] = useState<Features>(defaultFeatures)

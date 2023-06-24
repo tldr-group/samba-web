@@ -1,4 +1,5 @@
 """Given an image and some labels, featurise then segment with random forest classiier."""
+from zipfile import ZIP_DEFLATED
 import numpy as np
 from PIL import Image
 from tifffile import imwrite
@@ -7,9 +8,11 @@ from typing import List
 from math import floor, ceil
 from pickle import dump
 from io import BytesIO
-from skops.io import dumps, loads
+from skops.io import dump as skdump
+from skops.io import loads as skloads
+from skops.io import load as skload
 
-from forest_based import segment_with_features
+from forest_based import segment_with_features, apply_features_done
 
 try:
     CWD = os.environ["APP_PATH"]
@@ -113,14 +116,23 @@ def save_labels(
 async def _save_classifier(model, CWD: str, UID: str) -> int:
     with open(f"{CWD}/{UID}/classifier.pkl", "wb") as handle:
         dump(model, handle)
-    with open(f"{CWD}/{UID}/classifier.skops", "wb") as handle:
-        handle.write(dumps(model))
+    skdump(
+        model,
+        f"{CWD}/{UID}/classifier.skops",
+        compression=ZIP_DEFLATED,
+        compresslevel=9,
+    )
     return 0
 
 
 async def load_classifier_from_http(file_bytes: bytes, CWD: str, UID: str) -> None:
-    with open(f"{CWD}/{UID}/classifier.skops", "wb") as handle:
-        handle.write(file_bytes)
+    model = skloads(file_bytes)
+    skdump(
+        model,
+        f"{CWD}/{UID}/classifier.skops",
+        compression=ZIP_DEFLATED,
+        compresslevel=9,
+    )
     print("Loaded skops successfully")
 
 
@@ -171,3 +183,28 @@ async def segment(
     await _save_classifier(model, CWD, UID)
     print(remasked_flattened_arrs.shape, label_arrs[0].shape)
     return remasked_flattened_arrs
+
+
+async def apply(
+    images: List[Image.Image],
+    UID: str,
+    save_mode: str,
+    large_w: int = 0,
+    large_h: int = 0,
+) -> np.ndarray:
+    model = skload(f"{CWD}/{UID}/classifier.skops")
+    probs = apply_features_done(model, UID, len(images))
+
+    arrs_list: List[np.ndarray] = []
+    flattened_arrs: np.ndarray
+    for i in range(len(images)):
+        classes = np.argmax(probs[i], axis=0).astype(np.uint8) + 1
+        arrs_list.append(classes)
+        if i == 0:
+            flattened_arrs = classes.flatten()
+        else:
+            flattened_arrs = np.concatenate(
+                (flattened_arrs, classes.flatten()), axis=0, dtype=np.uint8
+            )
+    await _save_as_tiff(arrs_list, save_mode, UID, large_w, large_h)
+    return flattened_arrs

@@ -85,8 +85,8 @@ interface contextProps {
     setBrushWidth: (e: number) => void
   ];
   processing: [
-    processing: "None" | "Encoding" | "Segmenting",
-    setProcessing: (e: "None" | "Encoding" | "Segmenting") => void
+    processing: "None" | "Encoding" | "Segmenting" | "Applying",
+    setProcessing: (e: "None" | "Encoding" | "Segmenting" | "Applying") => void
   ];
 
   features: [

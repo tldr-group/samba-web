@@ -30,6 +30,7 @@ export interface StageProps {
   loadDefault: () => void;
   requestEmbedding: () => void;
   trainClassifier: () => void;
+  applyClassifier: () => void;
   changeToImage: (oldIdx: number, newIdx: number) => void;
   saveSeg: () => void;
   saveLabels: () => void;
@@ -42,6 +43,7 @@ export interface TopbarProps {
   saveSeg: () => void;
   saveLabels: () => void;
   saveClassifier: () => void;
+  applyClassifier: () => void;
   loadClassifier: (file: File) => void;
 }
 

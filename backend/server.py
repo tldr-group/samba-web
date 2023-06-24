@@ -21,7 +21,7 @@ except KeyError:
 print(CWD, os.getcwd())
 
 from encode import encode, featurise
-from segment import segment, save_labels, load_classifier_from_http
+from segment import segment, save_labels, load_classifier_from_http, apply
 from PIL import Image
 
 app = Flask(
@@ -115,6 +115,27 @@ async def segment_respond():
         raise RuntimeError("Wrong HTTP method {}".format(request.method))
 
 
+@app.route("/applying", methods=["POST", "GET", "OPTIONS"])
+async def apply_respond():
+    if "OPTIONS" in request.method:  # CORS preflight
+        return _build_cors_preflight_response()
+    elif "POST" in request.method:  # The actual request following the preflight
+        images = [_get_image_from_b64(i) for i in request.json["images"]]
+        UID = request.json["id"]
+        try:
+            os.mkdir(f"{CWD}/{UID}")
+        except FileExistsError:
+            pass
+        save_mode = request.json["save_mode"]
+        large_w, large_h = request.json["large_w"], request.json["large_h"]
+        segmentation = await apply(images, UID, save_mode, large_w, large_h)
+        response = Response(segmentation.tobytes())
+        response.headers.add("Content-Type", "application/octet-stream")
+        return _corsify_actual_response(response)
+    else:
+        raise RuntimeError("Wrong HTTP method {}".format(request.method))
+
+
 @app.route("/saving", methods=["POST", "GET", "OPTIONS"])
 def save_respond():
     if "OPTIONS" in request.method:  # CORS preflight
@@ -172,8 +193,10 @@ async def load_classifier_respond():
             os.mkdir(f"{CWD}/{UID}")
         except FileExistsError:
             pass
-        classifier_bytes = base64.standard_b64decode(request.json["bytes"])
-        print("uhhhh")
+        classifier_b64_with_prefix = request.json["bytes"]
+        b64 = classifier_b64_with_prefix.split(",")[1]
+        classifier_bytes = base64.standard_b64decode(b64)
+        # classifier_bytes = base64.standard_b64decode(request.json["bytes"])
         await load_classifier_from_http(classifier_bytes, CWD, UID)
         response = Response("{'foo': 'bar'}", status=200)
         return _corsify_actual_response(response)

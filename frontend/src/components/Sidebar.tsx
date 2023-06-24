@@ -212,6 +212,7 @@ const SpinWheel = () => {
                 )
                 }
                 {processing === "Segmenting" && < Spinner as='span' animation="border" />}
+                {processing === "Applying" && < Spinner as='span' animation="border" />}
                 <p style={{ marginBottom: '-4px' }}>{processing}</p>
             </Button >
         </div >)

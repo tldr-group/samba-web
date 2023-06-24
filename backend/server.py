@@ -159,7 +159,10 @@ def save_labels_respond():
         labels_dicts = request.json["labels"]
         save_mode = request.json["save_mode"]
         large_w, large_h = request.json["large_w"], request.json["large_h"]
-        labels_bytes = save_labels(images, labels_dicts, save_mode, large_w, large_h)
+        rescale = request.json["rescale"]
+        labels_bytes = save_labels(
+            images, labels_dicts, save_mode, large_w, large_h, rescale
+        )
         response = Response(labels_bytes)
         response.headers.add("Content-Type", "application/octet-stream")
         return _corsify_actual_response(response)
@@ -173,10 +176,11 @@ def classifier_respond():
         return _build_cors_preflight_response()
     elif "POST" in request.method:  # The actual request following the preflight
         UID = request.json["id"]
+        format = request.json["format"]
         response = send_file(
-            f"{CWD}/{UID}/classifier.pkl",
+            f"{CWD}/{UID}/classifier{format}",
             mimetype="application/octet-stream",
-            download_name="classifier.pkl",
+            download_name=f"classifier{format}",
         )
         return _corsify_actual_response(response)
     else:

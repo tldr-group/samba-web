@@ -164,4 +164,5 @@ export interface Settings {
   nPoints: number;
   trainAll: boolean;
   rescale: boolean;
+  format: ".skops" | ".pkl";
 }

@@ -129,16 +129,21 @@ const SettingsModalContent = () => {
     const change = (e: any) => { setTheme(e.target.value as Theme) }
     const setN = (e: any) => {
         console.log(typeof (e.target.value))
-        setSettings({ nPoints: parseInt(e.target.value), trainAll: settings.trainAll, rescale: settings.rescale })
+        setSettings({ nPoints: parseInt(e.target.value), trainAll: settings.trainAll, rescale: settings.rescale, format: settings.format })
     }
     const setAll = (e: any) => {
         const state = e.target.value == "on" ? true : false
-        setSettings({ nPoints: settings.nPoints, trainAll: state, rescale: settings.rescale })
+        setSettings({ nPoints: settings.nPoints, trainAll: state, rescale: settings.rescale, format: settings.format })
     }
     const setRescale = (e: any) => {
         const state = e.target.value == "on" ? true : false
-        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: state })
+        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: state, format: settings.format })
     }
+
+    const setFormat = (e: any) => {
+        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: settings.rescale, format: e.target.value })
+    }
+
     return (
         <>
             <Modal.Header closeButton>
@@ -149,6 +154,15 @@ const SettingsModalContent = () => {
                     <InputGroup.Text>Theme:</InputGroup.Text>
                     <Form.Select onChange={e => change(e)} defaultValue={theme}>
                         {themes.map((x, i) => <option value={x} key={i} >{x}</option>)}
+                    </Form.Select>
+                </InputGroup>
+            </Modal.Body >
+            <Modal.Body>
+                <InputGroup>
+                    <InputGroup.Text>Classifier format:</InputGroup.Text>
+                    <Form.Select onChange={e => setFormat(e)} defaultValue={settings.format}>
+                        <option value={".skops"} key="0">.skops</option>
+                        <option value={".pkl"} key="1">.pkl</option>
                     </Form.Select>
                 </InputGroup>
             </Modal.Body >

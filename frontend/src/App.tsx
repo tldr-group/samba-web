@@ -300,13 +300,15 @@ const App = () => {
       setLabelArrs(newLabelArrs);
       msg = {
         "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
-        "large_w": largeW, "large_h": largeH, "n_points": settings.nPoints, "train_all": settings.trainAll
+        "large_w": largeW, "large_h": largeH, "n_points": settings.nPoints,
+        "train_all": settings.trainAll, "rescale": settings.rescale
       };
       ENDPOINT = SEGMENT_ENDPOINT;
     } else {
       msg = {
         "images": b64images, "id": UID, "save_mode": imgType,
-        "large_w": largeW, "large_h": largeH, "n_points": settings.nPoints, "train_all": settings.trainAll
+        "large_w": largeW, "large_h": largeH, "n_points": settings.nPoints,
+        "train_all": settings.trainAll, "rescale": settings.rescale
       };
       ENDPOINT = APPLY_ENDPOINT;
     }
@@ -376,7 +378,7 @@ const App = () => {
 
   const onSaveClick = async () => {
     if (image === null || segArr === null) { return; }
-    saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID }), "seg.tiff")
+    saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID, "rescale": settings.rescale }), "seg.tiff")
   }
 
   const saveLabels = async () => {
@@ -389,7 +391,10 @@ const App = () => {
       largeW = largeImg.width
       largeH = largeImg.height
     }
-    const dict = { "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType, "large_w": largeW, "large_h": largeH }
+    const dict = {
+      "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
+      "large_w": largeW, "large_h": largeH, "rescale": settings.rescale
+    }
     const msg = JSON.stringify(dict)
     saveArrAsTIFF(SAVE_LABEL_ENDPOINT, msg, "label.tiff")
   }
@@ -398,10 +403,10 @@ const App = () => {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     try {
-      let resp = await fetch(CLASSIFIER_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID }) })
+      let resp = await fetch(CLASSIFIER_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "format": settings.format }) })
       const buffer = await resp.arrayBuffer();
       const a = document.createElement("a")
-      a.download = "classifier.pkl"
+      a.download = "classifier" + settings.format
       const file = new Blob([buffer], { type: "application/octet-stream" });
       a.href = URL.createObjectURL(file);
       a.click()

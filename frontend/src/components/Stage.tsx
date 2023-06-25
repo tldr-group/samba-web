@@ -18,7 +18,8 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, app
   changeToImage, saveSeg, saveLabels, saveClassifier, loadClassifier }: StageProps) => {
   const {
     image: [image,],
-    imgType: [, setImgType],
+    imgArrs: [imgArrs,],
+    imgType: [imgType, setImgType],
     largeImg: [, setLargeImg],
     errorObject: [, setErrorObject],
     theme: [theme,]
@@ -39,8 +40,9 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, app
       loadImages(hrefs);
       setImgType("stack");
     } else if (tifs.length == 1 && isSmall) {
+      const type = (imgArrs.length == 0) ? "single" : "multi"
       loadImages(hrefs);
-      setImgType("single");
+      setImgType(type);
     } else if (!isSmall) {
       const img = new Image();
       img.src = hrefs[0];
@@ -60,8 +62,10 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, app
         setImgType("large");
       }
       else {
+        const type = (imgArrs.length == 0) ? "single" : "multi"
+        console.log(type)
         loadImages([href]);
-        setImgType("single");
+        setImgType(type);
       }
     }
   }
@@ -104,6 +108,10 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, app
         return
       }
       try {
+        if (imgType === "large" && imgArrs.length > 0) {
+          setErrorObject({ msg: "Cannot load another image with existing large image! Please remove the previous.", stackTrace: "" })
+          return
+        }
         if (isTIF) {
           loadTIFF(reader.result as ArrayBuffer);
         } else if (isPNGJPG) {

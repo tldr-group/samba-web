@@ -187,8 +187,6 @@ const SettingsModalContent = () => {
 }
 
 
-
-
 const ErrorMessage = () => {
     const {
         errorObject: [errorObject, setErrorObject]
@@ -222,6 +220,10 @@ const ErrorMessage = () => {
             </Modal >
         </>
     );
+}
+
+const WarningModal = (text: string, closeFunction: CallableFunction) => {
+
 }
 
 

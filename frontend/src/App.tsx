@@ -20,6 +20,7 @@ import AppContext from "./components/hooks/createContext";
 const ort = require("onnxruntime-web");
 /* @ts-ignore */
 import npyjs from "npyjs";
+import { size } from "underscore";
 
 
 const MODEL_DIR = "/model/sam_onnx_quantized_example.onnx";
@@ -56,6 +57,10 @@ const updateArr = (oldArr: Array<any>, idx: number, setVal: any) => {
   const newArr = oldArr.map((v, i) => (i === idx) ? setVal : v);
   return newArr;
 };
+
+const appendToArr = (oldArr: Array<any>, toAdd: Array<any>) => {
+  return oldArr.concat(toAdd)
+}
 
 
 const getRandomInt = (max: number) => {
@@ -122,14 +127,14 @@ const App = () => {
       }
     };
     initModel();
-    initBacked();
+    initBackend();
     const showHelp = localStorage.getItem("showHelp")
     if (showHelp === null || showHelp === "true") {
       setModalShow({ welcome: true, settings: false, features: false })
     }
   }, []);
 
-  const initBacked = async () => {
+  const initBackend = async () => {
     try {
       const headers = new Headers();
       headers.append('Content-Type', 'application/json;charset=utf-8');
@@ -171,11 +176,7 @@ const App = () => {
           }
           // Set the arrays once only when very last image is loaded
           if (i === hrefs.length - 1) {
-            setImgArrs(imgs);
-            setLabelArrs(nullLabels);
-            setSegArrs(nullSegs);
-            setTensorArrs(nullTensors);
-            requestFeatures(imgs)
+            updateAllArrs(imgs, nullLabels, nullSegs, nullTensors)
           }
         };
       }
@@ -185,6 +186,27 @@ const App = () => {
       console.log(e);
     }
   };
+
+  const updateAllArrs = (imgs: Array<HTMLImageElement>, labels: Array<Uint8ClampedArray>,
+    segs: Array<Uint8ClampedArray>, tensors: Array<any>) => {
+    if (imgArrs.length > 0) {
+      const isStack = (imgType === "stack")
+      const sizeMatches = (imgs[0].width === imgArrs[0].width && imgs[0].height === imgArrs[0].height)
+      if (isStack && !sizeMatches) {
+        setErrorObject({ msg: "Size of two stacks don't match!", stackTrace: "" })
+        return
+      }
+    }
+    const newImgs = appendToArr(imgArrs, imgs)
+    setImgArrs(newImgs);
+    const newLabels = appendToArr(labelArrs, labels)
+    setLabelArrs(newLabels);
+    const newSegArrs = appendToArr(segArrs, segs)
+    setSegArrs(newSegArrs);
+    const newTensors = appendToArr(tensorArrs, tensors)
+    setTensorArrs(newTensors);
+    requestFeatures(imgs)
+  }
 
   const changeToImage = (oldIdx: number, newIdx: number) => {
     // Update arrs with arrs of old image, then switch to new one.
@@ -274,6 +296,8 @@ const App = () => {
   }
 
   const trainPressed = () => {
+    if (image == null || labelArr == null) { return }
+
     if (segmentFlag === true) {
       checkToSegment(featureFlag, true, false)
     } else {
@@ -283,6 +307,7 @@ const App = () => {
   }
 
   const applyPressed = () => {
+    if (image == null) { return }
     if (applyFlag === true) {
       checkToSegment(featureFlag, false, true)
     } else {

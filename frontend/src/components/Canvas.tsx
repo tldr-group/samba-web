@@ -320,6 +320,7 @@ const MultiCanvas = () => {
         console.log('Image changed');
         let ctx = getctx(imgCanvasRef);
         if (image === null || ctx?.canvas == undefined) { return; }
+        ctx?.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         const newLabelImg = new Image(image.width, image.height);
         const newSegImg = new Image(image.width, image.height);
         setLabelImg(newLabelImg);

@@ -145,7 +145,7 @@ export const defaultFeatures = {
   "Derivatives": 0,
   "Structure": 0,
   "Entropy": 0,
-  "Neighbours": 1,
+  "Neighbours": 0,
   "Membrane Thickness": 1,
   "Membrane Patch Size": 17,
   "Minimum Sigma": 0.5,

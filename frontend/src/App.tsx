@@ -29,6 +29,7 @@ const DEFAULT_EMBEDDING = "/assets/data/default_encoding.npy"
 // URLS of our API endpoints - change when live
 //const PATH = "https://samba-web-demo.azurewebsites.net"
 const PATH = "http://127.0.0.1:5000"
+const INIT_ENDPOINT = PATH + "/init"
 const ENCODE_ENDPOINT = PATH + "/encoding"
 const FEATURISE_ENDPOINT = PATH + "/featurising"
 const SEGMENT_ENDPOINT = PATH + "/segmenting"
@@ -121,11 +122,23 @@ const App = () => {
       }
     };
     initModel();
+    initBacked();
     const showHelp = localStorage.getItem("showHelp")
     if (showHelp === null || showHelp === "true") {
       setModalShow({ welcome: true, settings: false, features: false })
     }
   }, []);
+
+  const initBacked = async () => {
+    try {
+      const headers = new Headers();
+      headers.append('Content-Type', 'application/json;charset=utf-8');
+      await fetch(INIT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID }) });
+    } catch (e) {
+      const error = e as Error;
+      setErrorObject({ msg: "Failed to connect to backend.", stackTrace: error.toString() });
+    }
+  }
 
   const loadImages = async (hrefs: string[]) => {
     /* Start by initing the empty arrs for the imgs, labels, segs and tensors. Then, for each

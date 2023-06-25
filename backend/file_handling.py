@@ -21,7 +21,6 @@ def _check_data_folder(folder_name: str) -> str:
 def _check_to_delete(old_timestamp_str: str, new_timestamp_str: str) -> bool:
     old: int = int(old_timestamp_str)
     new: int = int(new_timestamp_str)
-    print(new - old)
     if new - old > DELETE_TIME_SECONDS:
         return True
     else:
@@ -44,3 +43,24 @@ def delete_old_folders(UID: str) -> None:
     print(
         f"Deleted {n_delete} old folders that were more than {DELETE_TIME_SECONDS}s old."
     )
+
+
+def delete_feature_file(folder_name: str, delete_idx: int) -> None:
+    feature_file_paths = []
+    for fp in os.listdir(folder_name):
+        if "features" in fp:
+            feature_file_paths.append(fp)
+    for i, feature_fp in enumerate(feature_file_paths):
+        if i < delete_idx:
+            pass
+        elif i == delete_idx:
+            os.remove(feature_fp)
+        else:
+            new_fp = feature_fp[:-5] + f"{i}.npz"
+            os.rename(feature_fp, new_fp)
+
+
+def delete_all_features(folder_name: str) -> None:
+    for fp in os.listdir(folder_name):
+        if "features" in fp:
+            os.remove(fp)

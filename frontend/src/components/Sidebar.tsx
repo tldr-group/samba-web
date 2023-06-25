@@ -206,8 +206,8 @@ const OverlaysFrame = () => {
         <Card className="text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }} bg={themeBGs[theme][0]}>
             <Card.Header as="h5">Overlay</Card.Header>
             <Card.Body className="flex">
-                <Form.Select onChange={e => _setOverlayType(e.target.value)} style={{ backgroundColor: themeBGs[theme][2] }}>
-                    <option >Overlay type</option>
+                <Form.Select onChange={e => _setOverlayType(e.target.value)} value={overlayType} style={{ backgroundColor: themeBGs[theme][2] }}>
+                    <option value="None" >Overlay type</option>
                     <option value="Segmentation">Segmentation</option>
                     <option value="Label">Labels</option>
                 </Form.Select>

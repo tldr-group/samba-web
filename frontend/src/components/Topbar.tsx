@@ -25,7 +25,7 @@ export const ToolTip = (str: string) => {
 }
 
 
-const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier, loadClassifier, applyClassifier }: TopbarProps) => {
+const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, saveClassifier, loadClassifier, applyClassifier }: TopbarProps) => {
     const {
         modalShow: [modalShow, setModalShow],
         theme: [theme,],
@@ -45,6 +45,7 @@ const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier, loadClassif
             loadClassifierRef.current.click();
         }
     }
+
 
     const handleFileUpload = (e: any, type: "image" | "classifier") => {
         // Open file dialog and load file.
@@ -93,9 +94,9 @@ const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier, loadClassif
                                 ref={fileInputRef}
                                 style={{ display: 'none' }}
                                 onChange={e => handleFileUpload(e, "image")} />
-                            <NavDropdown.Item>Remove</NavDropdown.Item>
+                            <NavDropdown.Item onClick={deleteCurrent}>Remove</NavDropdown.Item>
                             <NavDropdown.Divider />
-                            <NavDropdown.Item>Clear All</NavDropdown.Item>
+                            <NavDropdown.Item onClick={deleteAll}>Clear All</NavDropdown.Item>
                         </NavDropdown>
                         <NavDropdown title="Classifier" id="data-dropdown">
                             <NavDropdown.Item onClick={saveClassifier}>Save</NavDropdown.Item>

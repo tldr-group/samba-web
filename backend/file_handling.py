@@ -6,7 +6,7 @@ try:
 except KeyError:
     CWD = os.getcwd()
 
-DELETE_TIME_SECONDS = 2 * 60 * 60
+DELETE_TIME_MS = 2 * 60 * 60 * 1000
 
 
 def _check_data_folder(folder_name: str) -> str:
@@ -21,7 +21,7 @@ def _check_data_folder(folder_name: str) -> str:
 def _check_to_delete(old_timestamp_str: str, new_timestamp_str: str) -> bool:
     old: int = int(old_timestamp_str)
     new: int = int(new_timestamp_str)
-    if new - old > DELETE_TIME_SECONDS:
+    if new - old > DELETE_TIME_MS:
         return True
     else:
         return False
@@ -40,9 +40,7 @@ def delete_old_folders(UID: str) -> None:
                 n_delete += 1
         else:
             pass
-    print(
-        f"Deleted {n_delete} old folders that were more than {DELETE_TIME_SECONDS}s old."
-    )
+    print(f"Deleted {n_delete} old folders that were more than {DELETE_TIME_MS}ms old.")
 
 
 def delete_feature_file(folder_name: str, delete_idx: int) -> None:
@@ -50,17 +48,24 @@ def delete_feature_file(folder_name: str, delete_idx: int) -> None:
     for fp in os.listdir(folder_name):
         if "features" in fp:
             feature_file_paths.append(fp)
-    for i, feature_fp in enumerate(feature_file_paths):
-        if i < delete_idx:
-            pass
-        elif i == delete_idx:
-            os.remove(feature_fp)
-        else:
-            new_fp = feature_fp[:-5] + f"{i}.npz"
-            os.rename(feature_fp, new_fp)
+
+    tmp_fps = []
+    for feature_fp in feature_file_paths:
+        file_idx = int(feature_fp.split("_")[-1][:-4])
+        print(feature_fp, file_idx, delete_idx)
+        if file_idx == delete_idx:
+            print("deleting")
+            os.remove(f"{folder_name}/{feature_fp}")
+        elif file_idx > delete_idx:
+            # need to do it this way to avoid writing to file that already exists (file paths not ordered by index!)
+            new_fp = feature_fp[:-5] + f"{file_idx - 1}.npz.bak"
+            os.rename(f"{folder_name}/{feature_fp}", f"{folder_name}/{new_fp}")
+            tmp_fps.append(f"{folder_name}/{new_fp}")
+    for fp in tmp_fps:
+        os.rename(fp, f"{folder_name}/{new_fp}"[:-4])
 
 
 def delete_all_features(folder_name: str) -> None:
     for fp in os.listdir(folder_name):
         if "features" in fp:
-            os.remove(fp)
+            os.remove(f"{folder_name}/{fp}")

@@ -4,15 +4,16 @@ import { modelInputProps, Offset } from "./helpers/Interfaces";
 import {
     getctx, transferLabels, addImageDataToArray, clearctx, getxy, getZoomPanXY,
     getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage,
-    imageDataToImage, erase, drawErase, drawPolygon
+    imageDataToImage, erase, drawErase, drawPolygon, computeNewZoomOffset
 } from "./helpers/canvasUtils"
 import * as _ from "underscore";
 import '../assets/scss/styles.css'
 
 
 const MAX_ZOOM = 10
-const MIN_ZOOM = 0.1
+const MIN_ZOOM = 0.4
 const SCROLL_SENSITIVITY = 0.0005
+const SCROLL_SPEED = 1
 const PAN_OFFSET = 20
 
 const appendArr = (oldArr: Array<any>, newVal: any) => {
@@ -198,12 +199,17 @@ const MultiCanvas = () => {
         // Adjust the zoom level based on scroll wheel delta
         //e.preventDefault()
         const delta = e.deltaY * SCROLL_SENSITIVITY > 0 ? -0.1 : 0.1; // Change the zoom increment as needed
-        let newZoom = zoom.current + delta;
+        const speed = (zoom.current < 1) ? SCROLL_SPEED * zoom.current : SCROLL_SPEED
+        let newZoom = zoom.current + delta * speed;
         newZoom = Math.min(newZoom, MAX_ZOOM);
         newZoom = Math.max(newZoom, MIN_ZOOM);
-        drawAllCanvases(newZoom, cameraOffset.current);
+        if (image === null) { return }
+        const newOffset = computeNewZoomOffset(zoom.current, newZoom, mousePos.current, cameraOffset.current)
+        drawAllCanvases(newZoom, newOffset); //cameraOffset.current
+        //drawAllCanvases(newZoom, cameraOffset.current)
         resetLabels();
         zoom.current = newZoom;
+        cameraOffset.current = newOffset
     };
 
     const handleKeyPress = (e: any) => {
@@ -228,14 +234,14 @@ const MultiCanvas = () => {
         const c = cameraOffset.current;
         const delta = PAN_OFFSET / zoom.current;
         if (e.key == "w" || e.key == "ArrowUp") {
-            newOffset = { x: c.x, y: Math.max(c.y - delta, 0) };
+            newOffset = { x: c.x, y: c.y - delta };
             redraw = true;
         }
         else if (e.key == "s" || e.key == "ArrowDown") {
             newOffset = { x: c.x, y: c.y + delta };
             redraw = true;
         } else if (e.key == "a" || e.key == "ArrowLeft") {
-            newOffset = { x: Math.max(c.x - delta, 0), y: c.y };
+            newOffset = { x: c.x - delta, y: c.y };
             redraw = true;
         } else if (e.key == "d" || e.key == "ArrowRight") {
             newOffset = { x: c.x + delta, y: c.y };

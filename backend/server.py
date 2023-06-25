@@ -22,12 +22,13 @@ print(CWD, os.getcwd())
 
 from encode import encode, featurise
 from segment import segment, save_labels, load_classifier_from_http, apply
-from file_handling import delete_old_folders
+from file_handling import delete_old_folders, delete_all_features, delete_feature_file
 
 
 app = Flask(
     __name__,
 )
+# CAN/SHOULD CLEAN UP THEN NUMBER OF ENDPOINTS BY CALLING DIFFERENT FUNCTIONS DEPENDING ON PARAMETER IN BODY (I.E DELETE VS DELETE ALL, APPLY VS SEGMENT I.E ONES WITH SIMILAR ARGUMENTS)
 
 
 # these 2 functions from user Niels B on stack overflow: https://stackoverflow.com/questions/25594893/how-to-enable-cors-in-flask
@@ -78,7 +79,24 @@ async def featurise_respond():
         UID = request.json["id"]
         features = request.json["features"]
         images = [_get_image_from_b64(i) for i in request.json["images"]]
-        success = await featurise(images, UID, selected_features=features)
+        offset = request.json["offset"]
+        success = await featurise(
+            images, UID, selected_features=features, offset=offset
+        )
+        return _corsify_actual_response(jsonify(success=True))
+
+
+@app.route("/delete", methods=["POST", "GET", "OPTIONS"])
+async def delete_respond():
+    if "OPTIONS" in request.method:  # CORS preflight
+        return _build_cors_preflight_response()
+    elif "POST" in request.method:
+        UID = request.json["id"]
+        img_idx = request.json["idx"]
+        if img_idx == -1:
+            success = delete_all_features(f"{CWD}/{UID}")
+        else:
+            success = delete_feature_file(f"{CWD}/{UID}", img_idx)
         return _corsify_actual_response(jsonify(success=True))
 
 

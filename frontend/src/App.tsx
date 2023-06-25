@@ -12,7 +12,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import "./assets/scss/App.scss";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { handleImageScale } from "./components/helpers/scaleHelper";
-import { modelScaleProps, getHTTPRequest } from "./components/helpers/Interfaces";
+import { modelScaleProps } from "./components/helpers/Interfaces";
 import { onnxMaskToImage, imageDataToImage } from "./components/helpers/canvasUtils";
 import { modelData } from "./components/helpers/onnxModelAPI";
 import Stage from "./components/Stage";
@@ -20,8 +20,6 @@ import AppContext from "./components/hooks/createContext";
 const ort = require("onnxruntime-web");
 /* @ts-ignore */
 import npyjs from "npyjs";
-import { size } from "underscore";
-
 
 const MODEL_DIR = "/model/sam_onnx_quantized_example.onnx";
 const DEFAULT_IMAGE = "/assets/data/default_image.png"
@@ -33,6 +31,7 @@ const PATH = "http://127.0.0.1:5000"
 const INIT_ENDPOINT = PATH + "/init"
 const ENCODE_ENDPOINT = PATH + "/encoding"
 const FEATURISE_ENDPOINT = PATH + "/featurising"
+const DELETE_ENDPOINT = PATH + "/delete"
 const SEGMENT_ENDPOINT = PATH + "/segmenting"
 const APPLY_ENDPOINT = PATH + "/applying"
 const SAVE_ENDPOINT = PATH + "/saving"
@@ -62,6 +61,11 @@ const appendToArr = (oldArr: Array<any>, toAdd: Array<any>) => {
   return oldArr.concat(toAdd)
 }
 
+const deleteIdx = (oldArr: Array<any>, idx: number) => {
+  const newArr = oldArr.filter((v, i) => (i != idx));
+  return newArr
+}
+
 
 const getRandomInt = (max: number) => {
   return Math.floor(Math.random() * max);
@@ -80,7 +84,7 @@ const App = () => {
   const {
     clicks: [clicks],
     imgType: [imgType,],
-    imgIdx: [imgIdx,],
+    imgIdx: [imgIdx, setImgIdx],
     largeImg: [largeImg,],
     imgArrs: [imgArrs, setImgArrs],
     segArrs: [segArrs, setSegArrs],
@@ -93,6 +97,7 @@ const App = () => {
     maskIdx: [maskIdx],
     labelType: [, setLabelType],
     labelClass: [labelClass],
+    overlayType: [, setOverlayType],
     features: [features,],
     processing: [, setProcessing],
     errorObject: [errorObject, setErrorObject],
@@ -170,7 +175,7 @@ const App = () => {
           nullLabels.push(tempLabelArr);
           nullSegs.push(tempSegArr);
           nullTensors.push(null);
-          if (i === 0) { // for very first arr, init these to be empty but the right shape
+          if (i === 0 && imgArrs.length == 0) { // for very first arr, init these to be empty but the right shape
             setSegArr(tempSegArr);
             setLabelArr(tempLabelArr);
           }
@@ -197,6 +202,7 @@ const App = () => {
         return
       }
     }
+    requestFeatures(imgs, imgArrs.length)
     const newImgs = appendToArr(imgArrs, imgs)
     setImgArrs(newImgs);
     const newLabels = appendToArr(labelArrs, labels)
@@ -205,7 +211,42 @@ const App = () => {
     setSegArrs(newSegArrs);
     const newTensors = appendToArr(tensorArrs, tensors)
     setTensorArrs(newTensors);
-    requestFeatures(imgs)
+  }
+
+  const deleteAllFiles = async () => {
+    try {
+      const headers = new Headers();
+      headers.append('Content-Type', 'application/json;charset=utf-8');
+      await fetch(DELETE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "idx": -1 }) });
+      setImgArrs([])
+      setLabelArrs([])
+      setSegArrs([])
+      setTensorArrs([])
+      setImage(null)
+      setLabelArr(new Uint8ClampedArray(1))
+      setSegArr(new Uint8ClampedArray(1))
+      setTensor(null)
+    } catch (e) {
+      const error = e as Error;
+      setErrorObject({ msg: "Failed to delete files.", stackTrace: error.toString() });
+    }
+  }
+
+  const deleteCurrentFile = async () => {
+    try {
+      const headers = new Headers();
+      headers.append('Content-Type', 'application/json;charset=utf-8');
+      await fetch(DELETE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "idx": imgIdx }) });
+      changeToImage(imgIdx, imgIdx - 1)
+      setImgArrs(deleteIdx(imgArrs, imgIdx))
+      setSegArrs(deleteIdx(segArrs, imgIdx))
+      setLabelArrs(deleteIdx(labelArrs, imgIdx))
+      setTensorArrs(deleteIdx(tensorArrs, imgIdx))
+      setImgIdx(imgIdx - 1)
+    } catch (e) {
+      const error = e as Error;
+      setErrorObject({ msg: "Failed to delete image.", stackTrace: error.toString() });
+    }
   }
 
   const changeToImage = (oldIdx: number, newIdx: number) => {
@@ -243,13 +284,13 @@ const App = () => {
     setLabelType('Smart Labelling');
   }
 
-  const requestFeatures = async (imgs: Array<HTMLImageElement>) => {
+  const requestFeatures = async (imgs: Array<HTMLImageElement>, offset: number = 0) => {
     const b64images: string[] = imgs.map((img, i) => getb64Image(img));
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     console.log("Started Featurising");
     try {
-      await fetch(FEATURISE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "id": UID, "features": features }) });
+      await fetch(FEATURISE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "id": UID, "features": features, "offset": offset }) });
       console.log("Finished Featurising");
       //const segFeat = { feature: true, segment: segmentFeature.segment }
       //setSegmentFeature(segFeat)
@@ -334,6 +375,7 @@ const App = () => {
     let msg
     let ENDPOINT: string
     if (apply == false && labelArr != null) {
+      console.log(imgIdx)
       const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
       setLabelArrs(newLabelArrs);
       msg = {
@@ -365,6 +407,7 @@ const App = () => {
       setApplyFlag(false)
     }
     setProcessing("None");
+    setOverlayType("Segmentation")
     setShowToast(true);
   }
 
@@ -537,6 +580,8 @@ const App = () => {
     trainClassifier={trainPressed}
     applyClassifier={applyPressed}
     changeToImage={changeToImage}
+    deleteAll={deleteAllFiles}
+    deleteCurrent={deleteCurrentFile}
     saveSeg={onSaveClick}
     saveLabels={saveLabels}
     saveClassifier={saveClassifier}

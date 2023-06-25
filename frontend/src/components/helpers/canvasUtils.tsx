@@ -181,6 +181,8 @@ export const getZoomPanCoords = (cw: number, ch: number, image: HTMLImageElement
   const [zw, zh] = [w * zoom, h * zoom]
   let [sx0, sx1, sy0, sy1] = [0, 0, 0, 0]
   let [dx, dy, dw, dh] = [0, 0, 0, 0]
+
+  /*
   if (zw <= cw) {
     sx0 = 0
     sx1 = w
@@ -204,6 +206,14 @@ export const getZoomPanCoords = (cw: number, ch: number, image: HTMLImageElement
     dy = 0
     dh = ch
   }
+  */
+  sx1 = w
+  sy1 = h
+  dw = zw
+  dh = zh
+  dx = offset.x
+  dy = offset.y
+
   return [sx0, sy0, sx1, sy1, dx, dy, dw, dh]
 }
 
@@ -215,6 +225,13 @@ export const getZoomPanXY = (canvX: number, canvY: number, ctx: CanvasRenderingC
   const naturalY = (fracY * sh) + sy0
   return [naturalX, naturalY]
 }
+
+export const computeNewZoomOffset = (currentZoom: number, newZoom: number, mousePos: Offset, currentOffset: Offset) => {
+  const [ix, iy] = [(mousePos.x - currentOffset.x) / currentZoom, (mousePos.y - currentOffset.y) / currentZoom]
+  const [ox, oy] = [mousePos.x - newZoom * ix, mousePos.y - newZoom * iy]
+  return { x: ox, y: oy }
+}
+
 
 export const drawImage = (ctx: CanvasRenderingContext2D, image: HTMLImageElement, offset: Offset, zoom: number) => {
   // split into 2 funcitons - one to get coords and one to draw, then reverse the coords for transfert.

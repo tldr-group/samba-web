@@ -29,7 +29,7 @@ const AppContextProvider = (props: {
   const [brushWidth, setBrushWidth] = useState<number>(20);
 
   // Canvas display stuff
-  const [overlayType, setOverlayType] = useState<"Segmentation" | "Label">("Segmentation");
+  const [overlayType, setOverlayType] = useState<"Segmentation" | "Label" | "None">("None");
   const [labelOpacity, setLabelOpacity] = useState<number>(0.6 * 255);
   const [segOpacity, setSegOpacity] = useState<number>(0.9 * 255);
   const [processing, setProcessing] = useState<"None" | "Encoding" | "Segmenting" | "Applying">("None");

@@ -45,7 +45,6 @@ def _create_composite_tiff(
     # this will save a tiff with 1, 2, 3 etc rather than 64, 128, etc
     if rescale is False:
         delta = 1
-    print(mode, remasked_arrs.shape)
     if mode == "stack":
         rescaled = ((remasked_arrs) * delta).astype(np.uint8)
         out = rescaled
@@ -171,7 +170,6 @@ async def segment(
         label_dict = labels_dicts[i]
         labels_list = [item for keys, item in label_dict.items()]
         label_arr = np.array(labels_list).reshape(image.height, image.width)
-
         label_arrs.append(label_arr)
 
     remasked_arrs_list: List[np.ndarray] = []

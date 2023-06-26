@@ -121,31 +121,25 @@ async def segment_respond():
         return _build_cors_preflight_response()
     elif "POST" in request.method:
         images = [_get_image_from_b64(i) for i in request.json["images"]]
-        labels_dicts = request.json["labels"]
         UID = request.json["id"]
         save_mode = request.json["save_mode"]
         large_w, large_h = request.json["large_w"], request.json["large_h"]
-        n_points, train_all = request.json["n_points"], request.json["train_all"]
-        segmentation = await segment(
-            images, labels_dicts, UID, save_mode, large_w, large_h, n_points, train_all
-        )
-        response = Response(segmentation.tobytes())
-        response.headers.add("Content-Type", "application/octet-stream")
-        return _corsify_actual_response(response)
-    else:
-        raise RuntimeError("Wrong HTTP method {}".format(request.method))
-
-
-@app.route("/applying", methods=["POST", "GET", "OPTIONS"])
-async def apply_respond():
-    if "OPTIONS" in request.method:
-        return _build_cors_preflight_response()
-    elif "POST" in request.method:
-        images = [_get_image_from_b64(i) for i in request.json["images"]]
-        UID = request.json["id"]
-        save_mode = request.json["save_mode"]
-        large_w, large_h = request.json["large_w"], request.json["large_h"]
-        segmentation = await apply(images, UID, save_mode, large_w, large_h)
+        segment_type = request.json["type"]
+        if segment_type == "segment":
+            labels_dicts = request.json["labels"]
+            n_points, train_all = request.json["n_points"], request.json["train_all"]
+            segmentation = await segment(
+                images,
+                labels_dicts,
+                UID,
+                save_mode,
+                large_w,
+                large_h,
+                n_points,
+                train_all,
+            )
+        elif segment_type == "apply":
+            segmentation = await apply(images, UID, save_mode, large_w, large_h)
         response = Response(segmentation.tobytes())
         response.headers.add("Content-Type", "application/octet-stream")
         return _corsify_actual_response(response)
@@ -159,9 +153,18 @@ def save_respond():
         return _build_cors_preflight_response()
     elif "POST" in request.method:
         UID = request.json["id"]
-        response = send_file(
-            f"{CWD}/{UID}/seg.tiff", mimetype="image/tiff", download_name="seg.tiff"
-        )
+        save_type = request.json["type"]
+        if save_type == "segmentation":
+            response = send_file(
+                f"{CWD}/{UID}/seg.tiff", mimetype="image/tiff", download_name="seg.tiff"
+            )
+        else:
+            file_format = request.json["format"]
+            response = send_file(
+                f"{CWD}/{UID}/classifier{file_format}",
+                mimetype="application/octet-stream",
+                download_name=f"classifier{file_format}",
+            )
         return _corsify_actual_response(response)
     else:
         raise RuntimeError("Wrong HTTP method {}".format(request.method))
@@ -182,23 +185,6 @@ def save_labels_respond():
         )
         response = Response(labels_bytes)
         response.headers.add("Content-Type", "application/octet-stream")
-        return _corsify_actual_response(response)
-    else:
-        raise RuntimeError("Wrong HTTP method {}".format(request.method))
-
-
-@app.route("/classifier", methods=["POST", "GET", "OPTIONS"])
-def classifier_respond():
-    if "OPTIONS" in request.method:
-        return _build_cors_preflight_response()
-    elif "POST" in request.method:
-        UID = request.json["id"]
-        format = request.json["format"]
-        response = send_file(
-            f"{CWD}/{UID}/classifier{format}",
-            mimetype="application/octet-stream",
-            download_name=f"classifier{format}",
-        )
         return _corsify_actual_response(response)
     else:
         raise RuntimeError("Wrong HTTP method {}".format(request.method))

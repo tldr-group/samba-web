@@ -33,9 +33,7 @@ const ENCODE_ENDPOINT = PATH + "/encoding"
 const FEATURISE_ENDPOINT = PATH + "/featurising"
 const DELETE_ENDPOINT = PATH + "/delete"
 const SEGMENT_ENDPOINT = PATH + "/segmenting"
-const APPLY_ENDPOINT = PATH + "/applying"
 const SAVE_ENDPOINT = PATH + "/saving"
-const CLASSIFIER_ENDPOINT = PATH + "/classifier"
 const LOAD_CLASSIFIER_ENDPOINT = PATH + "/lclassifier"
 const SAVE_LABEL_ENDPOINT = PATH + "/slabel"
 
@@ -233,6 +231,11 @@ const App = () => {
   }
 
   const deleteCurrentFile = async () => {
+    if (imgArrs.length == 1) { //delete all if one file
+      deleteAllFiles()
+      return
+    }
+
     try {
       const headers = new Headers();
       headers.append('Content-Type', 'application/json;charset=utf-8');
@@ -373,7 +376,6 @@ const App = () => {
     }
 
     let msg
-    let ENDPOINT: string
     if (apply == false && labelArr != null) {
       console.log(imgIdx)
       const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
@@ -381,20 +383,19 @@ const App = () => {
       msg = {
         "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
         "large_w": largeW, "large_h": largeH, "n_points": settings.nPoints,
-        "train_all": settings.trainAll, "rescale": settings.rescale
+        "train_all": settings.trainAll, "rescale": settings.rescale, "type": "segment"
       };
-      ENDPOINT = SEGMENT_ENDPOINT;
+
     } else {
       msg = {
         "images": b64images, "id": UID, "save_mode": imgType,
         "large_w": largeW, "large_h": largeH, "n_points": settings.nPoints,
-        "train_all": settings.trainAll, "rescale": settings.rescale
+        "train_all": settings.trainAll, "rescale": settings.rescale, "type": "apply"
       };
-      ENDPOINT = APPLY_ENDPOINT;
     }
 
     try {
-      let resp = await fetch(ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify(msg) })
+      let resp = await fetch(SEGMENT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify(msg) })
       const buffer = await resp.arrayBuffer();
       loadSegmentationsFromHTTP(buffer);
     } catch (e) {
@@ -459,7 +460,7 @@ const App = () => {
 
   const onSaveClick = async () => {
     if (image === null || segArr === null) { return; }
-    saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID, "rescale": settings.rescale }), "seg.tiff")
+    saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID, "rescale": settings.rescale, "type": "segmentation" }), "seg.tiff")
   }
 
   const saveLabels = async () => {
@@ -484,7 +485,7 @@ const App = () => {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     try {
-      let resp = await fetch(CLASSIFIER_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "format": settings.format }) })
+      let resp = await fetch(SAVE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "format": settings.format, "type": "classifier" }) })
       const buffer = await resp.arrayBuffer();
       const a = document.createElement("a")
       a.download = "classifier" + settings.format

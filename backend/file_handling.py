@@ -43,7 +43,7 @@ def delete_old_folders(UID: str) -> None:
     print(f"Deleted {n_delete} old folders that were more than {DELETE_TIME_MS}ms old.")
 
 
-def delete_feature_file(folder_name: str, delete_idx: int) -> None:
+def delete_feature_file(folder_name: str, delete_idx: int) -> int:
     feature_file_paths = []
     for fp in os.listdir(folder_name):
         if "features" in fp:
@@ -63,9 +63,11 @@ def delete_feature_file(folder_name: str, delete_idx: int) -> None:
             tmp_fps.append(f"{folder_name}/{new_fp}")
     for fp in tmp_fps:
         os.rename(fp, f"{folder_name}/{new_fp}"[:-4])
+    return 0
 
 
-def delete_all_features(folder_name: str) -> None:
+def delete_all_features(folder_name: str) -> int:
     for fp in os.listdir(folder_name):
         if "features" in fp:
             os.remove(f"{folder_name}/{fp}")
+    return 0

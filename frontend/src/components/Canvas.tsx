@@ -4,7 +4,8 @@ import { modelInputProps, Offset } from "./helpers/Interfaces";
 import {
     getctx, transferLabels, addImageDataToArray, clearctx, getxy, getZoomPanXY,
     getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage,
-    imageDataToImage, erase, drawErase, drawPolygon, computeNewZoomOffset
+    imageDataToImage, erase, drawErase, drawPolygon, computeNewZoomOffset,
+    computeCentreOffset
 } from "./helpers/canvasUtils"
 import * as _ from "underscore";
 import '../assets/scss/styles.css'
@@ -368,7 +369,11 @@ const MultiCanvas = () => {
                 canv.height = canvSize.y
             }
         }
-        drawAllCanvases(zoom.current, cameraOffset.current)
+        if (image === null) { return }
+        const centreOffset = computeCentreOffset(image, canvSize.x, canvSize.y)
+        console.log(centreOffset)
+        cameraOffset.current = centreOffset
+        drawAllCanvases(zoom.current, centreOffset)
     }, [canvSize])
 
     useEffect(() => {

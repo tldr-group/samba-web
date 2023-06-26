@@ -409,7 +409,6 @@ const App = () => {
     }
     setProcessing("None");
     setOverlayType("Segmentation")
-    setShowToast(true);
   }
 
   const loadSegmentationsFromHTTP = (buffer: ArrayBuffer) => {
@@ -461,6 +460,7 @@ const App = () => {
   const onSaveClick = async () => {
     if (image === null || segArr === null) { return; }
     saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID, "rescale": settings.rescale, "type": "segmentation" }), "seg.tiff")
+    setShowToast(true);
   }
 
   const saveLabels = async () => {

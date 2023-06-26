@@ -226,6 +226,11 @@ export const getZoomPanXY = (canvX: number, canvY: number, ctx: CanvasRenderingC
   return [naturalX, naturalY]
 }
 
+export const computeCentreOffset = (image: HTMLImageElement, cx: number, cy: number): Offset => {
+  const [iw, ih] = [image.width, image.height]
+  return { x: (cx - iw) / 2, y: (cy - ih) / 2 }
+}
+
 export const computeNewZoomOffset = (currentZoom: number, newZoom: number, mousePos: Offset, currentOffset: Offset) => {
   const [ix, iy] = [(mousePos.x - currentOffset.x) / currentZoom, (mousePos.y - currentOffset.y) / currentZoom]
   const [ox, oy] = [mousePos.x - newZoom * ix, mousePos.y - newZoom * iy]

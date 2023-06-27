@@ -388,7 +388,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
         return (
             <div>
                 Image: <input type="number" min={1} max={imgArrs.length} value={imgIdx + 1} onChange={e => changeImageIdx(e)} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px', backgroundColor: themeBGs[theme][2] }} />
-                <Form.Range min={1} value={imgIdx} max={imgArrs.length} onChange={e => changeImageIdx(e)} />
+                <Form.Range min={1} value={imgIdx + 1} max={imgArrs.length} onChange={e => changeImageIdx(e)} />
             </div>
         )
     } else {

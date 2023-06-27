@@ -1,5 +1,6 @@
 import os
 from shutil import rmtree
+from time import sleep
 
 try:
     CWD = os.environ["APP_PATH"]
@@ -50,7 +51,7 @@ def delete_feature_file(folder_name: str, delete_idx: int) -> int:
             feature_file_paths.append(fp)
 
     tmp_fps = []
-    for feature_fp in feature_file_paths:
+    for i, feature_fp in enumerate(feature_file_paths):
         file_idx = int(feature_fp.split("_")[-1][:-4])
         print(feature_fp, file_idx, delete_idx)
         if file_idx == delete_idx:
@@ -58,11 +59,12 @@ def delete_feature_file(folder_name: str, delete_idx: int) -> int:
             os.remove(f"{folder_name}/{feature_fp}")
         elif file_idx > delete_idx:
             # need to do it this way to avoid writing to file that already exists (file paths not ordered by index!)
-            new_fp = feature_fp[:-5] + f"{file_idx - 1}.npz.bak"
+            new_fp = feature_fp[:-5] + f"{file_idx - 1}.npz_{i % 10}"
             os.rename(f"{folder_name}/{feature_fp}", f"{folder_name}/{new_fp}")
             tmp_fps.append(f"{folder_name}/{new_fp}")
+    print(tmp_fps, os.listdir(folder_name))
     for fp in tmp_fps:
-        os.rename(fp, f"{folder_name}/{new_fp}"[:-4])
+        os.rename(fp, fp[:-2])
     return 0
 
 

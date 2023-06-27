@@ -240,12 +240,13 @@ const App = () => {
       const headers = new Headers();
       headers.append('Content-Type', 'application/json;charset=utf-8');
       await fetch(DELETE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "idx": imgIdx }) });
-      changeToImage(imgIdx, imgIdx - 1)
+      const newIdx = (imgIdx == 0) ? 1 : imgIdx - 1
+      changeToImage(imgIdx, newIdx)
       setImgArrs(deleteIdx(imgArrs, imgIdx))
       setSegArrs(deleteIdx(segArrs, imgIdx))
       setLabelArrs(deleteIdx(labelArrs, imgIdx))
       setTensorArrs(deleteIdx(tensorArrs, imgIdx))
-      setImgIdx(imgIdx - 1)
+      setImgIdx(imgIdx) // CHECK THIS AT SOME POINT
     } catch (e) {
       const error = e as Error;
       setErrorObject({ msg: "Failed to delete image.", stackTrace: error.toString() });

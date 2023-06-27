@@ -25,12 +25,13 @@ export const ToolTip = (str: string) => {
 }
 
 
-const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier }: TopbarProps) => {
+const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, saveClassifier, loadClassifier, applyClassifier }: TopbarProps) => {
     const {
         modalShow: [modalShow, setModalShow],
         theme: [theme,],
     } = useContext(AppContext)!;
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const loadClassifierRef = useRef<HTMLInputElement>(null);
 
     // Common pattern for opening file dialog w/ button: hidden <input> who is clicked when button is clicked.
     const addData = () => {
@@ -39,10 +40,24 @@ const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier }: TopbarPro
         }
     }
 
-    const handleFileUpload = (e: any) => {
+    const loadClassifierClick = () => {
+        if (loadClassifierRef.current) {
+            loadClassifierRef.current.click();
+        }
+    }
+
+
+    const handleFileUpload = (e: any, type: "image" | "classifier") => {
         // Open file dialog and load file.
         const file: File | null = e.target.files?.[0] || null;
-        if (file != null) { loadFromFile(file); };
+        if (file != null) {
+            if (type === "image") {
+                loadFromFile(file);
+            } else {
+                console.log("classifier")
+                loadClassifier(file)
+            }
+        };
     }
 
     const icons: string[][] = [
@@ -78,12 +93,21 @@ const Topbar = ({ loadFromFile, saveSeg, saveLabels, saveClassifier }: TopbarPro
                                 id='file'
                                 ref={fileInputRef}
                                 style={{ display: 'none' }}
-                                onChange={handleFileUpload} />
-                            <NavDropdown.Item>Remove</NavDropdown.Item>
+                                onChange={e => handleFileUpload(e, "image")} />
+                            <NavDropdown.Item onClick={deleteCurrent}>Remove</NavDropdown.Item>
+                            <NavDropdown.Divider />
+                            <NavDropdown.Item onClick={deleteAll}>Clear All</NavDropdown.Item>
                         </NavDropdown>
                         <NavDropdown title="Classifier" id="data-dropdown">
                             <NavDropdown.Item onClick={saveClassifier}>Save</NavDropdown.Item>
-                            <NavDropdown.Item >Load</NavDropdown.Item>
+                            <NavDropdown.Item onClick={loadClassifierClick} >Load</NavDropdown.Item>
+                            <input
+                                type='file'
+                                id='loadClassifier'
+                                ref={loadClassifierRef}
+                                style={{ display: 'none' }}
+                                onChange={e => handleFileUpload(e, "classifier")} />
+                            <NavDropdown.Item onClick={applyClassifier} >Apply</NavDropdown.Item>
                             <NavDropdown.Divider />
                             <NavDropdown.Item onClick={(e) => iconClick(e, "Features")}>
                                 Features

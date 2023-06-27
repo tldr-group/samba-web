@@ -29,11 +29,14 @@ def encode(image: Image.Image) -> bytes:
 
 
 async def featurise(
-    images: List[Image.Image], UID: str, selected_features=DEAFAULT_FEATURES
+    images: List[Image.Image],
+    UID: str,
+    selected_features=DEAFAULT_FEATURES,
+    offset: int = 0,
 ) -> int:
     """For each img in images, convert to np array then featurise, saving the result to the user's folder."""
     for i, img in enumerate(images):
         img_arr = np.array(img.convert("L")) * 255
         feature_stack = multiscale_advanced_features(img_arr, selected_features)
-        np.savez_compressed(f"{CWD}/{UID}/features_{i}", a=feature_stack)
+        np.savez_compressed(f"{CWD}/{UID}/features_{i + offset}", a=feature_stack)
     return 0

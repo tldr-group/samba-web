@@ -1,11 +1,6 @@
 # From the Meta SAM demo - check below for the commands I use to export
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
 
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-
-# I run this command with the script in the same folder as the corresponding checkpoint to get the  
+# I run this command with the script in the same folder as the corresponding checkpoint to get the
 # > python export_onnx_model.py --checkpoint 'sam_vit_b_01ec64.pth' --output 'model' --model-type 'vit_b' --opset 16 --quantize-out 'sam_onnx_quantized_example' --gelu-approximate
 
 
@@ -210,5 +205,3 @@ if __name__ == "__main__":
             weight_type=QuantType.QUInt8,
         )
         print("Done!")
-
-

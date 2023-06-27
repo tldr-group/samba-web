@@ -29,7 +29,7 @@ EnsembleMethod: TypeAlias = (
 EnsembleMethodName: TypeAlias = Literal["FRF", "XGB", "LGBM"]
 
 
-def get_class_weights(target_data: np.ndarray) -> np.ndarray:
+def get_class_weights(target_data: np.ndarray) -> Tuple[np.ndarray, List[int]]:
     """
     Get class weights array.
 
@@ -48,7 +48,7 @@ def get_class_weights(target_data: np.ndarray) -> np.ndarray:
 
     for i, class_val in enumerate(unique_classes):
         weights_arr = np.where(target_data == class_val, class_weights[i], weights_arr)
-    return weights_arr
+    return weights_arr, class_freqs
 
 
 def get_training_data(
@@ -65,32 +65,6 @@ def get_training_data(
     if method == "gpu":
         target_data -= 1
     return fit_data, target_data
-
-
-def get_training_data_multiple_images(
-    imgs: List[np.ndarray], labels: List[np.ndarray], selected_features: dict
-) -> Tuple[List[np.ndarray], np.ndarray, np.ndarray]:
-    """For each image, featurise. Then check if it's labelled and if it is get the training data and concat."""
-    feature_stacks: List[np.ndarray] = []
-    fit_data_set = False
-    all_fit_data: np.ndarray
-    all_target_data: np.ndarray
-    for i in range(len(imgs)):
-        img, label = imgs[i], labels[i]
-        feature_stack = multiscale_advanced_features(img, selected_features)
-        feature_stacks.append(feature_stack)
-        is_labelled = np.sum(label) >= 1
-        # print(i, is_labelled, fit_data_set, np.sum(label))
-        if is_labelled:
-            fit_data, target_data = get_training_data(feature_stack, label)
-            if fit_data_set is False:
-                all_fit_data = fit_data
-                all_target_data = target_data
-                fit_data_set = True
-            else:
-                all_fit_data = np.concatenate((all_fit_data, fit_data), axis=0)
-                all_target_data = np.concatenate((all_target_data, target_data), axis=0)
-    return (feature_stacks, all_fit_data, all_target_data)
 
 
 def get_training_data_features_done(
@@ -115,6 +89,58 @@ def get_training_data_features_done(
     return (all_fit_data, all_target_data)
 
 
+def _shuffle_fit_target(
+    fit: np.ndarray, target: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray]:
+    all_shuffle_inds = np.arange(0, target.shape[0], 1)
+    np.random.shuffle(all_shuffle_inds)
+    print(f"sampled and shuffled {len(all_shuffle_inds)} points")
+    return fit[all_shuffle_inds], target[all_shuffle_inds]
+
+
+def sample_training_data(
+    fit_data: np.ndarray,
+    target_data: np.ndarray,
+    class_counts: List[int],
+    n_points: int,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Sample training data randomly up to n_points.
+
+    Given flat arrays of fit and target data, class frequencies and desired number of points, loop through each class,
+    sample class_freq * n_points randomly of each class, put into array then shuffle once all classes sampled from.
+    """
+    sampled_fit_data: np.ndarray
+    sampled_target_data: np.ndarray
+    class_freqs = [i / sum(class_counts) for i in class_counts]
+    for i, freq in enumerate(class_freqs):
+        class_val = i + 1
+        n_points_per_class = int(n_points * freq)
+
+        matching_inds = np.nonzero(np.where(target_data == class_val, 1, 0))
+        class_filtered_fit = fit_data[matching_inds]
+        class_filtered_target = (
+            np.zeros(shape=(class_filtered_fit.shape[0],)) + class_val
+        )
+        print(f"sampling up to {n_points_per_class} points for class {class_val}")
+
+        shuffle_inds = np.arange(0, len(class_filtered_fit), 1)
+        np.random.shuffle(shuffle_inds)
+        shuffled_fit = class_filtered_fit[shuffle_inds]
+
+        sampled_fit = shuffled_fit[:n_points_per_class]
+        sampled_target: np.ndarray = class_filtered_target[:n_points_per_class]
+        if i == 0:
+            sampled_fit_data = sampled_fit
+            sampled_target_data = sampled_target
+        else:
+            sampled_fit_data = np.concatenate((sampled_fit_data, sampled_fit), axis=0)
+            sampled_target_data = np.concatenate(
+                (sampled_target_data, sampled_target), axis=0
+            )
+    # now globally shuffle our data
+    return _shuffle_fit_target(sampled_fit_data, sampled_target_data)
+
+
 def fit(
     model: EnsembleMethod,
     train_data: np.ndarray,
@@ -127,25 +153,6 @@ def fit(
     else:
         model.fit(train_data, target_data, weights)
     return model
-
-
-def apply(
-    model: EnsembleMethod, feature_stacks: List[np.ndarray], reorder: bool = True
-) -> List[np.ndarray]:
-    """Given $model, apply it to each feature stack in $feature stacks."""
-    out: List[np.ndarray] = []
-    for feature_stack in feature_stacks:
-        h, w, feat = feature_stack.shape
-        flat_apply_data = feature_stack.reshape((h * w, feat))
-        out_probs = model.predict_proba(flat_apply_data)
-        _, n_classes = out_probs.shape
-        # gui expects arr in form (n_classes, h, w)
-        if reorder:
-            out_probs_arr = out_probs.T.reshape((n_classes, h, w))
-        else:
-            out_probs_arr = out_probs
-        out.append(out_probs_arr)
-    return out
 
 
 def apply_features_done(
@@ -184,6 +191,7 @@ def get_model(
             max_features=n_features,
             max_depth=depth,
             n_jobs=N_ALLOWED_CPUS - 1,
+            oob_score=True,
         )
     elif model_name == "XGB":
         model = GradientBoostingClassifier(
@@ -194,43 +202,33 @@ def get_model(
     return model
 
 
-def featurise_then_segment(
-    imgs: List[np.ndarray],
-    selected_features: dict,
-    labels: List[np.ndarray],
-    model_name: EnsembleMethodName = "FRF",
-    balance_classes: bool = True,
-) -> Tuple[List[np.ndarray], EnsembleMethod]:
-    """Perform each step of classification: featurising, get data, get model, fit, apply."""
-    # TODO: fix out of memory errors by only computing feature stacks of labelled images and then computing and applying on demand?
-    # compute one at a time, saving to a file each time? how would this work w/out loading the whole thing into memory?
-    # will it matter how much memory the VM/cloud instance if it's shared between users (i.e could one user use too much memory?)
-    feature_stacks, fit_data, target_data = get_training_data_multiple_images(
-        imgs, labels, selected_features
-    )  # get_training_data(feature_stack, labels)
-    model = get_model(model_name)
-    if balance_classes:
-        weights = get_class_weights(target_data)
-    else:
-        weights = None
-    model = fit(model, fit_data, target_data, weights)
-    out_data = apply(model, feature_stacks)
-    return out_data, model
-
-
 def segment_with_features(
     labels: List[np.ndarray],
     UID: str,
     model_name: EnsembleMethodName = "FRF",
+    n_points: int = 40000,
     balance_classes: bool = True,
-) -> Tuple[List[np.ndarray], EnsembleMethod]:
+    train_all: bool = False,
+) -> Tuple[List[np.ndarray], EnsembleMethod, float]:
     """Assuming a list of feature stacks are saved at the folder, get training data then fit then apply."""
     fit_data, target_data = get_training_data_features_done(labels, UID)
     model = get_model(model_name)
-    if balance_classes:
-        weights = get_class_weights(target_data)
-    else:
+    weights: np.ndarray | None
+    weights, class_counts = get_class_weights(target_data)
+    if balance_classes is False:
         weights = None
-    model = fit(model, fit_data, target_data, weights)
+    if train_all or target_data.shape[0] < n_points:
+        sample_fit_data, sample_target_data = _shuffle_fit_target(
+            fit_data,
+            target_data,
+        )
+        new_weights = weights
+    else:
+        sample_fit_data, sample_target_data = sample_training_data(
+            fit_data, target_data, class_counts, n_points
+        )
+        new_weights, _ = get_class_weights(sample_target_data)
+    model = fit(model, sample_fit_data, sample_target_data, new_weights)
+    print(model.oob_score_)
     out_data = apply_features_done(model, UID, len(labels))
-    return out_data, model
+    return out_data, model, model.oob_score_

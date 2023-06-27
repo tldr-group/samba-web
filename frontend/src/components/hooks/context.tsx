@@ -26,16 +26,15 @@ const AppContextProvider = (props: {
   const [maskIdx, setMaskIdx] = useState<number>(2);
   const [labelClass, setLabelClass] = useState<number>(1);
   const [labelType, setLabelType] = useState<Label>("Brush");
-  const [brushWidth, setBrushWidth] = useState<number>(1);
+  const [brushWidth, setBrushWidth] = useState<number>(20);
 
   // Canvas display stuff
-  const [overlayType, setOverlayType] = useState<"Segmentation" | "Label">("Segmentation");
+  const [overlayType, setOverlayType] = useState<"Segmentation" | "Label" | "None">("None");
   const [labelOpacity, setLabelOpacity] = useState<number>(0.6 * 255);
   const [segOpacity, setSegOpacity] = useState<number>(0.9 * 255);
-  const [processing, setProcessing] = useState<"None" | "Encoding" | "Segmenting">("None");
+  const [processing, setProcessing] = useState<"None" | "Encoding" | "Segmenting" | "Applying">("None");
 
   // Segment Feature stuff
-  const [segmentFeature, setSegmentFeature] = useState<SegmentFeatureState>({ feature: false, segment: false })
   const [features, setFeatures] = useState<Features>(defaultFeatures)
 
   // Menus
@@ -43,7 +42,7 @@ const AppContextProvider = (props: {
   const [showToast, setShowToast] = useState<boolean>(false);
   const [modalShow, setModalShow] = useState<ModalShow>({ welcome: false, settings: false, features: false })
   const [theme, setTheme] = useState<Theme>("default")
-  const [settings, setSettings] = useState<Settings>({ nPoints: 20000, trainAll: false, rescale: true })
+  const [settings, setSettings] = useState<Settings>({ nPoints: 50000, trainAll: false, rescale: true, format: ".skops" })
 
   return (
     <AppContext.Provider
@@ -72,7 +71,6 @@ const AppContextProvider = (props: {
         segOpacity: [segOpacity, setSegOpacity],
         processing: [processing, setProcessing],
 
-        segmentFeature: [segmentFeature, setSegmentFeature],
         features: [features, setFeatures],
 
         errorObject: [errorObject, setErrorObject],

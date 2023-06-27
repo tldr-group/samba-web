@@ -30,17 +30,25 @@ export interface StageProps {
   loadDefault: () => void;
   requestEmbedding: () => void;
   trainClassifier: () => void;
+  applyClassifier: () => void;
+  deleteAll: () => void;
+  deleteCurrent: () => void;
   changeToImage: (oldIdx: number, newIdx: number) => void;
   saveSeg: () => void;
   saveLabels: () => void;
   saveClassifier: () => void;
+  loadClassifier: (file: File) => void;
 }
 
 export interface TopbarProps {
   loadFromFile: (file: File) => void;
+  deleteAll: () => void;
+  deleteCurrent: () => void;
   saveSeg: () => void;
   saveLabels: () => void;
   saveClassifier: () => void;
+  applyClassifier: () => void;
+  loadClassifier: (file: File) => void;
 }
 
 export interface DragDropProps {
@@ -141,7 +149,7 @@ export const defaultFeatures = {
   "Derivatives": 0,
   "Structure": 0,
   "Entropy": 0,
-  "Neighbours": 1,
+  "Neighbours": 0,
   "Membrane Thickness": 1,
   "Membrane Patch Size": 17,
   "Minimum Sigma": 0.5,
@@ -160,4 +168,5 @@ export interface Settings {
   nPoints: number;
   trainAll: boolean;
   rescale: boolean;
+  format: ".skops" | ".pkl";
 }

@@ -8,11 +8,11 @@ of the SAM model (with the image encoding part run on the backed.).
 */
 
 import { InferenceSession, Tensor } from "onnxruntime-web";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import "./assets/scss/App.scss";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { handleImageScale } from "./components/helpers/scaleHelper";
-import { modelScaleProps, getHTTPRequest } from "./components/helpers/Interfaces";
+import { modelScaleProps } from "./components/helpers/Interfaces";
 import { onnxMaskToImage, imageDataToImage } from "./components/helpers/canvasUtils";
 import { modelData } from "./components/helpers/onnxModelAPI";
 import Stage from "./components/Stage";
@@ -21,7 +21,6 @@ const ort = require("onnxruntime-web");
 /* @ts-ignore */
 import npyjs from "npyjs";
 
-
 const MODEL_DIR = "/model/sam_onnx_quantized_example.onnx";
 const DEFAULT_IMAGE = "/assets/data/default_image.png"
 const DEFAULT_EMBEDDING = "/assets/data/default_encoding.npy"
@@ -29,11 +28,13 @@ const DEFAULT_EMBEDDING = "/assets/data/default_encoding.npy"
 // URLS of our API endpoints - change when live
 //const PATH = "https://samba-web-demo.azurewebsites.net"
 const PATH = "http://127.0.0.1:5000"
+const INIT_ENDPOINT = PATH + "/init"
 const ENCODE_ENDPOINT = PATH + "/encoding"
 const FEATURISE_ENDPOINT = PATH + "/featurising"
+const DELETE_ENDPOINT = PATH + "/delete"
 const SEGMENT_ENDPOINT = PATH + "/segmenting"
 const SAVE_ENDPOINT = PATH + "/saving"
-const CLASSIFIER_ENDPOINT = PATH + "/classifier"
+const LOAD_CLASSIFIER_ENDPOINT = PATH + "/lclassifier"
 const SAVE_LABEL_ENDPOINT = PATH + "/slabel"
 
 const getb64Image = (img: HTMLImageElement): string => {
@@ -54,6 +55,15 @@ const updateArr = (oldArr: Array<any>, idx: number, setVal: any) => {
   return newArr;
 };
 
+const appendToArr = (oldArr: Array<any>, toAdd: Array<any>) => {
+  return oldArr.concat(toAdd)
+}
+
+const deleteIdx = (oldArr: Array<any>, idx: number) => {
+  const newArr = oldArr.filter((v, i) => (i != idx));
+  return newArr
+}
+
 
 const getRandomInt = (max: number) => {
   return Math.floor(Math.random() * max);
@@ -72,7 +82,7 @@ const App = () => {
   const {
     clicks: [clicks],
     imgType: [imgType,],
-    imgIdx: [imgIdx,],
+    imgIdx: [imgIdx, setImgIdx],
     largeImg: [largeImg,],
     imgArrs: [imgArrs, setImgArrs],
     segArrs: [segArrs, setSegArrs],
@@ -85,12 +95,13 @@ const App = () => {
     maskIdx: [maskIdx],
     labelType: [, setLabelType],
     labelClass: [labelClass],
-    segmentFeature: [segmentFeature, setSegmentFeature],
+    overlayType: [, setOverlayType],
     features: [features,],
     processing: [, setProcessing],
     errorObject: [errorObject, setErrorObject],
     showToast: [, setShowToast],
     modalShow: [, setModalShow],
+    settings: [settings,],
   } = useContext(AppContext)!;
 
   const [model, setModel] = useState<InferenceSession | null>(null); // ONNX model
@@ -99,6 +110,10 @@ const App = () => {
   // The ONNX model expects the input to be rescaled to 1024. 
   // The modelScale state variable keeps track of the scale values.
   const [modelScale, setModelScale] = useState<modelScaleProps | null>(null);
+
+  const [segmentFlag, setSegmentFlag] = useState<boolean>(false)
+  const [featureFlag, setFeatureFlag] = useState<boolean>(false)
+  const [applyFlag, setApplyFlag] = useState<boolean>(false)
 
   useEffect(() => {
     // Initialize the ONNX model on load
@@ -115,15 +130,23 @@ const App = () => {
       }
     };
     initModel();
+    initBackend();
     const showHelp = localStorage.getItem("showHelp")
     if (showHelp === null || showHelp === "true") {
       setModalShow({ welcome: true, settings: false, features: false })
     }
-    const body = document.getElementById("root")
-    if (body != null) {
-      //document.body.style.backgroundColor = "#000000;"
-    }
   }, []);
+
+  const initBackend = async () => {
+    try {
+      const headers = new Headers();
+      headers.append('Content-Type', 'application/json;charset=utf-8');
+      await fetch(INIT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID }) });
+    } catch (e) {
+      const error = e as Error;
+      setErrorObject({ msg: "Failed to connect to backend.", stackTrace: error.toString() });
+    }
+  }
 
   const loadImages = async (hrefs: string[]) => {
     /* Start by initing the empty arrs for the imgs, labels, segs and tensors. Then, for each
@@ -150,17 +173,13 @@ const App = () => {
           nullLabels.push(tempLabelArr);
           nullSegs.push(tempSegArr);
           nullTensors.push(null);
-          if (i === 0) { // for very first arr, init these to be empty but the right shape
+          if (i === 0 && imgArrs.length == 0) { // for very first arr, init these to be empty but the right shape
             setSegArr(tempSegArr);
             setLabelArr(tempLabelArr);
           }
           // Set the arrays once only when very last image is loaded
           if (i === hrefs.length - 1) {
-            setImgArrs(imgs);
-            setLabelArrs(nullLabels);
-            setSegArrs(nullSegs);
-            setTensorArrs(nullTensors);
-            requestFeatures(imgs)
+            updateAllArrs(imgs, nullLabels, nullSegs, nullTensors)
           }
         };
       }
@@ -170,6 +189,69 @@ const App = () => {
       console.log(e);
     }
   };
+
+  const updateAllArrs = (imgs: Array<HTMLImageElement>, labels: Array<Uint8ClampedArray>,
+    segs: Array<Uint8ClampedArray>, tensors: Array<any>) => {
+    if (imgArrs.length > 0) {
+      const isStack = (imgType === "stack")
+      const sizeMatches = (imgs[0].width === imgArrs[0].width && imgs[0].height === imgArrs[0].height)
+      if (isStack && !sizeMatches) {
+        setErrorObject({ msg: "Size of two stacks don't match!", stackTrace: "" })
+        return
+      }
+    }
+    requestFeatures(imgs, imgArrs.length)
+    const newImgs = appendToArr(imgArrs, imgs)
+    setImgArrs(newImgs);
+    const newLabels = appendToArr(labelArrs, labels)
+    setLabelArrs(newLabels);
+    const newSegArrs = appendToArr(segArrs, segs)
+    setSegArrs(newSegArrs);
+    const newTensors = appendToArr(tensorArrs, tensors)
+    setTensorArrs(newTensors);
+  }
+
+  const deleteAllFiles = async () => {
+    try {
+      const headers = new Headers();
+      headers.append('Content-Type', 'application/json;charset=utf-8');
+      await fetch(DELETE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "idx": -1 }) });
+      setImgArrs([])
+      setLabelArrs([])
+      setSegArrs([])
+      setTensorArrs([])
+      setImage(null)
+      setLabelArr(new Uint8ClampedArray(1))
+      setSegArr(new Uint8ClampedArray(1))
+      setTensor(null)
+    } catch (e) {
+      const error = e as Error;
+      setErrorObject({ msg: "Failed to delete files.", stackTrace: error.toString() });
+    }
+  }
+
+  const deleteCurrentFile = async () => {
+    if (imgArrs.length == 1) { //delete all if one file
+      deleteAllFiles()
+      return
+    }
+
+    try {
+      const headers = new Headers();
+      headers.append('Content-Type', 'application/json;charset=utf-8');
+      await fetch(DELETE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "idx": imgIdx }) });
+      const newIdx = (imgIdx == 0) ? 1 : imgIdx - 1
+      changeToImage(imgIdx, newIdx)
+      setImgArrs(deleteIdx(imgArrs, imgIdx))
+      setSegArrs(deleteIdx(segArrs, imgIdx))
+      setLabelArrs(deleteIdx(labelArrs, imgIdx))
+      setTensorArrs(deleteIdx(tensorArrs, imgIdx))
+      setImgIdx(imgIdx) // CHECK THIS AT SOME POINT
+    } catch (e) {
+      const error = e as Error;
+      setErrorObject({ msg: "Failed to delete image.", stackTrace: error.toString() });
+    }
+  }
 
   const changeToImage = (oldIdx: number, newIdx: number) => {
     // Update arrs with arrs of old image, then switch to new one.
@@ -206,16 +288,17 @@ const App = () => {
     setLabelType('Smart Labelling');
   }
 
-  const requestFeatures = async (imgs: Array<HTMLImageElement>) => {
+  const requestFeatures = async (imgs: Array<HTMLImageElement>, offset: number = 0) => {
     const b64images: string[] = imgs.map((img, i) => getb64Image(img));
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     console.log("Started Featurising");
     try {
-      await fetch(FEATURISE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "id": UID, "features": features }) });
+      await fetch(FEATURISE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "id": UID, "features": features, "offset": offset }) });
       console.log("Finished Featurising");
-      const segFeat = { feature: true, segment: segmentFeature.segment }
-      setSegmentFeature(segFeat)
+      //const segFeat = { feature: true, segment: segmentFeature.segment }
+      //setSegmentFeature(segFeat)
+      setFeatureFlag(true)
     } catch (e) {
       const error = e as Error;
       setErrorObject({ msg: "Failed to featurise.", stackTrace: error.toString() });
@@ -249,29 +332,69 @@ const App = () => {
     return
   };
 
-  const trainPressed = () => {
-    const segFeat = { feature: segmentFeature.feature, segment: true }
-    setSegmentFeature(segFeat)
+  const checkToSegment = (featFlag: boolean, segFlag: boolean, appFlag: boolean) => {
+    if (featFlag == true && segFlag == true) {
+      trainClassifier()
+    } else if (featFlag == true && appFlag == true) {
+      trainClassifier(true)
+    }
   }
 
-  const trainClassifier = async () => {
+  const trainPressed = () => {
+    if (image == null || labelArr == null) { return }
+
+    if (segmentFlag === true) {
+      checkToSegment(featureFlag, true, false)
+    } else {
+      setSegmentFlag(true)
+    }
+    setProcessing("Segmenting");
+  }
+
+  const applyPressed = () => {
+    if (image == null) { return }
+    if (applyFlag === true) {
+      checkToSegment(featureFlag, false, true)
+    } else {
+      setApplyFlag(true)
+    }
+    setProcessing("Applying");
+  }
+
+  const trainClassifier = async (apply: boolean = false) => {
     // Ping our segment endpoint, send it our image and labels then await the array.
-    if (image === null || labelArr === null) {
+    if (image === null) {
       return;
     }
-    const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
-    setLabelArrs(newLabelArrs);
-    setProcessing("Segmenting");
     const b64images: string[] = imgArrs.map((img, i) => getb64Image(img));
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     console.log("Started Segementing");
-    let [largeW, largeH]: Array<number> = [0, 0]
+    let [largeW, largeH]: Array<number> = [0, 0];
     if (imgType === "large" && largeImg !== null) {
-      largeW = largeImg.width
-      largeH = largeImg.height
+      largeW = largeImg.width;
+      largeH = largeImg.height;
     }
-    const msg = { "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType, "large_w": largeW, "large_h": largeH }
+
+    let msg
+    if (apply == false && labelArr != null) {
+      console.log(imgIdx)
+      const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
+      setLabelArrs(newLabelArrs);
+      msg = {
+        "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
+        "large_w": largeW, "large_h": largeH, "n_points": settings.nPoints,
+        "train_all": settings.trainAll, "rescale": settings.rescale, "type": "segment"
+      };
+
+    } else {
+      msg = {
+        "images": b64images, "id": UID, "save_mode": imgType,
+        "large_w": largeW, "large_h": largeH, "n_points": settings.nPoints,
+        "train_all": settings.trainAll, "rescale": settings.rescale, "type": "apply"
+      };
+    }
+
     try {
       let resp = await fetch(SEGMENT_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify(msg) })
       const buffer = await resp.arrayBuffer();
@@ -280,8 +403,13 @@ const App = () => {
       const error = e as Error;
       setErrorObject({ msg: "Failed to segment.", stackTrace: error.toString() });
     }
+    if (apply === false) {
+      setSegmentFlag(false)
+    } else {
+      setApplyFlag(false)
+    }
     setProcessing("None");
-    setShowToast(true)
+    setOverlayType("Segmentation")
   }
 
   const loadSegmentationsFromHTTP = (buffer: ArrayBuffer) => {
@@ -332,7 +460,8 @@ const App = () => {
 
   const onSaveClick = async () => {
     if (image === null || segArr === null) { return; }
-    saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID }), "seg.tiff")
+    saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID, "rescale": settings.rescale, "type": "segmentation" }), "seg.tiff")
+    setShowToast(true);
   }
 
   const saveLabels = async () => {
@@ -345,7 +474,10 @@ const App = () => {
       largeW = largeImg.width
       largeH = largeImg.height
     }
-    const dict = { "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType, "large_w": largeW, "large_h": largeH }
+    const dict = {
+      "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
+      "large_w": largeW, "large_h": largeH, "rescale": settings.rescale
+    }
     const msg = JSON.stringify(dict)
     saveArrAsTIFF(SAVE_LABEL_ENDPOINT, msg, "label.tiff")
   }
@@ -354,10 +486,10 @@ const App = () => {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     try {
-      let resp = await fetch(CLASSIFIER_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID }) })
+      let resp = await fetch(SAVE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "format": settings.format, "type": "classifier" }) })
       const buffer = await resp.arrayBuffer();
       const a = document.createElement("a")
-      a.download = "classifier.pkl"
+      a.download = "classifier" + settings.format
       const file = new Blob([buffer], { type: "application/octet-stream" });
       a.href = URL.createObjectURL(file);
       a.click()
@@ -365,6 +497,31 @@ const App = () => {
       const error = e as Error;
       setErrorObject({ msg: "Failed to dowload classifier.", stackTrace: error.toString() });
     }
+  }
+
+  const loadClassifier = async (file: File) => {
+    const headers = new Headers();
+    const reader = new FileReader();
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    const isSkops = (extension == "skops");
+    reader.readAsDataURL(file)
+
+    reader.onload = () => {
+      console.log("loading classifier")
+      if (isSkops) {
+        headers.append('Content-Type', 'application/json;charset=utf-8');
+        try {
+          const b64 = reader.result
+          let resp = fetch(LOAD_CLASSIFIER_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "bytes": b64 }) });
+        } catch (error: any) {
+          setErrorObject({ msg: "Failed to load classifier", stackTrace: error.message as string });
+        }
+      } else {
+        setErrorObject({ msg: "Must load a .skops file for classifier.", stackTrace: ".pkl files are insecure and so won't be loaded serverside" });
+        return
+      }
+    }
+
   }
 
   // Run the ONNX model every time clicks state changes - updated in Canvas
@@ -415,20 +572,22 @@ const App = () => {
   }, [segArrs])
 
   useEffect(() => {
-    if (segmentFeature.feature == true && segmentFeature.segment == true) {
-      trainClassifier()
-    }
-  }, [segmentFeature])
+    checkToSegment(featureFlag, segmentFlag, applyFlag)
+  }, [segmentFlag, featureFlag, applyFlag])
 
   return <Stage
     loadImages={loadImages}
     loadDefault={loadDefault}
     requestEmbedding={requestEmbedding}
     trainClassifier={trainPressed}
+    applyClassifier={applyPressed}
     changeToImage={changeToImage}
+    deleteAll={deleteAllFiles}
+    deleteCurrent={deleteCurrentFile}
     saveSeg={onSaveClick}
     saveLabels={saveLabels}
     saveClassifier={saveClassifier}
+    loadClassifier={loadClassifier}
   />;
 };
 

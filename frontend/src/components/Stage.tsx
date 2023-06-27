@@ -14,10 +14,13 @@ const UTIF = require("./UTIF.js")
 const MAX_FILE_SIZE_BYTES = 1024 * 1024 * 50 // 50MB
 
 
-const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, changeToImage, saveSeg, saveLabels, saveClassifier }: StageProps) => {
+const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier,
+  applyClassifier, changeToImage, deleteAll, deleteCurrent, saveSeg,
+  saveLabels, saveClassifier, loadClassifier }: StageProps) => {
   const {
     image: [image,],
-    imgType: [, setImgType],
+    imgArrs: [imgArrs,],
+    imgType: [imgType, setImgType],
     largeImg: [, setLargeImg],
     errorObject: [, setErrorObject],
     theme: [theme,]
@@ -38,8 +41,9 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, cha
       loadImages(hrefs);
       setImgType("stack");
     } else if (tifs.length == 1 && isSmall) {
+      const type = (imgArrs.length == 0) ? "single" : "multi"
       loadImages(hrefs);
-      setImgType("single");
+      setImgType(type);
     } else if (!isSmall) {
       const img = new Image();
       img.src = hrefs[0];
@@ -59,8 +63,10 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, cha
         setImgType("large");
       }
       else {
+        const type = (imgArrs.length == 0) ? "single" : "multi"
+        console.log(type)
         loadImages([href]);
-        setImgType("single");
+        setImgType(type);
       }
     }
   }
@@ -103,6 +109,10 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, cha
         return
       }
       try {
+        if (imgType === "large" && imgArrs.length > 0) {
+          setErrorObject({ msg: "Cannot load another image with existing large image! Please remove the previous.", stackTrace: "" })
+          return
+        }
         if (isTIF) {
           loadTIFF(reader.result as ArrayBuffer);
         } else if (isPNGJPG) {
@@ -127,7 +137,9 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier, cha
 
   return (
     <div className={`w-full h-full`} style={{ background: themeBGs[theme][1] }}>
-      <Topbar loadFromFile={loadFromFile} saveSeg={saveSeg} saveLabels={saveLabels} saveClassifier={saveClassifier} />
+      <Topbar loadFromFile={loadFromFile} deleteAll={deleteAll} deleteCurrent={deleteCurrent}
+        saveSeg={saveSeg} saveLabels={saveLabels} saveClassifier={saveClassifier}
+        loadClassifier={loadClassifier} applyClassifier={applyClassifier} />
       <div className={`flex`} style={{ margin: '1.5%', background: themeBGs[theme][1] }} > {/*Canvas div on left, sidebar on right*/}
         <div className={`${flexCenterClasses} relative w-[90%] h-[80%]`}>
           {!image && <DragDrop loadFromFile={loadFromFile} loadDefault={loadDefault} />}

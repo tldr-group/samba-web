@@ -21,6 +21,7 @@ import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Spinner from "react-bootstrap/Spinner";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import * as _ from "underscore";
+import { relative } from "path";
 
 
 const _getCSSColour = (currentStateVal: any, targetStateVal: any, successPrefix: string, colourIdx: number, theme: Theme): string => {
@@ -44,18 +45,38 @@ const _getCSSColour = (currentStateVal: any, targetStateVal: any, successPrefix:
 
 const Sidebar = ({ requestEmbedding, trainClassifier, changeToImage }: SidebarProps) => {
     const {
+        labelClass: [labelClass,],
         theme: [theme,],
+        processing: [processing,],
     } = useContext(AppContext)!;
+
+    const _getTrainBtn = () => {
+        if (processing === "Segmenting" || processing === "Applying") {
+            return (<Button disabled variant={themeBGs[theme][0]} style={{
+                marginLeft: '28%',
+                boxShadow: "1px 1px  1px grey", outline: _getCSSColour("foo", "foo", "3px solid ", labelClass, theme),
+            }}>
+                <Spinner
+                    as="span"
+                    animation="border"
+                    size="sm"
+                    role="status"
+                />
+                &nbsp;{processing}
+            </Button>)
+        } else {
+            return (<Button onClick={trainClassifier} variant={themeBGs[theme][0]} style={{ marginLeft: '28%', boxShadow: "1px 1px  1px grey", color: "#ffffff" }}>Train Classifier!</Button>)
+        }
+    }
 
     // holds all the stuff on the side of the screen: train button, label frame, overlay frame and a hidden spin wheel that displays when encoding or segmenting
     return (
         <div className="items-center" style={{ padding: '10px 10px', alignItems: 'center' }}>
-            <Button onClick={trainClassifier} variant={themeBGs[theme][0]} style={{ marginLeft: '28%', boxShadow: "1px 1px  1px grey", color: "#ffffff" }}>Train Classifier!</Button>{' '}
+            {_getTrainBtn()}
             <div className={`h-full w-[20%]`}>
                 <LabelFrame requestEmbedding={requestEmbedding} />
                 <OverlaysFrame />
                 <NavigationFrame changeToImage={changeToImage} />
-                <SpinWheel></SpinWheel>
             </div>
         </div>
     );
@@ -67,6 +88,7 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
         labelClass: [labelClass, setLabelClass],
         brushWidth: [brushWidth, setBrushWidth],
         maskIdx: [maskIdx, setMaskIdx],
+        processing: [processing,],
         theme: [theme,],
     } = useContext(AppContext)!;
 
@@ -86,6 +108,30 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
             requestEmbedding();
         };
     };
+
+    const _getImg = (l: any) => {
+        if (l.name == "Smart Labelling" && processing === "Encoding") {
+            return (
+                <div style={{
+                    marginLeft: '7%', width: '40px', height: '40px', position: 'relative',
+                    outline: _getCSSColour(l.name, labelType, "3px solid ", labelClass, theme),
+                    backgroundColor: themeBGs[theme][2], borderRadius: '3px', boxShadow: '2px 2px 2px black',
+                }}>
+                    < Spinner as='span' animation="border" variant="secondary" style={{ position: "absolute", left: "5px", top: "5px", width: '30px', height: '30px' }} />
+                </div>
+            )
+        } else {
+            return (<img src={prefix + l.path} style={
+                {
+                    backgroundColor: themeBGs[theme][2], borderRadius: '3px',
+                    marginLeft: '7%', width: '40px', boxShadow: '2px 2px 2px black',
+                    outline: _getCSSColour(l.name, labelType, "3px solid ", labelClass, theme)
+                }
+            }
+                onClick={(e) => _setLabel(e, l.name)}></img>)
+        }
+    }
+
     const _setWidth = (e: any) => { setBrushWidth(e.target.value) }
 
 
@@ -100,14 +146,7 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                             placement="top"
                             delay={{ show: 250, hide: 400 }}
                             overlay={ToolTip(l.name)}>
-                            <img src={prefix + l.path} style={
-                                {
-                                    backgroundColor: themeBGs[theme][2], borderRadius: '3px',
-                                    marginLeft: '7%', width: '40px', boxShadow: '2px 2px 2px black',
-                                    outline: _getCSSColour(l.name, labelType, "3px solid ", labelClass, theme)
-                                }
-                            }
-                                onClick={(e) => _setLabel(e, l.name)}></img>
+                            {_getImg(l)}
                         </OverlayTrigger>
 
                     )}
@@ -123,11 +162,11 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                     }}>{i}</Button>)}
                 </ButtonGroup>
             </Card.Body>
-            <Card.Body>
-                Brush Width
+            {(labelType == "Brush" || labelType == "Erase") && <Card.Body>
+                {labelType} Width
                 <Form.Range onChange={(e) => _setWidth(e)} min="1" max="100" value={brushWidth} />
-            </Card.Body>
-            <Card.Body>
+            </Card.Body>}
+            {labelType == "Smart Labelling" && <Card.Body>
                 Smart Label Region
                 <ButtonGroup style={{ paddingLeft: "4%" }}>
                     {regionSizes.map((size, i) => <Button key={i} variant="light" onClick={(e) => setMaskIdx(3 - i)} style={{
@@ -135,7 +174,7 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                         borderColor: _getCSSColour(3 - i, maskIdx, "", labelClass, theme)
                     }}>{size}</Button>)}
                 </ButtonGroup>
-            </Card.Body>
+            </Card.Body>}
         </Card >
     );
 }
@@ -167,8 +206,8 @@ const OverlaysFrame = () => {
         <Card className="text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }} bg={themeBGs[theme][0]}>
             <Card.Header as="h5">Overlay</Card.Header>
             <Card.Body className="flex">
-                <Form.Select onChange={e => _setOverlayType(e.target.value)} style={{ backgroundColor: themeBGs[theme][2] }}>
-                    <option >Overlay type</option>
+                <Form.Select onChange={e => _setOverlayType(e.target.value)} value={overlayType} style={{ backgroundColor: themeBGs[theme][2] }}>
+                    <option value="None" >Overlay type</option>
                     <option value="Segmentation">Segmentation</option>
                     <option value="Label">Labels</option>
                 </Form.Select>
@@ -181,54 +220,17 @@ const OverlaysFrame = () => {
     );
 }
 
-const SpinWheel = () => {
-    // Spinny wheel and text that shows up when processing state is true. Has same bg colour as labelling colour.
-    const {
-        processing: [processing,],
-        labelClass: [labelClass,],
-        theme: [theme,],
-    } = useContext(AppContext)!;
-
-    const c = colours[labelClass];
-    const hex = rgbaToHex(c[0], c[1], c[2], 255);
-
-    if (processing !== "None") {
-        return (<div>
-            <Button disabled style={{
-                backgroundColor: hex, borderColor: hex, width: '18rem', margin: '15%'
-            }}>
-                {(processing === "Encoding" &&
-                    <div style={{ display: 'grid', placeItems: 'center' }} >
-                        < Spinner as='span' animation="grow" role="status" style={{
-                            gridColumn: 1, gridRow: 1
-                        }} />
-                        <img src={"../assets/icons/smart.png"} style={
-                            {
-                                backgroundColor: _getCSSColour("foo", "foo", "3px solid ", labelClass, theme), width: '30px',
-                                gridColumn: 1, gridRow: 1, zIndex: 2
-                            }
-                        }></img>
-                    </div>
-                )
-                }
-                {processing === "Segmenting" && < Spinner as='span' animation="border" />}
-                <p style={{ marginBottom: '-4px' }}>{processing}</p>
-            </Button >
-        </div >)
-    }
-
-    return (
-        <div></div >
-    )
-}
 
 const NavigationFrame = ({ changeToImage }: NavigationProps) => {
-    const { imgType: [imgType,] } = useContext(AppContext)!;
+    const {
+        imgType: [imgType,],
+        theme: [theme]
+    } = useContext(AppContext)!;
     const nImages = 2
 
     if (nImages > 1 && imgType != "single") {
         return (
-            <Card className="bg-dark text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }}>
+            <Card className="text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }} bg={themeBGs[theme][0]}>
                 <Card.Header as="h5">Navigation</Card.Header>
                 <Card.Body>
                     <ImgSelect changeToImage={changeToImage} />
@@ -249,6 +251,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
         labelClass: [labelClass,],
         imgIdx: [imgIdx, setImgIdx],
         imgType: [imgType,],
+        theme: [theme,],
     } = useContext(AppContext)!;
     // Reference stord to update later.
     const canvRef = useRef<HTMLCanvasElement>(null);
@@ -367,7 +370,7 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
             <div>
                 <div className={`flex`}>Piece: <input type="number" min={1} max={imgArrs.length}
                     value={imgIdx + 1} onChange={e => changeImageIdx(e)}
-                    style={{ marginLeft: '8px', color: 'black', borderRadius: '4px', marginBottom: '10px' }} />
+                    style={{ marginLeft: '8px', color: 'black', borderRadius: '4px', marginBottom: '10px', backgroundColor: themeBGs[theme][2] }} />
                 </div>
                 <div id="container" style={{ display: 'grid', width: "100%", height: "100%" }}>
                     {(largeImg !== null) ? <img src={largeImg.src} style={{ gridColumn: 1, gridRow: 1, width: "100%", height: "100%" }}></img> : <></>}
@@ -384,8 +387,8 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
     } else if (imgType === "stack" || imgType === "multi") {
         return (
             <div>
-                Image: <input type="number" min={1} max={imgArrs.length} value={imgIdx + 1} onChange={e => changeImageIdx(e)} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px' }} />
-                <Form.Range min={1} value={imgIdx} max={imgArrs.length} onChange={e => changeImageIdx(e)} />
+                Image: <input type="number" min={1} max={imgArrs.length} value={imgIdx + 1} onChange={e => changeImageIdx(e)} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px', backgroundColor: themeBGs[theme][2] }} />
+                <Form.Range min={1} value={imgIdx + 1} max={imgArrs.length} onChange={e => changeImageIdx(e)} />
             </div>
         )
     } else {

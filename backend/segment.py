@@ -1,4 +1,5 @@
 """Given an image and some labels, featurise then segment with random forest classiier."""
+from zipfile import ZIP_DEFLATED
 import numpy as np
 from PIL import Image
 from tifffile import imwrite
@@ -7,8 +8,11 @@ from typing import List
 from math import floor, ceil
 from pickle import dump
 from io import BytesIO
+from skops.io import dump as skdump
+from skops.io import loads as skloads
+from skops.io import load as skload
 
-from forest_based import segment_with_features
+from forest_based import segment_with_features, apply_features_done
 
 try:
     CWD = os.environ["APP_PATH"]
@@ -28,13 +32,19 @@ def _get_split_inds(w: int, h: int) -> dict:
 
 
 def _create_composite_tiff(
-    arr_list: List[np.ndarray], mode: str, large_w: int = 0, large_h: int = 0
+    arr_list: List[np.ndarray],
+    mode: str,
+    large_w: int = 0,
+    large_h: int = 0,
+    rescale=True,
 ) -> np.ndarray:
     out: np.ndarray
     remasked_arrs = np.array(arr_list)
     max_class = np.amax(remasked_arrs)
     delta = floor(255 / (max_class))
-    print(mode, remasked_arrs.shape)
+    # this will save a tiff with 1, 2, 3 etc rather than 64, 128, etc
+    if rescale is False:
+        delta = 1
     if mode == "stack":
         rescaled = ((remasked_arrs) * delta).astype(np.uint8)
         out = rescaled
@@ -64,10 +74,29 @@ def _create_composite_tiff(
 
 
 async def _save_as_tiff(
-    arr_list: List[np.ndarray], mode: str, UID: str, large_w: int = 0, large_h: int = 0
+    arr_list: List[np.ndarray],
+    mode: str,
+    UID: str,
+    large_w: int = 0,
+    large_h: int = 0,
+    score: float | None = None,
+    rescale: bool = True,
 ) -> int:
-    out = _create_composite_tiff(arr_list, mode, large_w=large_w, large_h=large_h)
-    imwrite(f"{CWD}/{UID}/seg.tiff", out, photometric="minisblack")
+    out = _create_composite_tiff(
+        arr_list, mode, large_w=large_w, large_h=large_h, rescale=rescale
+    )
+    sw_name: str = "SAMBA"
+    if score != None:
+        sw_name = f"SAMBA, val. score={score:.3f}"
+
+    imwrite(
+        f"{CWD}/{UID}/seg.tiff",
+        out,
+        photometric="minisblack",
+        description="foo".encode("utf-8"),
+        datetime=True,
+        software=sw_name,
+    )
     return 0
 
 
@@ -77,6 +106,7 @@ def save_labels(
     mode: str,
     large_w: int = 0,
     large_h: int = 0,
+    rescale=True,
 ) -> bytes:
     label_arrs: List[np.ndarray] = []
     for i in range(len(images)):
@@ -85,7 +115,7 @@ def save_labels(
         labels_list = [item for keys, item in label_dict.items()]
         label_arr = np.array(labels_list).reshape(image.height, image.width)
         label_arrs.append(label_arr)
-    label_out = _create_composite_tiff(label_arrs, mode, large_w, large_h)
+    label_out = _create_composite_tiff(label_arrs, mode, large_w, large_h, rescale)
     file_bytes_io = BytesIO()
     imwrite(file_bytes_io, label_out, photometric="minisblack")
     file_bytes_io.seek(0)
@@ -96,7 +126,24 @@ def save_labels(
 async def _save_classifier(model, CWD: str, UID: str) -> int:
     with open(f"{CWD}/{UID}/classifier.pkl", "wb") as handle:
         dump(model, handle)
+    skdump(
+        model,
+        f"{CWD}/{UID}/classifier.skops",
+        compression=ZIP_DEFLATED,
+        compresslevel=9,
+    )
     return 0
+
+
+async def load_classifier_from_http(file_bytes: bytes, CWD: str, UID: str) -> None:
+    model = skloads(file_bytes)
+    skdump(
+        model,
+        f"{CWD}/{UID}/classifier.skops",
+        compression=ZIP_DEFLATED,
+        compresslevel=9,
+    )
+    print("Loaded skops successfully")
 
 
 async def segment(
@@ -106,6 +153,9 @@ async def segment(
     save_mode: str,
     large_w: int = 0,
     large_h: int = 0,
+    n_points: int = 50000,
+    train_all: bool = True,
+    rescale: bool = True,
 ) -> np.ndarray:
     """
     Perform FRF segmentation.
@@ -120,12 +170,13 @@ async def segment(
         label_dict = labels_dicts[i]
         labels_list = [item for keys, item in label_dict.items()]
         label_arr = np.array(labels_list).reshape(image.height, image.width)
-
         label_arrs.append(label_arr)
 
     remasked_arrs_list: List[np.ndarray] = []
     remasked_flattened_arrs: np.ndarray
-    probs, model = segment_with_features(label_arrs, UID)
+    probs, model, score = segment_with_features(
+        label_arrs, UID, n_points=n_points, train_all=train_all
+    )
 
     for i in range(len(probs)):
         label_arr = label_arrs[i]
@@ -138,7 +189,35 @@ async def segment(
             remasked_flattened_arrs = np.concatenate(
                 (remasked_flattened_arrs, remasked.flatten()), axis=0, dtype=np.uint8
             )
-    await _save_as_tiff(remasked_arrs_list, save_mode, UID, large_w, large_h)
+    await _save_as_tiff(
+        remasked_arrs_list, save_mode, UID, large_w, large_h, score, rescale=rescale
+    )
     await _save_classifier(model, CWD, UID)
     print(remasked_flattened_arrs.shape, label_arrs[0].shape)
     return remasked_flattened_arrs
+
+
+async def apply(
+    images: List[Image.Image],
+    UID: str,
+    save_mode: str,
+    large_w: int = 0,
+    large_h: int = 0,
+    rescale: bool = True,
+) -> np.ndarray:
+    model = skload(f"{CWD}/{UID}/classifier.skops")
+    probs = apply_features_done(model, UID, len(images))
+
+    arrs_list: List[np.ndarray] = []
+    flattened_arrs: np.ndarray
+    for i in range(len(images)):
+        classes = np.argmax(probs[i], axis=0).astype(np.uint8) + 1
+        arrs_list.append(classes)
+        if i == 0:
+            flattened_arrs = classes.flatten()
+        else:
+            flattened_arrs = np.concatenate(
+                (flattened_arrs, classes.flatten()), axis=0, dtype=np.uint8
+            )
+    await _save_as_tiff(arrs_list, save_mode, UID, large_w, large_h, rescale=rescale)
+    return flattened_arrs

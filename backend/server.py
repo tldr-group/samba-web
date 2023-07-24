@@ -100,6 +100,7 @@ async def featurise_fn(request) -> Response:
     UID = request.json["id"]
     features = request.json["features"]
     images = [_get_image_from_b64(i) for i in request.json["images"]]
+    images[0].save("0.png")
     offset = request.json["offset"]
     success = await featurise(images, UID, selected_features=features, offset=offset)
     return jsonify(success=True)

@@ -10,6 +10,7 @@ import numpy as np
 from scipy.ndimage import rotate, convolve, sobel
 from math import isclose, pi
 import matplotlib.pyplot as plt
+from tifffile import imread, imwrite
 
 
 import features as ft
@@ -166,10 +167,36 @@ class TestFeatures(unittest.TestCase):
         assert np.sum(bilaterals[0]) == np.sum(bilaterals[2])
         assert np.sum(bilaterals[0]) > np.sum(bilaterals[3])
 
-    # test entropy by seeing if entropy of disk + random noise > random nosie
     # test derivatives on polynomials
+    # test entropy by seeing if entropy of disk + random noise > random nosie
+    # stuff left: gaussian, hessian, DoG, derivatives, structure, entropy
+
     # have seperate integration test for both features and classifier - basically check results match weka
 
 
+def norm(x: np.ndarray) -> np.ndarray:
+    return (x - np.amin(x)) / np.amax(x)
+
+
+class CompareFeatures(unittest.TestCase):
+    def test_compare_stacks(self) -> None:
+        weka = imread("backend/weka_stack_super1.tif")
+        samba = imread("backend/samba_stack_super1.tif")
+        transpose = samba.transpose((2, 0, 1))
+
+        norm_weka = np.apply_along_axis(norm, -1, weka)
+        norm_samba = 1 - np.apply_along_axis(norm, -1, transpose)
+        # maybe normalise both then compare?
+        imwrite("backend/weka_stack_super1_n.tif", norm_weka)
+        imwrite("backend/samba_stack_super1_n.tif", norm_samba)
+
+        print(weka.shape, samba.transpose((2, 0, 1)).shape)
+        assert True
+
+
 if __name__ == "__main__":
+    cases = (TestFeatures, CompareFeatures)
+    suite = unittest.TestSuite(
+        [unittest.TestLoader().loadTestsFromTestCase(c) for c in cases]
+    )
     unittest.main()

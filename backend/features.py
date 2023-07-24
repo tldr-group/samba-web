@@ -23,7 +23,9 @@ from itertools import combinations_with_replacement, combinations, chain
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import cpu_count
 
-from typing import Tuple, List
+from typing import Tuple, List, Iterable
+
+# Gaussian blur seems to be 1 - the value in weka. Interesting. NB weka also adds original image as default - i should do the same
 
 # - 2 to allow for main & gui threads
 N_ALLOWED_CPUS = cpu_count() - 2
@@ -43,8 +45,8 @@ DEAFAULT_FEATURES = {
     "Entropy": 0,
     "Neighbours": 1,
     "Membrane Thickness": 1,
-    "Membrane Patch Size": 17,
-    "Minimum Sigma": 0.5,
+    "Membrane Patch Size": 19,
+    "Minimum Sigma": 0.5,  # check this - is 1 in weka docs but 0.5 in sklearn example
     "Maximum Sigma": 16,
 }
 
@@ -60,13 +62,16 @@ def make_footprint(sigma: int) -> np.ndarray:
 
 
 # %% ===================================SINGLESCALE FEATURES===================================
+# these main 3 are also computed at sigma = 0 and added to stack i.e no blur
 def singlescale_gaussian(img: np.ndarray, sigma: int) -> np.ndarray:
     """Gaussian blur of each pixel in $img of scale/radius $sigma."""
-    return filters.gaussian(img, sigma, preserve_range=False)
+    # weka adds a really weird 0.4 multiplier to its gaussian, so hvae added it here
+    return filters.gaussian(img, 0.4 * sigma, preserve_range=False)
 
 
 def singlescale_edges(gaussian_filtered: np.ndarray) -> np.ndarray:
     """Sobel filter applied to gaussian filtered arr of scale sigma to detect edges."""
+    # edges seem lower intensity than in weka - do weka sqrt the sum or not? Is there a problem with me normalising here?
     return filters.sobel(gaussian_filtered)
 
 
@@ -116,6 +121,7 @@ def singlescale_minimum(
 
 def singlescale_entropy(img: np.ndarray, sigma_rad_footprint: np.ndarray) -> np.ndarray:
     """Compute entropy of $n_bins histogram of $img in $sigma_rad_footprint. Memory intensive."""
+    # lots of nans here because of np.divide
     entropies = []
     for n_bins in [32, 64, 128]:  # was 32, 64, 128, 256
         histogram = filters.rank.windowed_histogram(
@@ -152,6 +158,7 @@ def singlescale_neighbours(img: np.ndarray, sigma: int) -> List[np.ndarray]:
 
     etc.
     """
+    # weka has mirror boundary conditions - i can probably achieve the same using a different mode in convolve.
     sigma = int(sigma)
     kernel = np.zeros((2 * sigma + 1, 2 * sigma + 1), dtype=np.uint8)
     out_convs = []
@@ -166,7 +173,7 @@ def singlescale_neighbours(img: np.ndarray, sigma: int) -> List[np.ndarray]:
                 k_temp = np.copy(kernel)
                 neighbour_coord = (mid[1] + y * sigma, mid[0] + x * sigma)
                 k_temp[neighbour_coord[0], neighbour_coord[1]] = 1
-                result = convolve(img, k_temp)
+                result = convolve(img, k_temp, mode="wrap")
                 out_convs.append(result)
     return out_convs
 
@@ -249,6 +256,7 @@ def membrane_projections(
     median_proj = np.median(out_angles_np, axis=0)
     max_proj = np.amax(out_angles_np, axis=0)
     min_proj = np.amin(out_angles_np, axis=0)
+    # weka order is 0=mean_proj, 1=max_proj, 2=min_proj, 3=sum_proj, 4=std_proj, 5=median
     return [sum_proj, mean_proj, std_proj, median_proj, max_proj, min_proj]
 
 
@@ -311,6 +319,20 @@ def singlescale_advanced_features_singlechannel(
     return results
 
 
+def zero_scale_filters(
+    img: np.ndarray, edges=True, hess=True
+) -> Tuple[np.ndarray, ...]:
+    """Weka *always* adds the original image, and if computing edgees and/or hessian, adds those for sigma=0. This function does that."""
+    out_filtered: Tuple[np.ndarray, ...] = (img,)
+    if edges:
+        edges = singlescale_edges(img)
+        out_filtered += (edges,)
+    if hess:
+        hessian = singlescale_hessian(img)
+        out_filtered += (*hessian,)
+    return out_filtered
+
+
 def multiscale_advanced_features(
     img: np.ndarray,
     feature_dict: dict,
@@ -323,6 +345,10 @@ def multiscale_advanced_features(
     Singlescale features are computed over a ranged of length scales $sigma on different execution threads.
     Scale invariant features are computed onced.
     """
+    features: Iterable[np.ndarray] = zero_scale_filters(
+        img, edges=feature_dict["Sobel Filter"], hess=feature_dict["Hessian"]
+    )
+
     sigma_min = (
         float(feature_dict["Minimum Sigma"])
         if feature_dict["Minimum Sigma"] != -1
@@ -337,41 +363,62 @@ def multiscale_advanced_features(
         base=2,
         endpoint=True,
     )
-    with ThreadPoolExecutor(max_workers=num_workers) as ex:
-        out_sigmas = list(
-            ex.map(
-                lambda s: singlescale_advanced_features_singlechannel(
-                    img,
-                    s,
-                    intensity=feature_dict["Gaussian Blur"],
-                    edges=feature_dict["Sobel Filter"],
-                    texture=feature_dict["Hessian"],
-                    mean=feature_dict["Mean"],
-                    median=feature_dict["Median"],
-                    minimum=feature_dict["Minimum"],
-                    maximum=feature_dict["Maximum"],
-                    entropy=feature_dict["Entropy"],
-                    structure=feature_dict["Structure"],
-                    neighbours=feature_dict["Neighbours"],
-                    derivatives=feature_dict["Derivatives"],
-                ),
-                sigmas,
+
+    singlescale_requested = 0
+    for filter in [
+        "Gaussian Blur",
+        "Sobel Filter",
+        "Hessian",
+        "Mean",
+        "Median",
+        "Minimum",
+        "Maximum",
+        "Entropy",
+        "Structure",
+        "Neighbours",
+        "Derivatives",
+    ]:
+        singlescale_requested += int(feature_dict[filter])
+
+    if singlescale_requested > 0:
+        with ThreadPoolExecutor(max_workers=num_workers) as ex:
+            out_sigmas = list(
+                ex.map(
+                    lambda s: singlescale_advanced_features_singlechannel(
+                        img,
+                        s,
+                        intensity=feature_dict["Gaussian Blur"],
+                        edges=feature_dict["Sobel Filter"],
+                        texture=feature_dict["Hessian"],
+                        mean=feature_dict["Mean"],
+                        median=feature_dict["Median"],
+                        minimum=feature_dict["Minimum"],
+                        maximum=feature_dict["Maximum"],
+                        entropy=feature_dict["Entropy"],
+                        structure=feature_dict["Structure"],
+                        neighbours=feature_dict["Neighbours"],
+                        derivatives=feature_dict["Derivatives"],
+                    ),
+                    sigmas,
+                )
             )
-        )
-    features = chain.from_iterable(out_sigmas)
+        multiscale_features = chain.from_iterable(out_sigmas)
+        features = chain(features, multiscale_features)
+    else:
+        print("no singlescale features requested")
 
     if feature_dict["Difference of Gaussians"] == 1:
+        # change this so that it doesn't implictly require gaussians to be computed
         intensities = []
         for i in range(num_sigma):
             intensities.append(out_sigmas[i][0])
         dogs = difference_of_gaussians(intensities)
         features = chain(features, dogs)
 
-    img = np.ascontiguousarray(img_as_float32(img))
-
     if feature_dict["Membrane Projections"] == 1:
+        converted = np.ascontiguousarray(img_as_float32(img))
         projections = membrane_projections(
-            img,
+            converted,
             membrane_patch_size=int(float(feature_dict["Membrane Patch Size"])),
             membrane_thickness=int(float(feature_dict["Membrane Thickness"])),
             num_workers=num_workers,
@@ -384,5 +431,6 @@ def multiscale_advanced_features(
         features = chain(features, bilateral)
 
     features = list(features)  # type: ignore
-    features: np.ndarray = np.stack(features, axis=-1).astype(np.float16)  # type: ignore
-    return features  # type: ignore
+    # maybe cast to int32?
+    features_np: np.ndarray = np.stack(features, axis=-1).astype(np.float16)  # type: ignore
+    return features_np  # type: ignore

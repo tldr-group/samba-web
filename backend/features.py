@@ -427,10 +427,10 @@ def multiscale_advanced_features(
 
     if feature_dict["Bilateral"] == 1:
         byte_img = img.astype(np.uint8)
-        bilateral = bilateral(byte_img)
-        features = chain(features, bilateral)
+        bilateral_filtered = bilateral(byte_img)
+        features = chain(features, bilateral_filtered)
 
-    features = list(features)  # type: ignore
+    features = list(features)
     # maybe cast to int32?
     features_np: np.ndarray = np.stack(features, axis=-1).astype(np.float16)  # type: ignore
     return features_np  # type: ignore

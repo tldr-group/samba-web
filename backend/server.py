@@ -62,6 +62,7 @@ async def generic_response(request, fn: Callable):
             response = await fn(request)
             return _corsify_actual_response(response)
         except Exception as e:
+            print(e)
             response = Response(f"{{'msg': '{e}' }}", 400, mimetype="application/json")
             return _corsify_actual_response(response)
     else:
@@ -100,7 +101,6 @@ async def featurise_fn(request) -> Response:
     UID = request.json["id"]
     features = request.json["features"]
     images = [_get_image_from_b64(i) for i in request.json["images"]]
-    images[0].save("0.png")
     offset = request.json["offset"]
     success = await featurise(images, UID, selected_features=features, offset=offset)
     return jsonify(success=True)

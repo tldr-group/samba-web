@@ -61,10 +61,11 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
     }
 
     const icons: string[][] = [
-        ["Settings", "settings.png", ""],
-        ["Paper", "paper.png", "coming_soon"],
-        ["Help", "help.png", "https://github.com/tldr-group/samba-web"],
-        ["TLDR Group", "tldr.png", "https://tldr-group.github.io/#/"]
+        ["Settings", "settings.png", "", ''],
+        ["Gallery", "gallery.png", "/gallery",''],
+        ["Paper", "paper.png", "coming_soon", '_blank'],
+        ["Help", "help.png", "https://github.com/tldr-group/samba-web", '_blank'],
+        ["TLDR Group", "tldr.png", "https://tldr-group.github.io/#/", '_blank']
     ]
 
     const iconClick = (e: any, i: string) => {
@@ -126,7 +127,7 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
                     delay={{ show: 250, hide: 400 }}
                     overlay={ToolTip(i[0])}
                 >
-                    <Navbar.Brand href={i[2]} target="_blank">
+                    <Navbar.Brand href={i[2]} target={i[3]}>
                         <img
                             src={"/assets/icons/" + i[1]}
                             width="30"

@@ -17,6 +17,7 @@ module.exports = {
   },
   output: {
     path: resolve(__dirname, "dist"),
+    publicPath: "/",
   },
   module: {
     rules: [

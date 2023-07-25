@@ -13,6 +13,7 @@ module.exports = merge(commonConfig, {
   devServer: {
     hot: true, // enable HMR on the server
     open: true,
+    historyApiFallback: true,
     // These headers enable the cross origin isolation state
     // needed to enable use of SharedArrayBuffer for ONNX 
     // multithreading. 

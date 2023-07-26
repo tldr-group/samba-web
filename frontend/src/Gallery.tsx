@@ -11,6 +11,7 @@ import Tooltip from "react-bootstrap/Tooltip";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Card from 'react-bootstrap/Card';
 import { BlobServiceClient } from '@azure/storage-blob';
+import { Form } from "react-bootstrap";
 
 
 const url = `https://sambasegment.blob.core.windows.net`
@@ -20,12 +21,15 @@ const blobServiceClient = new BlobServiceClient(
 
 const containerClient = await blobServiceClient.getContainerClient('gallery')
 
-async function getGalleryArray(containerClient: any, setGalleryArray: any) {
+async function getGalleryArray(containerClient: any, setImgGalleryArray: any, setSegGalleryArray: any) {
   
     let iterator = containerClient.listBlobsFlat()
-    const arr=[]; 
-    for await(const i of iterator) arr.push(i.name); 
-    setGalleryArray(arr)
+    const segArr=[]; 
+    const imgArr=[];
+    for await(const i of iterator) if (i.name.includes('seg')) segArr.push(i.name);
+     else if (i.name.includes('img')) imgArr.push(i.name)
+    setImgGalleryArray(imgArr)
+    setSegGalleryArray(segArr)
   }
 
 export const ToolTip = (str: string) => {
@@ -39,10 +43,32 @@ export const ToolTip = (str: string) => {
 const ImageCard = (props: any) => {
     return (
         <Card className='m-auto' style={{ width: '300px', height: '300px' }}>
-            <Card.Img variant="top" src={props.src} />
-            {/* <Card.Body> */}
-                {/* <Card.Title>{props.title}</Card.Title> */}
-            {/* </Card.Body> */}
+            <Card.Img
+        variant="top"
+        src={props.src_img}
+        style={{
+          opacity: props.segFlag ? 0 : 1,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          transition: 'opacity 0.5s ease', // Add a transition for smooth fading
+        }}
+      />
+      <Card.Img
+        variant="top"
+        src={props.src_seg}
+        style={{
+          opacity: props.segFlag ? 1 : 0,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          transition: 'opacity 0.5s ease', // Add a transition for smooth fading
+        }}
+      />
         </Card>
     )
 }
@@ -56,7 +82,9 @@ const Gallery = () => {
         theme: [theme,],
     } = useContext(AppContext)!;
 
-    const [galleryArray, setGalleryArray] = useState<any[]>([])
+    const [gallerySegArray, setSegGalleryArray] = useState<any[]>([])
+    const [galleryImgArray, setImgGalleryArray] = useState<any[]>([])
+    const [segFlag, setSegFlag] = useState<boolean>(false)
 
 
     const icons: string[][] = [
@@ -78,7 +106,7 @@ const Gallery = () => {
     };
 
     useEffect(() => {
-        getGalleryArray(containerClient, setGalleryArray)}, [])
+        getGalleryArray(containerClient, setImgGalleryArray, setSegGalleryArray)}, [])
 
     return (
         <>
@@ -118,12 +146,23 @@ const Gallery = () => {
             }
         </Navbar >
 
-        <Container fluid style={{ height: "100vh", marginTop:"4rem" }}>
+        <Container fluid style={{ height: "100vh", marginTop:"1rem" }}>
+            <Row>
+                <Col className="d-flex justify-content-end">
+            <Form >
+                        <Form.Check type="switch" id="seg-switch" >
+                        <Form.Check.Input type="checkbox" onChange={(e) => setSegFlag(e.target.checked)} style={{ marginLeft:'auto' }}/>
+                        {/* <Form.Check.Label>Segmentations</Form.Check.Label> */}
+                        </Form.Check>
+                    </Form>
+                    </Col>
+            </Row>
+            
             <Row >
                 
-                    {galleryArray.map((img, i) => 
+                    {galleryImgArray.map((img, i) => 
                         <Col lg={3} md={6} sm={12}>
-                        <ImageCard key={i} src={url+'/gallery/'+img} title={"Image " + i} />
+                        <ImageCard key={i} src_img={url+'/gallery/'+img} src_seg={url + '/gallery/'+gallerySegArray[i]} title={"Image " + i} segFlag={segFlag}/>
                         </Col>
                         )}
                 

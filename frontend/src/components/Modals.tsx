@@ -16,6 +16,8 @@ import Toast from 'react-bootstrap/Toast'
 import ToastContainer from "react-bootstrap/ToastContainer";
 import InputGroup from "react-bootstrap/InputGroup";
 import Form from "react-bootstrap/Form"
+import { BlobServiceClient } from "@azure/storage-blob";
+
 
 const BigModal = ({ requestEmbedding }: LabelFrameProps) => {
     const {
@@ -232,21 +234,48 @@ const PostSegToast = () => {
         errorObject: [errorObject, setErrorObject],
         path: [path, ],
         UID: [UID, ],
+        imgArrs: [imgArrs, ],
 
     } = useContext(AppContext)!;
 
 
     const [shareSeg, setShareSeg] = useState(false)
-    const SAVE_TO_GALLERY_ENDPOINT = path + '/saveToGallery'
+    const url = `https://sambasegment.blob.core.windows.net`
 
-    const saveToGallery = async (ENDPOINT: string) => {
+    const blobServiceClient = new BlobServiceClient(
+        url
+    );
+
+    const containerClient = blobServiceClient.getContainerClient('gallery')
+
+    const saveToGallery = async () => {
+        //  SAVE IMAGE TO BACKEND
+
+        const getb64Image = (img: HTMLImageElement): string => {
+            // Convert HTML Image to b64 string encoding by drawing onto canvas. Used for sending over HTTP
+            const tempCanvas = document.createElement("canvas");
+            tempCanvas.width = img.width
+            tempCanvas.height = img.height
+            const ctx = tempCanvas.getContext("2d");
+            ctx?.drawImage(img, 0, 0, img.width, img.height)
+            const b64image = tempCanvas.toDataURL("image/jpeg")
+            return b64image
+          }
+        const b64images = getb64Image(imgArrs[0]);
         const headers = new Headers();
         headers.append('Content-Type', 'application/json;charset=utf-8');
         try {
-          let resp = await fetch(ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID })})
+            let resp = await fetch(path + '/saveImage', { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "images": b64images })})
+        } catch (e) {
+            const error = e as Error;
+            setErrorObject({ msg: "Failed to save image to gallery.", stackTrace: error.toString() });
+        }
+        // UPLOAD SEGMENTATION FROM BACKEND
+        try {
+          let resp = await fetch(path + '/saveToGallery', { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID })})
         } catch (e) {
           const error = e as Error;
-          setErrorObject({ msg: "Failed to save to gallery.", stackTrace: error.toString() });
+          setErrorObject({ msg: "Failed to save degmentation to gallery.", stackTrace: error.toString() });
         }
       }
 
@@ -254,9 +283,9 @@ const PostSegToast = () => {
     const handleShareSend = (e: any) => {
         if (shareSeg) {
             console.log("sending to gallery")
-            saveToGallery(SAVE_TO_GALLERY_ENDPOINT)
+            saveToGallery()
         }
-        toggleToast()
+        // toggleToast()
     }
 
 

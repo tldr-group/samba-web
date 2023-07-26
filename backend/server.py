@@ -251,7 +251,8 @@ def upload_blob_file(fn, UID, blob_service_client: BlobServiceClient):
 async def save_to_gallery_fn(request) -> Response:
     UID = request.json["id"]
     try:
-        upload_blob_file(f"{CWD}/{UID}/seg_thumbnail.jpg", UID, blob_service_client=get_blob_service_client())
+        upload_blob_file(f"{CWD}/{UID}/seg_thumbnail.jpg", UID+'_seg', blob_service_client=get_blob_service_client())
+        upload_blob_file(f"{CWD}/{UID}/img_thumbnail.jpg", UID+'_img', blob_service_client=get_blob_service_client())
     except Exception as e:
         print(e)
     return Response(status=200)
@@ -260,4 +261,20 @@ async def save_to_gallery_fn(request) -> Response:
 @app.route("/saveToGallery", methods=["POST", "GET", "OPTIONS"])
 async def save_to_gallery_respond():
     response = await generic_response(request, save_to_gallery_fn)
+    return response
+
+
+# ================================= SAVE IMAGE AS JPEG =================================
+async def save_image_fn(request) -> Response:
+    UID = request.json["id"]
+    try:
+        image = _get_image_from_b64(request.json["images"]).crop((0, 0, 300, 300))
+        image.save(f"{CWD}/{UID}/img_thumbnail.jpg")
+    except Exception as e:
+        print(e)
+    return Response(status=200)
+
+@app.route("/saveImage", methods=["POST", "GET", "OPTIONS"])
+async def save_image_respond():
+    response = await generic_response(request, save_image_fn)
     return response

@@ -5,13 +5,16 @@ Unit tests for featurisation and random forest segmentation.
 """
 
 import unittest
-import numpy as np
 
-from scipy.ndimage import rotate, convolve, sobel
+import numpy as np
 from math import isclose, pi
 import matplotlib.pyplot as plt
-from tifffile import imread, imwrite
+from tifffile import imread
+from skimage.metrics import mean_squared_error
 
+from typing import List, Tuple
+
+import matplotlib.pyplot as plt
 
 import features as ft
 
@@ -141,7 +144,7 @@ class TestFeatures(unittest.TestCase):
         line = np.zeros((64, 64))
         line[:, 32] = 1
         z_projs = ft.membrane_projections(line)
-        filtered = z_projs[1]
+        filtered = z_projs[0]
         prev_val = filtered[32, 32]
         for i in range(1, 5):
             current_val = filtered[32, 32 + i]
@@ -167,35 +170,143 @@ class TestFeatures(unittest.TestCase):
         assert np.sum(bilaterals[0]) == np.sum(bilaterals[2])
         assert np.sum(bilaterals[0]) > np.sum(bilaterals[3])
 
-    # test derivatives on polynomials
-    # test entropy by seeing if entropy of disk + random noise > random nosie
-    # stuff left: gaussian, hessian, DoG, derivatives, structure, entropy
 
-    # have seperate integration test for both features and classifier - basically check results match weka
+def weka_dog_per_sigma(sigma: int) -> int:
+    """Get number of DoGs at given length scale when iterating through each filter."""
+    if sigma < 2:
+        return 0
+    else:
+        sigma -= 1
+        return int(np.floor((sigma * (sigma - 1)) / 2))
 
 
-def norm(x: np.ndarray) -> np.ndarray:
-    return (x - np.amin(x)) / np.amax(x)
+def norm(arr: np.ndarray) -> np.ndarray:
+    """Normalise array by subtracting its min then dividing my max of new arr. Works for mixes of positive and negative."""
+    offset = arr - np.amin(arr)
+    normed = offset / np.amax(offset)
+    return np.abs(normed)
 
 
-class CompareFeatures(unittest.TestCase):
-    def test_compare_stacks(self) -> None:
-        weka = imread("backend/weka_stack_super1.tif")
-        samba = imread("backend/samba_stack_super1.tif")
-        transpose = samba.transpose((2, 0, 1))
+def norm_get_mse(filter_1: np.ndarray, filter_2: np.ndarray) -> float:
+    """Normalise both filters (arrays) and get the mse."""
+    n1 = norm(filter_1)
+    n2 = norm(filter_2)
+    return mean_squared_error(n1, n2)
 
-        norm_weka = np.apply_along_axis(norm, -1, weka)
-        norm_samba = 1 - np.apply_along_axis(norm, -1, transpose)
-        # maybe normalise both then compare?
-        imwrite("backend/weka_stack_super1_n.tif", norm_weka)
-        imwrite("backend/samba_stack_super1_n.tif", norm_samba)
 
-        print(weka.shape, samba.transpose((2, 0, 1)).shape)
-        assert True
+SAMBA_PER_LENGTH_SCALE = 7
+WEKA_PER_LENGTH_SCALE_BASE = 10
+length_scales = [0, 1, 2, 4, 8, 16]
+
+
+class CompareDefaultFeatures(unittest.TestCase):
+    """
+    CompareDefaultFeatures.
+
+    Load a micrograph featurised with default filters in Weka. Featurise same micrograph
+    in SAMBA backed. For each filter, normalise then get MSE between Weka and SAMBA.
+    Do this for each singlescale feature as well as the scale-free features. Note that in Weka the
+    Difference Of Gaussian filters appear at each length scale whereas in SAMBA they
+    appear at the end, complicating analysis slightly. Plot the MSEs as a function
+    of filter and save them. A default threshold of 0.01 (i.e 1%) is the fail cut-off.
+    """
+
+    def test_compare_defaults(self) -> None:
+        """Handler for each test, shares the feature stacks with them so only computed once."""
+        passed = True
+        weka = imread("backend/test_resources/weka_default.tif")
+        img = imread("backend/test_resources/super1.tif").astype(np.float32)
+        samba = ft.multiscale_advanced_features(
+            img, ft.DEAFAULT_FEATURES, ft.N_ALLOWED_CPUS
+        ).transpose((2, 0, 1))
+        singlescale_mse = self.compare_singlescale_default(weka, samba)
+        dog_mse = self.compare_dog_default(weka, samba)
+        membrane_mse = self.compare_membrane_projections(weka, samba)
+        all_mses = singlescale_mse + dog_mse + membrane_mse
+        self.plot_mses_save(all_mses)
+        for m in all_mses:
+            if m > 0.01:
+                passed = False
+        assert passed
+
+    def compare_singlescale_default(self, weka, samba) -> List[float]:
+        """Compare each singlescale feature, accounting for ordering differences."""
+        mses: List[float] = []
+
+        for i in range(len(length_scales) * SAMBA_PER_LENGTH_SCALE):
+            scale = i // SAMBA_PER_LENGTH_SCALE
+            n_dog = weka_dog_per_sigma(scale)
+            weka_idx = (
+                scale * WEKA_PER_LENGTH_SCALE_BASE + n_dog + i % SAMBA_PER_LENGTH_SCALE
+            )
+            weka_f, samba_f = weka[weka_idx], samba[i]
+            mse = norm_get_mse(weka_f, samba_f)
+            mses.append(mse)
+        return mses
+
+    def compare_dog_default(self, weka, samba) -> List[float]:
+        """Compare DoG filters: in Weka these appear per length scale, in SAMBA these appear near the end."""
+        mses: List[float] = []
+        length_scales = [0, 1, 2, 4, 8, 16]
+        samba_DoG_offset = len(length_scales) * SAMBA_PER_LENGTH_SCALE
+        prev_total_n_dog = 0
+        for n in range(3, 7):
+            n_dog = n - 2
+            weka_offset = n * WEKA_PER_LENGTH_SCALE_BASE + prev_total_n_dog
+            for m in range(n_dog):
+                weka_f = weka[weka_offset + m]
+                samba_f = samba[samba_DoG_offset + prev_total_n_dog + m]
+                mse = norm_get_mse(weka_f, samba_f)
+                mses.append(mse)
+            prev_total_n_dog += n_dog
+        return mses
+
+    def compare_membrane_projections(self, weka, samba) -> List[float]:
+        """Compare membrane projection filters, for both tools these are at the end of the filter stacks."""
+        mses = []
+        for i in range(6):
+            idx = i - 6
+            weka_f = weka[idx]
+            samba_f = samba[idx]
+            mse = norm_get_mse(weka_f, samba_f)
+            mses.append(mse)
+        return mses
+
+    def plot_mses_save(self, mses: List[float]) -> None:
+        """Plot all the MSEs with correct names."""
+        names: list[str] = []
+        scale_filter_names = [
+            "Gauss",
+            "Sobel",
+            "Hess_Mod",
+            "Hess_Tr",
+            "Hess_Det",
+            "Hess_e1",
+            "Hess_e2",
+        ]
+        for i in range(len(length_scales) * SAMBA_PER_LENGTH_SCALE):
+            scale = i // SAMBA_PER_LENGTH_SCALE
+            name = f"{scale_filter_names[i % 7]}_{length_scales[scale]}"
+            names.append(name)
+        for n in range(3, 7):
+            n_dog = n - 2
+            for m in range(n_dog):
+                s1 = length_scales[n - 1]
+                s2 = length_scales[m + 1]
+                names.append(f"DoG_{s1}_{s2}")
+        m_projs_names = ["mean", "max", "min", "sum", "std", "median"]
+        for name in m_projs_names:
+            names.append("membrane_" + name)
+
+        plt.figure(figsize=(20, 20))
+        x = np.arange(0, len(mses))
+        plt.plot(x, mses, ".")
+        plt.xticks(ticks=x, labels=names, rotation="vertical")
+        plt.savefig("backend/test_resources/test.png")
 
 
 if __name__ == "__main__":
-    cases = (TestFeatures, CompareFeatures)
+    cases = (TestFeatures, CompareDefaultFeatures)
     suite = unittest.TestSuite(
         [unittest.TestLoader().loadTestsFromTestCase(c) for c in cases]
     )

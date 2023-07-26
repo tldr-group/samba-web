@@ -40,7 +40,7 @@ async def featurise(
 ) -> int:
     """For each img in images, convert to np array then featurise, saving the result to the user's folder."""
     for i, img in enumerate(images):
-        img_arr = np.array(img.convert("L"))
+        img_arr = np.array(img.convert("I"))
         feature_stack = multiscale_advanced_features(img_arr, selected_features)
         np.savez_compressed(f"{CWD}/{UID}/features_{i + offset}", a=feature_stack)
         if DEBUG:

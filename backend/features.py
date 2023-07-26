@@ -43,10 +43,10 @@ DEAFAULT_FEATURES = {
     "Derivatives": 0,
     "Structure": 0,
     "Entropy": 0,
-    "Neighbours": 1,
+    "Neighbours": 0,
     "Membrane Thickness": 1,
     "Membrane Patch Size": 19,
-    "Minimum Sigma": 0.5,  # check this - is 1 in weka docs but 0.5 in sklearn example
+    "Minimum Sigma": 1,  # check this - is 1 in weka docs but 0.5 in sklearn example
     "Maximum Sigma": 16,
 }
 
@@ -62,16 +62,16 @@ def make_footprint(sigma: int) -> np.ndarray:
 
 
 # %% ===================================SINGLESCALE FEATURES===================================
-# these main 3 are also computed at sigma = 0 and added to stack i.e no blur
+
+
 def singlescale_gaussian(img: np.ndarray, sigma: int) -> np.ndarray:
     """Gaussian blur of each pixel in $img of scale/radius $sigma."""
-    # weka adds a really weird 0.4 multiplier to its gaussian, so hvae added it here
-    return filters.gaussian(img, 0.4 * sigma, preserve_range=False)
+    # weka adds a weird 0.4 multiplier to its gaussian, so have added it here
+    return filters.gaussian(img, 0.4 * sigma, preserve_range=True)
 
 
 def singlescale_edges(gaussian_filtered: np.ndarray) -> np.ndarray:
     """Sobel filter applied to gaussian filtered arr of scale sigma to detect edges."""
-    # edges seem lower intensity than in weka - do weka sqrt the sum or not? Is there a problem with me normalising here?
     return filters.sobel(gaussian_filtered)
 
 
@@ -81,13 +81,29 @@ def singlescale_hessian(gaussian_filtered: np.ndarray) -> Tuple[np.ndarray, ...]
         np.gradient(np.gradient(gaussian_filtered)[ax0], axis=ax1)
         for ax0, ax1 in combinations_with_replacement(range(gaussian_filtered.ndim), 2)
     ]
+    # H_elems = feature.hessian_matrix(gaussian_filtered, use_gaussian_derivatives=False)
     a, b, d = H_elems
     mod = np.sqrt(a**2 + b**2 + d**2)
     trace = a + d
     det = a * d - b**2
-    # orientation_1 = 0.5 * np.arccos(4 * b ** 2 +  (a - d) ** 2)
     # orientation_2 = orientation_1 + np.pi / 2
-    eigvals = feature.hessian_matrix_eigvals(H_elems)
+    # eigvals = feature.hessian_matrix_eigvals(H_elems)
+    eig1 = trace + np.sqrt((4 * b**2 + (a - d) ** 2))
+    eig2 = trace - np.sqrt((4 * b**2 + (a - d) ** 2))
+    return (mod, trace, det, eig1 / 2.0, eig2 / 2.0)
+
+
+def singlescale_hessian_weka(gaussian_filtered: np.ndarray) -> Tuple[np.ndarray, ...]:
+    """Compute hessian weka style by using sobel (gradient) operator twice."""
+    x = filters.sobel_h(gaussian_filtered)
+    y = filters.sobel_v(gaussian_filtered)
+    xx = filters.sobel_h(x)
+    yy = filters.sobel_v(y)
+    xy = filters.sobel_v(x)
+    mod = np.sqrt(xx * xx + xy * xy + yy * yy)
+    trace = xx + yy
+    det = xx * yy - xy * xy
+    eigvals = feature.hessian_matrix_eigvals([xx, xy, yy])
     return (mod, trace, det, *eigvals)
 
 
@@ -158,7 +174,6 @@ def singlescale_neighbours(img: np.ndarray, sigma: int) -> List[np.ndarray]:
 
     etc.
     """
-    # weka has mirror boundary conditions - i can probably achieve the same using a different mode in convolve.
     sigma = int(sigma)
     kernel = np.zeros((2 * sigma + 1, 2 * sigma + 1), dtype=np.uint8)
     out_convs = []
@@ -214,10 +229,13 @@ def bilateral(img: np.ndarray) -> np.ndarray:
 
 def difference_of_gaussians(gaussian_blurs: List[np.ndarray]) -> List[np.ndarray]:
     """For each possible combination of arr in $gaussian_blurs (representing different $sigma scales), compute their difference."""
-    combs = combinations(gaussian_blurs, 2)
+    # weka computes dog for  each filter of a *lower* sigma
     dogs = []
-    for x, y in combs:
-        dogs.append(x - y)
+    for i in range(len(gaussian_blurs)):
+        sigma_1 = gaussian_blurs[i]
+        for j in range(i):
+            sigma_2 = gaussian_blurs[j]
+            dogs.append(sigma_2 - sigma_1)
     return dogs
 
 
@@ -256,8 +274,7 @@ def membrane_projections(
     median_proj = np.median(out_angles_np, axis=0)
     max_proj = np.amax(out_angles_np, axis=0)
     min_proj = np.amin(out_angles_np, axis=0)
-    # weka order is 0=mean_proj, 1=max_proj, 2=min_proj, 3=sum_proj, 4=std_proj, 5=median
-    return [sum_proj, mean_proj, std_proj, median_proj, max_proj, min_proj]
+    return [mean_proj, max_proj, min_proj, sum_proj, std_proj, median_proj]
 
 
 # %% ===================================MANAGER FUNCTIONS===================================
@@ -432,5 +449,5 @@ def multiscale_advanced_features(
 
     features = list(features)
     # maybe cast to int32?
-    features_np: np.ndarray = np.stack(features, axis=-1).astype(np.float16)  # type: ignore
+    features_np: np.ndarray = np.stack(features, axis=-1).astype(np.float32)  # type: ignore
     return features_np  # type: ignore

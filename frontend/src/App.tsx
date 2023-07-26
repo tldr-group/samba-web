@@ -101,6 +101,8 @@ const App = () => {
     errorObject: [errorObject, setErrorObject],
     showToast: [, setShowToast],
     modalShow: [, setModalShow],
+    path: [,setPath],
+    UID: [,setUID],
     settings: [settings,],
   } = useContext(AppContext)!;
 
@@ -131,6 +133,8 @@ const App = () => {
     };
     initModel();
     initBackend();
+    setPath(PATH)
+    setUID(UID)
     const showHelp = localStorage.getItem("showHelp")
     if (showHelp === null || showHelp === "true") {
       setModalShow({ welcome: true, settings: false, features: false })
@@ -146,6 +150,7 @@ const App = () => {
       const error = e as Error;
       setErrorObject({ msg: "Failed to connect to backend.", stackTrace: error.toString() });
     }
+      
   }
 
   const loadImages = async (hrefs: string[]) => {

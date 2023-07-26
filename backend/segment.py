@@ -81,6 +81,7 @@ async def _save_as_tiff(
     large_h: int = 0,
     score: float | None = None,
     rescale: bool = True,
+    thumbnail: bool = True,
 ) -> int:
     out = _create_composite_tiff(
         arr_list, mode, large_w=large_w, large_h=large_h, rescale=rescale
@@ -97,6 +98,12 @@ async def _save_as_tiff(
         datetime=True,
         software=sw_name,
     )
+    
+    try:
+        if thumbnail:
+            Image.fromarray(out[0,:300,:300]).save(f"{CWD}/{UID}/seg_thumbnail.jpg")
+    except Exception as e:
+        print(e)
     return 0
 
 

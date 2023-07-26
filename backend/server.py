@@ -12,7 +12,8 @@ import base64
 from io import BytesIO
 from PIL import Image
 from typing import Callable
-
+from azure.storage.blob import BlobServiceClient
+import dotenv
 import os
 
 try:
@@ -232,3 +233,31 @@ async def load_classifier_respond():
 
 if __name__ == "__main__":
     app.run()
+
+
+# ================================= SAVE TO GALLERY =================================
+def get_blob_service_client():
+    account_url = 'https://sambasegment.blob.core.windows.net'
+    credential = dotenv.get_key(dotenv.find_dotenv(), "AZURE_STORAGE_KEY")
+    # Create the BlobServiceClient object
+    blob_service_client = BlobServiceClient(account_url,credential=credential)
+    return blob_service_client
+
+def upload_blob_file(fn, UID, blob_service_client: BlobServiceClient):
+    container_client = blob_service_client.get_container_client(container='gallery')
+    with open(file=fn, mode="rb") as data:
+        blob_client = container_client.upload_blob(name=f'{UID}.jpeg', data=data, overwrite=True)
+
+async def save_to_gallery_fn(request) -> Response:
+    UID = request.json["id"]
+    try:
+        upload_blob_file(f"{CWD}/{UID}/seg_thumbnail.jpg", UID, blob_service_client=get_blob_service_client())
+    except Exception as e:
+        print(e)
+    return Response(status=200)
+
+
+@app.route("/saveToGallery", methods=["POST", "GET", "OPTIONS"])
+async def save_to_gallery_respond():
+    response = await generic_response(request, save_to_gallery_fn)
+    return response

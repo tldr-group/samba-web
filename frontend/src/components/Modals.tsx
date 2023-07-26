@@ -16,7 +16,6 @@ import Toast from 'react-bootstrap/Toast'
 import ToastContainer from "react-bootstrap/ToastContainer";
 import InputGroup from "react-bootstrap/InputGroup";
 import Form from "react-bootstrap/Form"
-import { FormCheck } from "react-bootstrap";
 
 const BigModal = ({ requestEmbedding }: LabelFrameProps) => {
     const {
@@ -229,10 +228,37 @@ const WarningModal = (text: string, closeFunction: CallableFunction) => {
 
 const PostSegToast = () => {
     const {
-        showToast: [showToast, setShowToast]
+        showToast: [showToast, setShowToast],
+        errorObject: [errorObject, setErrorObject],
+        path: [path, ],
+        UID: [UID, ],
+
     } = useContext(AppContext)!;
 
+
+    const [shareSeg, setShareSeg] = useState(false)
+    const SAVE_TO_GALLERY_ENDPOINT = path + '/saveToGallery'
+
+    const saveToGallery = async (ENDPOINT: string) => {
+        const headers = new Headers();
+        headers.append('Content-Type', 'application/json;charset=utf-8');
+        try {
+          let resp = await fetch(ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID })})
+        } catch (e) {
+          const error = e as Error;
+          setErrorObject({ msg: "Failed to save to gallery.", stackTrace: error.toString() });
+        }
+      }
+
     const toggleToast = () => { setShowToast(!showToast) }
+    const handleShareSend = (e: any) => {
+        if (shareSeg) {
+            console.log("sending to gallery")
+            saveToGallery(SAVE_TO_GALLERY_ENDPOINT)
+        }
+        toggleToast()
+    }
+
 
     return (
         <ToastContainer className="p-5" position="bottom-end">
@@ -245,10 +271,14 @@ const PostSegToast = () => {
                     </InputGroup>
 
                     <Form style={{ margin: '10px' }}>
-                        <Form.Check type="switch" id="share-seg" label="Share segmentation in a future open dataset?"></Form.Check>
-                        <Form.Check type="switch" id="share-gallery" label="Share segmentation in the gallery page?"></Form.Check>
+                        <Form.Check type="switch" id="share-seg" label="Share segmentation in a future open dataset?">
+                        </Form.Check>
+                        <Form.Check type="switch" id="share-gallery">
+                        <Form.Check.Input type="checkbox" onChange={(e) => setShareSeg(e.target.checked)} />
+                        <Form.Check.Label>Share segmentation in the gallery page?</Form.Check.Label>
+                        </Form.Check>
                     </Form>
-                    <Button variant="dark" onClick={toggleToast} style={{ marginLeft: '16rem' }} >Send!</Button>
+                    <Button variant="dark" onClick={handleShareSend} style={{ marginLeft: '16rem' }} >Send!</Button>
                 </Toast.Body>
             </Toast>
         </ToastContainer >

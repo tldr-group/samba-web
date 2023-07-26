@@ -52,6 +52,7 @@
     "webpack-merge": "^5.8.0"
   },
   "dependencies": {
+    "@azure/storage-blob": "^12.15.0",
     "bootstrap": "^5.2.3",
     "npyjs": "^0.4.0",
     "onnxruntime-web": "^1.14.0",

@@ -82,4 +82,7 @@ module.exports = {
       process: "process/browser",
     }),
   ],
+  experiments: {
+    topLevelAwait: true
+  }
 };

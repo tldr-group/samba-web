@@ -232,9 +232,9 @@ const PostSegToast = () => {
     const {
         showToast: [showToast, setShowToast],
         errorObject: [errorObject, setErrorObject],
-        path: [path, ],
-        UID: [UID, ],
-        imgArrs: [imgArrs, ],
+        path: [path,],
+        UID: [UID,],
+        imgArrs: [imgArrs,],
 
     } = useContext(AppContext)!;
 
@@ -260,30 +260,31 @@ const PostSegToast = () => {
             ctx?.drawImage(img, 0, 0, img.width, img.height)
             const b64image = tempCanvas.toDataURL("image/jpeg")
             return b64image
-          }
+        }
         const b64images = getb64Image(imgArrs[0]);
         const headers = new Headers();
         headers.append('Content-Type', 'application/json;charset=utf-8');
         try {
-            let resp = await fetch(path + '/saveImage', { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "images": b64images })})
+            let resp = await fetch(path + '/saveImage', { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "images": b64images }) })
         } catch (e) {
             const error = e as Error;
             setErrorObject({ msg: "Failed to save image to gallery.", stackTrace: error.toString() });
         }
         // UPLOAD SEGMENTATION FROM BACKEND
         try {
-          let resp = await fetch(path + '/saveToGallery', { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID })})
+            let resp = await fetch(path + '/saveToGallery', { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID }) })
         } catch (e) {
-          const error = e as Error;
-          setErrorObject({ msg: "Failed to save degmentation to gallery.", stackTrace: error.toString() });
+            const error = e as Error;
+            setErrorObject({ msg: "Failed to save degmentation to gallery.", stackTrace: error.toString() });
         }
-      }
+    }
 
     const toggleToast = () => { setShowToast(!showToast) }
     const handleShareSend = (e: any) => {
         if (shareSeg) {
             console.log("sending to gallery")
             saveToGallery()
+            setShowToast(false)
         }
         // toggleToast()
     }
@@ -303,8 +304,8 @@ const PostSegToast = () => {
                         <Form.Check type="switch" id="share-seg" label="Share segmentation in a future open dataset?">
                         </Form.Check>
                         <Form.Check type="switch" id="share-gallery">
-                        <Form.Check.Input type="checkbox" onChange={(e) => setShareSeg(e.target.checked)} />
-                        <Form.Check.Label>Share segmentation in the gallery page?</Form.Check.Label>
+                            <Form.Check.Input type="checkbox" onChange={(e) => setShareSeg(e.target.checked)} />
+                            <Form.Check.Label>Share segmentation in the gallery page?</Form.Check.Label>
                         </Form.Check>
                     </Form>
                     <Button variant="dark" onClick={handleShareSend} style={{ marginLeft: '16rem' }} >Send!</Button>

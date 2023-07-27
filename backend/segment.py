@@ -101,7 +101,10 @@ async def _save_as_tiff(
     
     try:
         if thumbnail:
-            Image.fromarray(out[0,:300,:300]).save(f"{CWD}/{UID}/seg_thumbnail.jpg")
+            _,x,y = out.shape
+            t_size = 300
+            Image.fromarray(out[0,x//2-t_size//2:x//2+t_size//2,  y//2-t_size//2:y//2+t_size//2]).save(f"{CWD}/{UID}/seg_thumbnail.jpg")
+            Image.fromarray(out[0]).save(f"{CWD}/{UID}/seg.jpg")
     except Exception as e:
         print(e)
     return 0

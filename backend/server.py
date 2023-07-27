@@ -12,7 +12,8 @@ import base64
 from io import BytesIO
 from PIL import Image
 from typing import Callable
-
+from azure.storage.blob import BlobServiceClient
+import dotenv
 import os
 
 try:
@@ -232,3 +233,54 @@ async def load_classifier_respond():
 
 if __name__ == "__main__":
     app.run()
+
+
+# ================================= SAVE TO GALLERY =================================
+def get_blob_service_client():
+    account_url = 'https://sambasegment.blob.core.windows.net'
+    credential = dotenv.get_key(dotenv.find_dotenv(), "AZURE_STORAGE_KEY")
+    # Create the BlobServiceClient object
+    blob_service_client = BlobServiceClient(account_url,credential=credential)
+    return blob_service_client
+
+def upload_blob_file(fn, UID, blob_service_client: BlobServiceClient):
+    container_client = blob_service_client.get_container_client(container='gallery-submission')
+    with open(file=fn, mode="rb") as data:
+        blob_client = container_client.upload_blob(name=f'{UID}.jpeg', data=data, overwrite=True)
+
+async def save_to_gallery_fn(request) -> Response:
+    UID = request.json["id"]
+    try:
+        upload_blob_file(f"{CWD}/{UID}/seg_thumbnail.jpg", UID+'_seg', blob_service_client=get_blob_service_client())
+        upload_blob_file(f"{CWD}/{UID}/img_thumbnail.jpg", UID+'_img', blob_service_client=get_blob_service_client())
+        upload_blob_file(f"{CWD}/{UID}/img.jpg", UID+'_img_full', blob_service_client=get_blob_service_client())
+        upload_blob_file(f"{CWD}/{UID}/seg.jpg", UID+'_seg_full', blob_service_client=get_blob_service_client())
+    except Exception as e:
+        print(e)
+    return Response(status=200)
+
+
+@app.route("/saveToGallery", methods=["POST", "GET", "OPTIONS"])
+async def save_to_gallery_respond():
+    response = await generic_response(request, save_to_gallery_fn)
+    return response
+
+
+# ================================= SAVE IMAGE AS JPEG =================================
+async def save_image_fn(request) -> Response:
+    UID = request.json["id"]
+    try:
+        image = _get_image_from_b64(request.json["images"])
+        x,y = image.size
+        t_size = 300
+        image.save(f"{CWD}/{UID}/img.jpg")
+        image = image.crop((x//2-t_size//2, y//2-t_size//2, x//2+t_size//2, y//2+t_size//2))
+        image.save(f"{CWD}/{UID}/img_thumbnail.jpg")
+    except Exception as e:
+        print(e)
+    return Response(status=200)
+
+@app.route("/saveImage", methods=["POST", "GET", "OPTIONS"])
+async def save_image_respond():
+    response = await generic_response(request, save_image_fn)
+    return response

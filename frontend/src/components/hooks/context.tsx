@@ -44,6 +44,10 @@ const AppContextProvider = (props: {
   const [theme, setTheme] = useState<Theme>("default")
   const [settings, setSettings] = useState<Settings>({ nPoints: 50000, trainAll: false, rescale: true, format: ".skops" })
 
+  // Path to backend
+  const [path, setPath] = useState<string>("http://localhost:5000")
+  const [UID, setUID] = useState<string>("")
+
   return (
     <AppContext.Provider
       value={{
@@ -78,6 +82,8 @@ const AppContextProvider = (props: {
         modalShow: [modalShow, setModalShow],
         theme: [theme, setTheme],
         settings: [settings, setSettings],
+        path: [path, setPath],
+        UID: [UID, setUID],
       }}
     >
       {props.children}

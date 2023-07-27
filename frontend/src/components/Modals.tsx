@@ -16,7 +16,8 @@ import Toast from 'react-bootstrap/Toast'
 import ToastContainer from "react-bootstrap/ToastContainer";
 import InputGroup from "react-bootstrap/InputGroup";
 import Form from "react-bootstrap/Form"
-import { FormCheck } from "react-bootstrap";
+import { BlobServiceClient } from "@azure/storage-blob";
+
 
 const BigModal = ({ requestEmbedding }: LabelFrameProps) => {
     const {
@@ -229,10 +230,65 @@ const WarningModal = (text: string, closeFunction: CallableFunction) => {
 
 const PostSegToast = () => {
     const {
-        showToast: [showToast, setShowToast]
+        showToast: [showToast, setShowToast],
+        errorObject: [errorObject, setErrorObject],
+        path: [path,],
+        UID: [UID,],
+        imgArrs: [imgArrs,],
+
     } = useContext(AppContext)!;
 
+
+    const [shareSeg, setShareSeg] = useState(false)
+    const url = `https://sambasegment.blob.core.windows.net`
+
+    const blobServiceClient = new BlobServiceClient(
+        url
+    );
+
+    const containerClient = blobServiceClient.getContainerClient('gallery')
+
+    const saveToGallery = async () => {
+        //  SAVE IMAGE TO BACKEND
+
+        const getb64Image = (img: HTMLImageElement): string => {
+            // Convert HTML Image to b64 string encoding by drawing onto canvas. Used for sending over HTTP
+            const tempCanvas = document.createElement("canvas");
+            tempCanvas.width = img.width
+            tempCanvas.height = img.height
+            const ctx = tempCanvas.getContext("2d");
+            ctx?.drawImage(img, 0, 0, img.width, img.height)
+            const b64image = tempCanvas.toDataURL("image/jpeg")
+            return b64image
+        }
+        const b64images = getb64Image(imgArrs[0]);
+        const headers = new Headers();
+        headers.append('Content-Type', 'application/json;charset=utf-8');
+        try {
+            let resp = await fetch(path + '/saveImage', { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "images": b64images }) })
+        } catch (e) {
+            const error = e as Error;
+            setErrorObject({ msg: "Failed to save image to gallery.", stackTrace: error.toString() });
+        }
+        // UPLOAD SEGMENTATION FROM BACKEND
+        try {
+            let resp = await fetch(path + '/saveToGallery', { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID }) })
+        } catch (e) {
+            const error = e as Error;
+            setErrorObject({ msg: "Failed to save degmentation to gallery.", stackTrace: error.toString() });
+        }
+    }
+
     const toggleToast = () => { setShowToast(!showToast) }
+    const handleShareSend = (e: any) => {
+        if (shareSeg) {
+            console.log("sending to gallery")
+            saveToGallery()
+            setShowToast(false)
+        }
+        // toggleToast()
+    }
+
 
     return (
         <ToastContainer className="p-5" position="bottom-end">
@@ -245,10 +301,14 @@ const PostSegToast = () => {
                     </InputGroup>
 
                     <Form style={{ margin: '10px' }}>
-                        <Form.Check type="switch" id="share-seg" label="Share segmentation in a future open dataset?"></Form.Check>
-                        <Form.Check type="switch" id="share-gallery" label="Share segmentation in the gallery page?"></Form.Check>
+                        <Form.Check type="switch" id="share-seg" label="Share segmentation in a future open dataset?">
+                        </Form.Check>
+                        <Form.Check type="switch" id="share-gallery">
+                            <Form.Check.Input type="checkbox" onChange={(e) => setShareSeg(e.target.checked)} />
+                            <Form.Check.Label>Share segmentation in the gallery page?</Form.Check.Label>
+                        </Form.Check>
                     </Form>
-                    <Button variant="dark" onClick={toggleToast} style={{ marginLeft: '16rem' }} >Send!</Button>
+                    <Button variant="dark" onClick={handleShareSend} style={{ marginLeft: '16rem' }} >Send!</Button>
                 </Toast.Body>
             </Toast>
         </ToastContainer >

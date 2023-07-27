@@ -7,6 +7,7 @@ import React, { useRef, useContext } from "react";
 import AppContext from "./hooks/createContext";
 import { TopbarProps, ModalShow, themeBGs } from "./helpers/Interfaces";
 
+import { Link, useNavigate } from 'react-router-dom'
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
@@ -23,6 +24,7 @@ export const ToolTip = (str: string) => {
         }}> {str}</Tooltip >
     )
 }
+
 
 
 const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, saveClassifier, loadClassifier, applyClassifier }: TopbarProps) => {
@@ -61,16 +63,21 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
     }
 
     const icons: string[][] = [
-        ["Settings", "settings.png", ""],
-        ["Paper", "paper.png", "coming_soon"],
-        ["Help", "help.png", "https://github.com/tldr-group/samba-web"],
-        ["TLDR Group", "tldr.png", "https://tldr-group.github.io/#/"]
+        ["Settings", "settings.png", "", ''],
+        ["Gallery", "gallery.png", "", ''],
+        ["Paper", "paper.png", "coming_soon", '_blank'],
+        ["Help", "help.png", "https://github.com/tldr-group/samba-web", '_blank'],
+        ["TLDR Group", "tldr.png", "https://tldr-group.github.io/#/", '_blank']
     ]
+
+    const navigate = useNavigate(); // goto gallery 'page' in the SPA (if use link then hosting doesn't work)
 
     const iconClick = (e: any, i: string) => {
         if (i === "Settings") {
             const newModalShow: ModalShow = { welcome: false, settings: true, features: false }
             setModalShow(newModalShow)
+        } else if (i === "Gallery") {
+            navigate("/gallery")
         } else if (i === "Features") {
             const newModalShow: ModalShow = { welcome: false, settings: false, features: true }
             setModalShow(newModalShow)
@@ -118,7 +125,6 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
                     </Nav>
                 </Navbar.Collapse>
             </Container>
-
             {
                 icons.map(i => <OverlayTrigger
                     key={i[0]}
@@ -126,7 +132,7 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
                     delay={{ show: 250, hide: 400 }}
                     overlay={ToolTip(i[0])}
                 >
-                    <Navbar.Brand href={i[2]} target="_blank">
+                    <Navbar.Brand href={i[2]} target={i[3]}>
                         <img
                             src={"/assets/icons/" + i[1]}
                             width="30"

@@ -17,6 +17,7 @@ module.exports = {
   },
   output: {
     path: resolve(__dirname, "dist"),
+    publicPath: "/",
   },
   module: {
     rules: [
@@ -81,4 +82,7 @@ module.exports = {
       process: "process/browser",
     }),
   ],
+  experiments: {
+    topLevelAwait: true
+  }
 };

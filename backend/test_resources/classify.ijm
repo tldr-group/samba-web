@@ -1,4 +1,4 @@
-path = "/home/ronan/Documents/uni_work/phd/xai_weka/"
+path = "/home/ronan/Documents/uni_work/phd/samba-web/backend/test_resources/"
 print(path+"classification_config.txt");
 dynamic_data_str = File.openAsString(path+"classification_config.txt");
 dynamic_data_arr = split(dynamic_data_str, "\n");
@@ -15,7 +15,7 @@ open(path+fname);
 run("Trainable Weka Segmentation");
 // Need to wait as loading GUI
 wait(800);
-selectWindow("Trainable Weka Segmentation v3.3.2");
+selectWindow("Trainable Weka Segmentation v3.3.4");
 
 roi_str = File.openAsString(path+img_name+"_roi_config.txt");
 roi_data_arr = split(roi_str, "\n");

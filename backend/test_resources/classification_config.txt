@@ -1,18 +1,6 @@
-Gaussian Blur=true
-Hessian=true
-Sobel filter=true
-Difference of gaussians=true
-Membrane projections=true
-Mean=false
-Maximum=false
-Anisotropic diffusion=false
-Lipschitz=false
-Gabor=false
-Entropy=false
-Sobel filter=false
-Difference of gaussians=false
-VarianceMinimum=false
-Median=false
-Bilateral=false
-Kuwahara=false
-Neighbours=false
+4_phase.tif
+Gaussian Blur=True
+Hessian=True
+Sobel filter=True
+Difference of gaussians=True
+Membrane projections=True

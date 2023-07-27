@@ -12,11 +12,18 @@ import matplotlib.pyplot as plt
 from tifffile import imread, imwrite
 from skimage.metrics import mean_squared_error
 
-from typing import List
+from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 
 import features as ft
+from test_resources.call_weka import (
+    set_macro_path,
+    set_config_file,
+    run_weka,
+    get_label_arr,
+)
+from forest_based import segment_no_features_get_arr
 
 # add call to grab the weka features tif from azure blob
 # set up git
@@ -25,6 +32,7 @@ FOOTPRINT = ft.make_footprint(sigma=SIGMA)
 CIRCLE = np.pad(FOOTPRINT, ((2, 2), (2, 2)))
 CENTRE = (SIGMA + 2, SIGMA + 2)
 CIRCLE_BYTE = (255 * CIRCLE).astype(np.uint8)
+FIJI_PATH = "/home/ronan/Documents/uni_work/phd/fiji-linux64/Fiji.app/ImageJ-linux64"  # make argparse
 
 
 def _test_centre_val(filtered_arr, val):
@@ -311,6 +319,31 @@ class CompareDefaultFeatures(unittest.TestCase):
         plt.xlabel("Features", fontsize=14)
         plt.ylabel("MSE", fontsize=14)
         plt.savefig("backend/test_resources/test.png")
+
+
+def get_scores(gt: np.ndarray, seg: np.ndarray) -> Tuple[float, float]:
+    flat_gt = gt.flatten()
+    flat_seg = seg.flatten()
+    boolean_out = np.where(flat_gt == flat_seg, 1, 0)
+    A, B, A_U_B = len(flat_gt), len(flat_seg), np.sum(boolean_out)
+    iou_score = A_U_B / (A + B - A_U_B)
+    dice_similarity = A_U_B * 2 / (A + B)
+    return iou_score, dice_similarity
+
+
+class CompareSegmentations(unittest.TestCase):
+    def test_segmentations(self):
+        set_macro_path()
+        set_config_file("4_phase.tif")
+        # run_weka(FIJI_PATH)
+        img_arr = imread("backend/test_resources/4_phase.tif")
+        weka_arr = imread("backend/test_resources/output.tif")
+        label = get_label_arr("backend/test_resources/4_phase_roi_config.txt", img_arr)
+        samba_arr = segment_no_features_get_arr(label, img_arr)
+        scores = get_scores(weka_arr, samba_arr)
+        print(scores)
+        imwrite("backend/test_resources/output2.tif", samba_arr)
+        # imwrite("backend/test_resources/label.tif", label)
 
 
 if __name__ == "__main__":

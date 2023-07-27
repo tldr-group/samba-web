@@ -11,7 +11,7 @@ say a cloud function or as a smaller part of a threaded classifier object (which
 memoise things like feature computation) that is part of a GUI app.  
 """
 import numpy as np
-from features import multiscale_advanced_features, N_ALLOWED_CPUS
+from features import multiscale_advanced_features, N_ALLOWED_CPUS, DEAFAULT_FEATURES
 
 print(N_ALLOWED_CPUS)
 
@@ -232,3 +232,22 @@ def segment_with_features(
     print(model.oob_score_)
     out_data = apply_features_done(model, UID, len(labels))
     return out_data, model, model.oob_score_
+
+
+def segment_no_features_get_arr(
+    label_arr: np.ndarray,
+    img_arr: np.ndarray,
+) -> np.ndarray:
+    feature_stack = multiscale_advanced_features(
+        img_arr, DEAFAULT_FEATURES, N_ALLOWED_CPUS
+    )
+    fit_data, target_data = get_training_data(feature_stack, label_arr)
+    model = get_model("FRF")
+    model = fit(model, fit_data, target_data, None)
+    h, w, feat = feature_stack.shape
+    flat_apply_data = feature_stack.reshape((h * w, feat))
+    out_probs = model.predict_proba(flat_apply_data)
+    _, n_classes = out_probs.shape
+    out_probs = out_probs.T.reshape((n_classes, h, w))
+    classes = np.argmax(out_probs, axis=0).astype(np.uint8)
+    return classes

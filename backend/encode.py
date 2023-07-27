@@ -10,7 +10,7 @@ from tifffile import imwrite
 
 from features import DEAFAULT_FEATURES, multiscale_advanced_features
 
-DEBUG = True
+DEBUG = False
 
 try:
     CWD = os.environ["APP_PATH"]

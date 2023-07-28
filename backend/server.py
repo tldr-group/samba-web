@@ -13,14 +13,26 @@ from io import BytesIO
 from PIL import Image
 from typing import Callable
 from azure.storage.blob import BlobServiceClient
-import dotenv
 import os
+import json
+import zipfile
 
 # Very important: this environment variable is only present on webapp. If running locally, this fails and we use cwd instead.
 try:
     CWD = os.environ["APP_PATH"]
 except KeyError:
     CWD = os.getcwd()
+
+
+credential: str | None
+try:
+    credential = os.environ["BLOB_KEY"]
+except:  # do this bc server can't find dotenv even if python-dotenv in requirements
+    import dotenv
+
+    credential = dotenv.get_key(dotenv.find_dotenv(), "AZURE_STORAGE_KEY")
+
+
 print(CWD, os.getcwd())
 
 from encode import encode, featurise
@@ -261,24 +273,50 @@ if __name__ == "__main__":
 
 # ================================= SAVE TO GALLERY =================================
 def get_blob_service_client():
-    account_url = 'https://sambasegment.blob.core.windows.net'
-    credential = dotenv.get_key(dotenv.find_dotenv(), "AZURE_STORAGE_KEY")
+    account_url = "https://sambasegment.blob.core.windows.net"
+
     # Create the BlobServiceClient object
-    blob_service_client = BlobServiceClient(account_url,credential=credential)
+    blob_service_client = BlobServiceClient(account_url, credential=credential)
     return blob_service_client
 
+
 def upload_blob_file(fn, UID, blob_service_client: BlobServiceClient):
-    container_client = blob_service_client.get_container_client(container='gallery-submission')
+    container_client = blob_service_client.get_container_client(
+        container="gallery-submission"
+    )
     with open(file=fn, mode="rb") as data:
-        blob_client = container_client.upload_blob(name=f'{UID}.jpeg', data=data, overwrite=True)
+        blob_client = container_client.upload_blob(
+            name=f"{UID}", data=data, overwrite=True
+        )
+
+
+def _map_fname_to_zip_fname(fname: str) -> str:
+    if fname == "seg_thumbnail":
+        return "seg"
+    elif fname == "img_thumbnail":
+        return "img"
+    elif fname == "img":
+        return "img_full"
+    elif fname == "seg":
+        return "seg_full"
+    else:
+        return fname
+
 
 async def save_to_gallery_fn(request) -> Response:
     UID = request.json["id"]
+    with zipfile.ZipFile(f"{CWD}/{UID}/{UID}.zip", "w") as zipf:
+        for fn in os.listdir(f"{CWD}/{UID}"):
+            fname, extension = fn.split(".")
+            zip_name = _map_fname_to_zip_fname(fname)
+            if extension in ["png", "jpg", "json", "tiff"]:
+                zipf.write(f"{CWD}/{UID}/{fn}", arcname=f"{UID}_{zip_name}.{extension}")
     try:
-        upload_blob_file(f"{CWD}/{UID}/seg_thumbnail.jpg", UID+'_seg', blob_service_client=get_blob_service_client())
-        upload_blob_file(f"{CWD}/{UID}/img_thumbnail.jpg", UID+'_img', blob_service_client=get_blob_service_client())
-        upload_blob_file(f"{CWD}/{UID}/img.jpg", UID+'_img_full', blob_service_client=get_blob_service_client())
-        upload_blob_file(f"{CWD}/{UID}/seg.jpg", UID+'_seg_full', blob_service_client=get_blob_service_client())
+        upload_blob_file(
+            f"{CWD}/{UID}/{UID}.zip",
+            UID + ".zip",
+            blob_service_client=get_blob_service_client(),
+        )
     except Exception as e:
         print(e)
     return Response(status=200)
@@ -295,14 +333,28 @@ async def save_image_fn(request) -> Response:
     UID = request.json["id"]
     try:
         image = _get_image_from_b64(request.json["images"])
-        x,y = image.size
+        x, y = image.size
         t_size = 300
-        image.save(f"{CWD}/{UID}/img.jpg")
-        image = image.crop((x//2-t_size//2, y//2-t_size//2, x//2+t_size//2, y//2+t_size//2))
+        image.save(f"{CWD}/{UID}/img.png")
+        image = image.crop(
+            (
+                x // 2 - t_size // 2,
+                y // 2 - t_size // 2,
+                x // 2 + t_size // 2,
+                y // 2 + t_size // 2,
+            )
+        )
         image.save(f"{CWD}/{UID}/img_thumbnail.jpg")
+
+        # Save metadata as a json file
+        metadata = request.json["metadata"]
+        with open(f"{CWD}/{UID}/metadata.json", "w") as f:
+            json.dump(metadata, f)
+
     except Exception as e:
         print(e)
     return Response(status=200)
+
 
 @app.route("/saveImage", methods=["POST", "GET", "OPTIONS"])
 async def save_image_respond():

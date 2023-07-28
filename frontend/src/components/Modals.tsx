@@ -240,6 +240,13 @@ const PostSegToast = () => {
 
 
     const [shareSeg, setShareSeg] = useState(false)
+    const [segQual, setSegQual] = useState(5)
+    const [materialName, setMaterialName] = useState('unknown')
+    const [resolution, setResolution] = useState('unknown')
+    const [instrumentType, setInstrumentType] = useState('unknown')
+    const [additionalNotes, setAdditionalNotes] = useState('unknown')
+    const [showMetaToast, setShowMetaToast] = useState(false)
+
     const url = `https://sambasegment.blob.core.windows.net`
 
     const blobServiceClient = new BlobServiceClient(
@@ -251,7 +258,7 @@ const PostSegToast = () => {
     const saveToGallery = async () => {
         //  SAVE IMAGE TO BACKEND
 
-        const getb64Image = (img: HTMLImageElement): string => {
+        const getb64Image = (img: HTMLImageElement) => {
             // Convert HTML Image to b64 string encoding by drawing onto canvas. Used for sending over HTTP
             const tempCanvas = document.createElement("canvas");
             tempCanvas.width = img.width
@@ -259,13 +266,15 @@ const PostSegToast = () => {
             const ctx = tempCanvas.getContext("2d");
             ctx?.drawImage(img, 0, 0, img.width, img.height)
             const b64image = tempCanvas.toDataURL("image/jpeg")
-            return b64image
+            return [b64image, tempCanvas.width, tempCanvas.height]
         }
-        const b64images = getb64Image(imgArrs[0]);
+        const b64 = getb64Image(imgArrs[0]);
+        const b64images = b64[0]
+        const metadata = { "id": UID, "segQual": segQual, "imgWidth": b64[1], "imgHeight": b64[2], "materialName": materialName, "resolution": resolution, "instrumentType": instrumentType, "additionalNotes": additionalNotes }
         const headers = new Headers();
         headers.append('Content-Type', 'application/json;charset=utf-8');
         try {
-            let resp = await fetch(path + '/saveImage', { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "images": b64images }) })
+            let resp = await fetch(path + '/saveImage', { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "images": b64images, "metadata": metadata }) })
         } catch (e) {
             const error = e as Error;
             setErrorObject({ msg: "Failed to save image to gallery.", stackTrace: error.toString() });
@@ -280,24 +289,32 @@ const PostSegToast = () => {
     }
 
     const toggleToast = () => { setShowToast(!showToast) }
+    const toggleMetaToast = () => { setShowMetaToast(!showMetaToast) }
+
     const handleShareSend = (e: any) => {
         if (shareSeg) {
-            console.log("sending to gallery")
-            saveToGallery()
             setShowToast(false)
+            setShowMetaToast(true)
         }
-        // toggleToast()
+        toggleToast()
+    }
+
+    const handleMetaSend = (e: any) => {
+        console.log("sending to gallery")
+        saveToGallery()
+        toggleMetaToast()
     }
 
 
     return (
+        <>
         <ToastContainer className="p-5" position="bottom-end">
             <Toast show={showToast} onClose={toggleToast}>
                 <Toast.Header className="roundedme-2"><strong className="me-auto">Share Segmentation?</strong></Toast.Header>
                 <Toast.Body>
                     <InputGroup>
                         <InputGroup.Text>Segmentation quality:</InputGroup.Text>
-                        <Form.Control type="number" min={0} max={10} defaultValue={5} width={1} size="sm"></Form.Control>
+                        <Form.Control type="number" min={0} max={10} value={segQual} width={1} size="sm" onChange={(e) => setSegQual(Number(e.target.value))}></Form.Control>
                     </InputGroup>
 
                     <Form style={{ margin: '10px' }}>
@@ -312,7 +329,38 @@ const PostSegToast = () => {
                 </Toast.Body>
             </Toast>
         </ToastContainer >
-
+        
+        <ToastContainer className="p-5" position="middle-center">
+            <Toast show={showMetaToast} onClose={toggleMetaToast}>
+                <Toast.Header className="roundedme-2"><strong className="me-auto">Add metadata</strong></Toast.Header>
+                <Toast.Body>
+                    <Form style={{ margin: '10px' }}>
+                        <Form.Group className="mb-3" controlId="formBasicEmail">
+                            <Form.Label>Material Name</Form.Label>
+                            <Form.Control type="text" placeholder="Enter material name" onChange={(e) => setMaterialName(e.target.value)} />
+                        </Form.Group>
+                        <Form.Group className="mb-3" controlId="formBasicPassword">
+                            <Form.Label>Resolution (µm/pixel)</Form.Label>
+                            <Form.Control type="text" placeholder="Enter resolution" onChange={(e) => setResolution(e.target.value)} />
+                        </Form.Group>
+                        <Form.Group className="mb-3" controlId="formBasicPassword">
+                            <Form.Label>Instrument Type</Form.Label>
+                            <Form.Control type="text" placeholder="Enter instrument type" onChange={(e) => setInstrumentType(e.target.value)} />
+                        </Form.Group>
+                        <Form.Group className="mb-3" controlId="formBasicPassword">
+                            <Form.Label>Additional Notes</Form.Label>
+                            <Form.Control type="text" placeholder="Enter additional notes" onChange={(e) => setAdditionalNotes(e.target.value)} />
+                        </Form.Group>
+                    </Form>
+                    <div style={{display:'flex', justifyContent:'center'}}>
+                    <Button variant="dark" onClick={handleMetaSend} >Send</Button>
+                    </div>
+                    </Toast.Body>
+                    
+                </Toast>
+        </ToastContainer>
+        
+</>
     )
 }
 

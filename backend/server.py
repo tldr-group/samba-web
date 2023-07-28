@@ -15,6 +15,7 @@ from typing import Callable
 from azure.storage.blob import BlobServiceClient
 import dotenv
 import os
+import json
 
 try:
     CWD = os.environ["APP_PATH"]
@@ -246,15 +247,16 @@ def get_blob_service_client():
 def upload_blob_file(fn, UID, blob_service_client: BlobServiceClient):
     container_client = blob_service_client.get_container_client(container='gallery-submission')
     with open(file=fn, mode="rb") as data:
-        blob_client = container_client.upload_blob(name=f'{UID}.jpeg', data=data, overwrite=True)
+        blob_client = container_client.upload_blob(name=f'{UID}', data=data, overwrite=True)
 
 async def save_to_gallery_fn(request) -> Response:
     UID = request.json["id"]
     try:
-        upload_blob_file(f"{CWD}/{UID}/seg_thumbnail.jpg", UID+'_seg', blob_service_client=get_blob_service_client())
-        upload_blob_file(f"{CWD}/{UID}/img_thumbnail.jpg", UID+'_img', blob_service_client=get_blob_service_client())
-        upload_blob_file(f"{CWD}/{UID}/img.jpg", UID+'_img_full', blob_service_client=get_blob_service_client())
-        upload_blob_file(f"{CWD}/{UID}/seg.jpg", UID+'_seg_full', blob_service_client=get_blob_service_client())
+        upload_blob_file(f"{CWD}/{UID}/seg_thumbnail.jpg", UID+'_seg.jpg', blob_service_client=get_blob_service_client())
+        upload_blob_file(f"{CWD}/{UID}/img_thumbnail.jpg", UID+'_img.jpg', blob_service_client=get_blob_service_client())
+        upload_blob_file(f"{CWD}/{UID}/img.png", UID+'_img_full.png', blob_service_client=get_blob_service_client())
+        upload_blob_file(f"{CWD}/{UID}/seg.png", UID+'_seg_full.png', blob_service_client=get_blob_service_client())
+        upload_blob_file(f"{CWD}/{UID}/metadata.json", UID+'_metadata.json', blob_service_client=get_blob_service_client())
     except Exception as e:
         print(e)
     return Response(status=200)
@@ -273,9 +275,15 @@ async def save_image_fn(request) -> Response:
         image = _get_image_from_b64(request.json["images"])
         x,y = image.size
         t_size = 300
-        image.save(f"{CWD}/{UID}/img.jpg")
+        image.save(f"{CWD}/{UID}/img.png")
         image = image.crop((x//2-t_size//2, y//2-t_size//2, x//2+t_size//2, y//2+t_size//2))
         image.save(f"{CWD}/{UID}/img_thumbnail.jpg")
+
+        # Save metadata as a json file
+        metadata = request.json["metadata"]
+        with open(f"{CWD}/{UID}/metadata.json", 'w') as f:
+            json.dump(metadata, f)
+
     except Exception as e:
         print(e)
     return Response(status=200)

@@ -239,29 +239,50 @@ if __name__ == "__main__":
 
 # ================================= SAVE TO GALLERY =================================
 def get_blob_service_client():
-    account_url = 'https://sambasegment.blob.core.windows.net'
+    account_url = "https://sambasegment.blob.core.windows.net"
     credential = dotenv.get_key(dotenv.find_dotenv(), "AZURE_STORAGE_KEY")
     # Create the BlobServiceClient object
-    blob_service_client = BlobServiceClient(account_url,credential=credential)
+    blob_service_client = BlobServiceClient(account_url, credential=credential)
     return blob_service_client
 
+
 def upload_blob_file(fn, UID, blob_service_client: BlobServiceClient):
-    container_client = blob_service_client.get_container_client(container='gallery-submission')
+    container_client = blob_service_client.get_container_client(
+        container="gallery-submission"
+    )
     with open(file=fn, mode="rb") as data:
-        blob_client = container_client.upload_blob(name=f'{UID}', data=data, overwrite=True)
+        blob_client = container_client.upload_blob(
+            name=f"{UID}", data=data, overwrite=True
+        )
+
+
+def _map_fname_to_zip_fname(fname: str) -> str:
+    if fname == "seg_thumbnail":
+        return "seg"
+    elif fname == "img_thumbnail":
+        return "img"
+    elif fname == "img":
+        return "img_full"
+    elif fname == "seg":
+        return "seg_full"
+    else:
+        return fname
+
 
 async def save_to_gallery_fn(request) -> Response:
     UID = request.json["id"]
-    with zipfile.ZipFile(f"{CWD}/{UID}.zip", 'w') as zipf:
+    with zipfile.ZipFile(f"{CWD}/{UID}/{UID}.zip", "w") as zipf:
         for fn in os.listdir(f"{CWD}/{UID}"):
-            zipf.write(f"{CWD}/{UID}/{fn}", arcname=fn)
+            fname, extension = fn.split(".")
+            zip_name = _map_fname_to_zip_fname(fname)
+            if extension in ["png", "jpg", "json", "tiff"]:
+                zipf.write(f"{CWD}/{UID}/{fn}", arcname=f"{UID}_{zip_name}.{extension}")
     try:
-        upload_blob_file(f"{CWD}/{UID}/seg_thumbnail.jpg", UID+'_seg.jpg', blob_service_client=get_blob_service_client())
-        upload_blob_file(f"{CWD}/{UID}/img_thumbnail.jpg", UID+'_img.jpg', blob_service_client=get_blob_service_client())
-        upload_blob_file(f"{CWD}/{UID}/img.png", UID+'_img_full.png', blob_service_client=get_blob_service_client())
-        upload_blob_file(f"{CWD}/{UID}/seg.png", UID+'_seg_full.png', blob_service_client=get_blob_service_client())
-        upload_blob_file(f"{CWD}/{UID}/metadata.json", UID+'_metadata.json', blob_service_client=get_blob_service_client())
-        upload_blob_file(f"{CWD}/{UID}.zip", UID+'.zip', blob_service_client=get_blob_service_client())
+        upload_blob_file(
+            f"{CWD}/{UID}/{UID}.zip",
+            UID + ".zip",
+            blob_service_client=get_blob_service_client(),
+        )
     except Exception as e:
         print(e)
     return Response(status=200)
@@ -278,20 +299,28 @@ async def save_image_fn(request) -> Response:
     UID = request.json["id"]
     try:
         image = _get_image_from_b64(request.json["images"])
-        x,y = image.size
+        x, y = image.size
         t_size = 300
         image.save(f"{CWD}/{UID}/img.png")
-        image = image.crop((x//2-t_size//2, y//2-t_size//2, x//2+t_size//2, y//2+t_size//2))
+        image = image.crop(
+            (
+                x // 2 - t_size // 2,
+                y // 2 - t_size // 2,
+                x // 2 + t_size // 2,
+                y // 2 + t_size // 2,
+            )
+        )
         image.save(f"{CWD}/{UID}/img_thumbnail.jpg")
 
         # Save metadata as a json file
         metadata = request.json["metadata"]
-        with open(f"{CWD}/{UID}/metadata.json", 'w') as f:
+        with open(f"{CWD}/{UID}/metadata.json", "w") as f:
             json.dump(metadata, f)
 
     except Exception as e:
         print(e)
     return Response(status=200)
+
 
 @app.route("/saveImage", methods=["POST", "GET", "OPTIONS"])
 async def save_image_respond():

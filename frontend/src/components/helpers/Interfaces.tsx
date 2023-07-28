@@ -151,8 +151,8 @@ export const defaultFeatures = {
   "Entropy": 0,
   "Neighbours": 0,
   "Membrane Thickness": 1,
-  "Membrane Patch Size": 17,
-  "Minimum Sigma": 0.5,
+  "Membrane Patch Size": 19,
+  "Minimum Sigma": 1,
   "Maximum Sigma": 16,
 }
 

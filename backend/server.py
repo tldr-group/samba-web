@@ -17,6 +17,7 @@ import os
 import json
 import zipfile
 
+# Very important: this environment variable is only present on webapp. If running locally, this fails and we use cwd instead.
 try:
     CWD = os.environ["APP_PATH"]
 except KeyError:
@@ -66,6 +67,7 @@ def _get_image_from_b64(b64_with_prefix: str):
 
 
 async def generic_response(request, fn: Callable):
+    """Given a HTTP request and response function, return corsified response."""
     if "OPTIONS" in request.method:
         return _build_cors_preflight_response()
     elif "POST" in request.method:
@@ -73,6 +75,7 @@ async def generic_response(request, fn: Callable):
             response = await fn(request)
             return _corsify_actual_response(response)
         except Exception as e:
+            print(e)
             response = Response(f"{{'msg': '{e}' }}", 400, mimetype="application/json")
             return _corsify_actual_response(response)
     else:
@@ -82,11 +85,13 @@ async def generic_response(request, fn: Callable):
 
 @app.route("/")
 def hello_world():
+    """Not used except to check app working."""
     return send_from_directory("", "index.html")
 
 
 # ================================= INIT =================================
 async def init_fn(request) -> Response:
+    """Call when user connects for first time. Creates a temporary folder in app directory."""
     UID = request.json["id"]
     try:
         os.mkdir(f"{CWD}/{UID}")
@@ -98,12 +103,14 @@ async def init_fn(request) -> Response:
 
 @app.route("/init", methods=["POST", "GET", "OPTIONS"])
 async def init_app():
+    """Init route."""
     response = await generic_response(request, init_fn)
     return response
 
 
 # ================================= FEATURISE =================================
 async def featurise_fn(request) -> Response:
+    """Call when user uploads an image(s). Converts b64 to image, performs featurisation and stores serverside."""
     UID = request.json["id"]
     features = request.json["features"]
     images = [_get_image_from_b64(i) for i in request.json["images"]]
@@ -114,11 +121,13 @@ async def featurise_fn(request) -> Response:
 
 @app.route("/featurising", methods=["POST", "GET", "OPTIONS"])
 async def featurise_respond():
+    """Featurise route."""
     response = await generic_response(request, featurise_fn)
     return response
 
 
 async def delete_fn(request) -> Response:
+    """Delete either specific features file or all feature file in user directory."""
     UID = request.json["id"]
     img_idx = request.json["idx"]
     if img_idx == -1:
@@ -130,12 +139,14 @@ async def delete_fn(request) -> Response:
 
 @app.route("/delete", methods=["POST", "GET", "OPTIONS"])
 async def delete_respond():
+    """Delete features route."""
     response = await generic_response(request, delete_fn)
     return response
 
 
 # ================================= ENCODE =================================
 async def encode_fn(request) -> Response:
+    """Get SAM encoding of requested image, return the bytes."""
     image = _get_image_from_b64(request.json["message"])
     encoded_bytes = encode(image)
     response = Response(encoded_bytes)
@@ -145,12 +156,18 @@ async def encode_fn(request) -> Response:
 
 @app.route("/encoding", methods=["POST", "GET", "OPTIONS"])
 async def encode_respond():
+    """Encode route."""
     response = await generic_response(request, encode_fn)
     return response
 
 
 # ================================= SEGMENT & APPLY =================================
 async def segment_fn(request) -> Response:
+    """Segment (train & apply or just apply).
+
+    Get image type and associated variables, if mode is segment then train segmenter on
+    images with labels then apply. If mode is apply then just apply.
+    """
     images = [_get_image_from_b64(i) for i in request.json["images"]]
     UID = request.json["id"]
     save_mode = request.json["save_mode"]
@@ -178,12 +195,14 @@ async def segment_fn(request) -> Response:
 
 @app.route("/segmenting", methods=["POST", "GET", "OPTIONS"])
 async def segment_respond():
+    """Segmentation response."""
     response = await generic_response(request, segment_fn)
     return response
 
 
 # ================================= SAVING =================================
 async def save_fn(request) -> Response:
+    """Return the saved segmentation or classifier (from segment function)."""
     UID = request.json["id"]
     save_type = request.json["type"]
     if save_type == "segmentation":
@@ -202,11 +221,13 @@ async def save_fn(request) -> Response:
 
 @app.route("/saving", methods=["POST", "GET", "OPTIONS"])
 async def save_respond():
+    """Save route."""
     response = await generic_response(request, save_fn)
     return response
 
 
 async def save_labels_fn(request) -> Response:
+    """Save the user labels by recombining them like in save segmentation (stack tiffs or patch)."""
     images = [_get_image_from_b64(i) for i in request.json["images"]]
     labels_dicts = request.json["labels"]
     save_mode = request.json["save_mode"]
@@ -222,12 +243,14 @@ async def save_labels_fn(request) -> Response:
 
 @app.route("/slabel", methods=["POST", "GET", "OPTIONS"])
 async def save_labels_respond():
+    """Save labels response."""
     response = await generic_response(request, save_labels_fn)
     return response
 
 
 # ================================= LOADING =================================
 async def load_classifier_fn(request):
+    """Load classifier from the b64 of a user .skops file, save to user directory."""
     UID = request.json["id"]
     classifier_b64_with_prefix = request.json["bytes"]
     b64 = classifier_b64_with_prefix.split(",")[1]
@@ -239,6 +262,7 @@ async def load_classifier_fn(request):
 
 @app.route("/lclassifier", methods=["POST", "GET", "OPTIONS"])
 async def load_classifier_respond():
+    """Load classifier route."""
     response = await generic_response(request, load_classifier_fn)
     return response
 

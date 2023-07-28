@@ -23,7 +23,9 @@ from itertools import combinations_with_replacement, combinations, chain
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import cpu_count
 
-from typing import Tuple, List
+from typing import Tuple, List, Iterable
+
+# Gaussian blur seems to be 1 - the value in weka. Interesting. NB weka also adds original image as default - i should do the same
 
 # - 2 to allow for main & gui threads
 N_ALLOWED_CPUS = cpu_count() - 2
@@ -41,10 +43,10 @@ DEAFAULT_FEATURES = {
     "Derivatives": 0,
     "Structure": 0,
     "Entropy": 0,
-    "Neighbours": 1,
+    "Neighbours": 0,
     "Membrane Thickness": 1,
-    "Membrane Patch Size": 17,
-    "Minimum Sigma": 0.5,
+    "Membrane Patch Size": 19,
+    "Minimum Sigma": 1,  # check this - is 1 in weka docs but 0.5 in sklearn example
     "Maximum Sigma": 16,
 }
 
@@ -60,9 +62,12 @@ def make_footprint(sigma: int) -> np.ndarray:
 
 
 # %% ===================================SINGLESCALE FEATURES===================================
+
+
 def singlescale_gaussian(img: np.ndarray, sigma: int) -> np.ndarray:
     """Gaussian blur of each pixel in $img of scale/radius $sigma."""
-    return filters.gaussian(img, sigma, preserve_range=False)
+    # weka adds a weird 0.4 multiplier to its gaussian, so have added it here
+    return filters.gaussian(img, 0.4 * sigma, preserve_range=True)
 
 
 def singlescale_edges(gaussian_filtered: np.ndarray) -> np.ndarray:
@@ -76,13 +81,29 @@ def singlescale_hessian(gaussian_filtered: np.ndarray) -> Tuple[np.ndarray, ...]
         np.gradient(np.gradient(gaussian_filtered)[ax0], axis=ax1)
         for ax0, ax1 in combinations_with_replacement(range(gaussian_filtered.ndim), 2)
     ]
+    # H_elems = feature.hessian_matrix(gaussian_filtered, use_gaussian_derivatives=False)
     a, b, d = H_elems
     mod = np.sqrt(a**2 + b**2 + d**2)
     trace = a + d
     det = a * d - b**2
-    # orientation_1 = 0.5 * np.arccos(4 * b ** 2 +  (a - d) ** 2)
     # orientation_2 = orientation_1 + np.pi / 2
-    eigvals = feature.hessian_matrix_eigvals(H_elems)
+    # eigvals = feature.hessian_matrix_eigvals(H_elems)
+    eig1 = trace + np.sqrt((4 * b**2 + (a - d) ** 2))
+    eig2 = trace - np.sqrt((4 * b**2 + (a - d) ** 2))
+    return (mod, trace, det, eig1 / 2.0, eig2 / 2.0)
+
+
+def singlescale_hessian_weka(gaussian_filtered: np.ndarray) -> Tuple[np.ndarray, ...]:
+    """Compute hessian weka style by using sobel (gradient) operator twice."""
+    x = filters.sobel_h(gaussian_filtered)
+    y = filters.sobel_v(gaussian_filtered)
+    xx = filters.sobel_h(x)
+    yy = filters.sobel_v(y)
+    xy = filters.sobel_v(x)
+    mod = np.sqrt(xx * xx + xy * xy + yy * yy)
+    trace = xx + yy
+    det = xx * yy - xy * xy
+    eigvals = feature.hessian_matrix_eigvals([xx, xy, yy])
     return (mod, trace, det, *eigvals)
 
 
@@ -116,6 +137,7 @@ def singlescale_minimum(
 
 def singlescale_entropy(img: np.ndarray, sigma_rad_footprint: np.ndarray) -> np.ndarray:
     """Compute entropy of $n_bins histogram of $img in $sigma_rad_footprint. Memory intensive."""
+    # lots of nans here because of np.divide
     entropies = []
     for n_bins in [32, 64, 128]:  # was 32, 64, 128, 256
         histogram = filters.rank.windowed_histogram(
@@ -166,7 +188,7 @@ def singlescale_neighbours(img: np.ndarray, sigma: int) -> List[np.ndarray]:
                 k_temp = np.copy(kernel)
                 neighbour_coord = (mid[1] + y * sigma, mid[0] + x * sigma)
                 k_temp[neighbour_coord[0], neighbour_coord[1]] = 1
-                result = convolve(img, k_temp)
+                result = convolve(img, k_temp, mode="wrap")
                 out_convs.append(result)
     return out_convs
 
@@ -207,10 +229,13 @@ def bilateral(img: np.ndarray) -> np.ndarray:
 
 def difference_of_gaussians(gaussian_blurs: List[np.ndarray]) -> List[np.ndarray]:
     """For each possible combination of arr in $gaussian_blurs (representing different $sigma scales), compute their difference."""
-    combs = combinations(gaussian_blurs, 2)
+    # weka computes dog for  each filter of a *lower* sigma
     dogs = []
-    for x, y in combs:
-        dogs.append(x - y)
+    for i in range(len(gaussian_blurs)):
+        sigma_1 = gaussian_blurs[i]
+        for j in range(i):
+            sigma_2 = gaussian_blurs[j]
+            dogs.append(sigma_2 - sigma_1)
     return dogs
 
 
@@ -249,7 +274,7 @@ def membrane_projections(
     median_proj = np.median(out_angles_np, axis=0)
     max_proj = np.amax(out_angles_np, axis=0)
     min_proj = np.amin(out_angles_np, axis=0)
-    return [sum_proj, mean_proj, std_proj, median_proj, max_proj, min_proj]
+    return [mean_proj, max_proj, min_proj, sum_proj, std_proj, median_proj]
 
 
 # %% ===================================MANAGER FUNCTIONS===================================
@@ -311,6 +336,20 @@ def singlescale_advanced_features_singlechannel(
     return results
 
 
+def zero_scale_filters(
+    img: np.ndarray, edges=True, hess=True
+) -> Tuple[np.ndarray, ...]:
+    """Weka *always* adds the original image, and if computing edgees and/or hessian, adds those for sigma=0. This function does that."""
+    out_filtered: Tuple[np.ndarray, ...] = (img,)
+    if edges:
+        edges = singlescale_edges(img)
+        out_filtered += (edges,)
+    if hess:
+        hessian = singlescale_hessian(img)
+        out_filtered += (*hessian,)
+    return out_filtered
+
+
 def multiscale_advanced_features(
     img: np.ndarray,
     feature_dict: dict,
@@ -323,6 +362,10 @@ def multiscale_advanced_features(
     Singlescale features are computed over a ranged of length scales $sigma on different execution threads.
     Scale invariant features are computed onced.
     """
+    features: Iterable[np.ndarray] = zero_scale_filters(
+        img, edges=feature_dict["Sobel Filter"], hess=feature_dict["Hessian"]
+    )
+
     sigma_min = (
         float(feature_dict["Minimum Sigma"])
         if feature_dict["Minimum Sigma"] != -1
@@ -337,41 +380,62 @@ def multiscale_advanced_features(
         base=2,
         endpoint=True,
     )
-    with ThreadPoolExecutor(max_workers=num_workers) as ex:
-        out_sigmas = list(
-            ex.map(
-                lambda s: singlescale_advanced_features_singlechannel(
-                    img,
-                    s,
-                    intensity=feature_dict["Gaussian Blur"],
-                    edges=feature_dict["Sobel Filter"],
-                    texture=feature_dict["Hessian"],
-                    mean=feature_dict["Mean"],
-                    median=feature_dict["Median"],
-                    minimum=feature_dict["Minimum"],
-                    maximum=feature_dict["Maximum"],
-                    entropy=feature_dict["Entropy"],
-                    structure=feature_dict["Structure"],
-                    neighbours=feature_dict["Neighbours"],
-                    derivatives=feature_dict["Derivatives"],
-                ),
-                sigmas,
+
+    singlescale_requested = 0
+    for filter in [
+        "Gaussian Blur",
+        "Sobel Filter",
+        "Hessian",
+        "Mean",
+        "Median",
+        "Minimum",
+        "Maximum",
+        "Entropy",
+        "Structure",
+        "Neighbours",
+        "Derivatives",
+    ]:
+        singlescale_requested += int(feature_dict[filter])
+
+    if singlescale_requested > 0:
+        with ThreadPoolExecutor(max_workers=num_workers) as ex:
+            out_sigmas = list(
+                ex.map(
+                    lambda s: singlescale_advanced_features_singlechannel(
+                        img,
+                        s,
+                        intensity=feature_dict["Gaussian Blur"],
+                        edges=feature_dict["Sobel Filter"],
+                        texture=feature_dict["Hessian"],
+                        mean=feature_dict["Mean"],
+                        median=feature_dict["Median"],
+                        minimum=feature_dict["Minimum"],
+                        maximum=feature_dict["Maximum"],
+                        entropy=feature_dict["Entropy"],
+                        structure=feature_dict["Structure"],
+                        neighbours=feature_dict["Neighbours"],
+                        derivatives=feature_dict["Derivatives"],
+                    ),
+                    sigmas,
+                )
             )
-        )
-    features = chain.from_iterable(out_sigmas)
+        multiscale_features = chain.from_iterable(out_sigmas)
+        features = chain(features, multiscale_features)
+    else:
+        print("no singlescale features requested")
 
     if feature_dict["Difference of Gaussians"] == 1:
+        # change this so that it doesn't implictly require gaussians to be computed
         intensities = []
         for i in range(num_sigma):
             intensities.append(out_sigmas[i][0])
         dogs = difference_of_gaussians(intensities)
         features = chain(features, dogs)
 
-    img = np.ascontiguousarray(img_as_float32(img))
-
     if feature_dict["Membrane Projections"] == 1:
+        converted = np.ascontiguousarray(img_as_float32(img))
         projections = membrane_projections(
-            img,
+            converted,
             membrane_patch_size=int(float(feature_dict["Membrane Patch Size"])),
             membrane_thickness=int(float(feature_dict["Membrane Thickness"])),
             num_workers=num_workers,
@@ -380,9 +444,10 @@ def multiscale_advanced_features(
 
     if feature_dict["Bilateral"] == 1:
         byte_img = img.astype(np.uint8)
-        bilateral = bilateral(byte_img)
-        features = chain(features, bilateral)
+        bilateral_filtered = bilateral(byte_img)
+        features = chain(features, bilateral_filtered)
 
-    features = list(features)  # type: ignore
-    features: np.ndarray = np.stack(features, axis=-1).astype(np.float16)  # type: ignore
-    return features  # type: ignore
+    features = list(features)
+    # maybe cast to int32?
+    features_np: np.ndarray = np.stack(features, axis=-1).astype(np.float32)  # type: ignore
+    return features_np  # type: ignore

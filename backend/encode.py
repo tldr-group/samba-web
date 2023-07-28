@@ -6,7 +6,11 @@ from typing import List
 import os
 from io import BytesIO
 
+from tifffile import imwrite
+
 from features import DEAFAULT_FEATURES, multiscale_advanced_features
+
+DEBUG = False
 
 try:
     CWD = os.environ["APP_PATH"]
@@ -36,7 +40,10 @@ async def featurise(
 ) -> int:
     """For each img in images, convert to np array then featurise, saving the result to the user's folder."""
     for i, img in enumerate(images):
-        img_arr = np.array(img.convert("L")) * 255
+        img_arr = np.array(img.convert("I"))
         feature_stack = multiscale_advanced_features(img_arr, selected_features)
         np.savez_compressed(f"{CWD}/{UID}/features_{i + offset}", a=feature_stack)
+        if DEBUG:
+            transpose = feature_stack.transpose((2, 0, 1))
+            imwrite(f"{CWD}/{UID}/features_{i + offset}.tiff", transpose)
     return 0

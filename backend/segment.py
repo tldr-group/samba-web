@@ -118,6 +118,7 @@ def save_labels(
     large_h: int = 0,
     rescale=True,
 ) -> bytes:
+    """Create composite tiffs of the label arrs and return the bytes. This has 0 for unlabelled pixels."""
     label_arrs: List[np.ndarray] = []
     for i in range(len(images)):
         image = images[i]
@@ -146,6 +147,7 @@ async def _save_classifier(model, CWD: str, UID: str) -> int:
 
 
 async def load_classifier_from_http(file_bytes: bytes, CWD: str, UID: str) -> None:
+    """Use skload to load sklearn model from the bytes, then save to user directory."""
     model = skloads(file_bytes)
     skdump(
         model,
@@ -215,6 +217,7 @@ async def apply(
     large_h: int = 0,
     rescale: bool = True,
 ) -> np.ndarray:
+    """Apply a trained classifier to a collection of images, save the tiff(s) & return the flattened byte arrays."""
     model = skload(f"{CWD}/{UID}/classifier.skops")
     probs = apply_features_done(model, UID, len(images))
 

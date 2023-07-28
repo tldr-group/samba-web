@@ -1,3 +1,4 @@
+"""File handling that works for either a local server or on the web app."""
 import os
 from shutil import rmtree
 from time import sleep
@@ -29,6 +30,7 @@ def _check_to_delete(old_timestamp_str: str, new_timestamp_str: str) -> bool:
 
 
 def delete_old_folders(UID: str) -> None:
+    """Call when new user connects: checks name of each folder (a timestamp + random UID) and if more han 2 hours old, delete."""
     current_timestamp = UID[:-5]
     subfolders = [f.path for f in os.scandir(CWD) if f.is_dir()]
     n_delete = 0
@@ -37,7 +39,7 @@ def delete_old_folders(UID: str) -> None:
         if old_timestamp != "":
             delete = _check_to_delete(old_timestamp, current_timestamp)
             if delete:
-                rmtree(folder)
+                rmtree(folder)  # rmtree needed for proper delete
                 n_delete += 1
         else:
             pass
@@ -45,6 +47,7 @@ def delete_old_folders(UID: str) -> None:
 
 
 def delete_feature_file(folder_name: str, delete_idx: int) -> int:
+    """Delete a given user file(s) then rename all subsequent files to account for this. This involves renaming twice to avoid a confilct."""
     feature_file_paths = []
     for fp in os.listdir(folder_name):
         if "features" in fp:
@@ -69,6 +72,7 @@ def delete_feature_file(folder_name: str, delete_idx: int) -> int:
 
 
 def delete_all_features(folder_name: str) -> int:
+    """Delete all features."""
     for fp in os.listdir(folder_name):
         if "features" in fp:
             os.remove(f"{folder_name}/{fp}")

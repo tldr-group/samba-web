@@ -1,0 +1,6 @@
+4_phase.tif
+Gaussian Blur=True
+Hessian=True
+Sobel filter=True
+Difference of gaussians=True
+Membrane projections=True

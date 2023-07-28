@@ -13,7 +13,6 @@ from io import BytesIO
 from PIL import Image
 from typing import Callable
 from azure.storage.blob import BlobServiceClient
-import dotenv
 import os
 import json
 import zipfile
@@ -22,6 +21,17 @@ try:
     CWD = os.environ["APP_PATH"]
 except KeyError:
     CWD = os.getcwd()
+
+
+credential: str | None
+try:
+    credential = os.environ["BLOB_KEY"]
+except:  # do this bc server can't find dotenv even if python-dotenv in requirements
+    import dotenv
+
+    credential = dotenv.get_key(dotenv.find_dotenv(), "AZURE_STORAGE_KEY")
+
+
 print(CWD, os.getcwd())
 
 from encode import encode, featurise
@@ -240,7 +250,7 @@ if __name__ == "__main__":
 # ================================= SAVE TO GALLERY =================================
 def get_blob_service_client():
     account_url = "https://sambasegment.blob.core.windows.net"
-    credential = dotenv.get_key(dotenv.find_dotenv(), "AZURE_STORAGE_KEY")
+
     # Create the BlobServiceClient object
     blob_service_client = BlobServiceClient(account_url, credential=credential)
     return blob_service_client

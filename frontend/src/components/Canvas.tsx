@@ -27,6 +27,7 @@ const MultiCanvas = () => {
         imgIdx: [imgIdx,],
         maskImg: [maskImg, setMaskImg],
         clicks: [, setClicks],
+        processing: [processing, setProcessing],
         labelType: [labelType],
         labelClass: [labelClass, setLabelClass],
         labelArr: [labelArr, setLabelArr],
@@ -65,6 +66,8 @@ const MultiCanvas = () => {
     // Track mouse state (for drag drawing)
     const clicking = useRef<boolean>(false);
 
+    const uniqueLabels = useRef<Set<number>>(new Set());
+
     const updateSAM = () => {
         const canvX = mousePos.current.x;
         const canvY = mousePos.current.y;
@@ -93,6 +96,12 @@ const MultiCanvas = () => {
         // (relatively) slow operation as needs to draw onto full image size
         const imageData = transferCtx.getImageData(0, 0, image?.width, image?.height);
         const currentClass = (erase === true) ? 0 : labelClass
+        if (labelClass > 0) {
+            const set = uniqueLabels.current
+            const n_labels = set.size + 1
+            set.add(labelClass)
+            if (n_labels > 1) { setProcessing("None") }
+        }
         const arr = addImageDataToArray(imageData, oldArr, currentClass, erase);
         return arr
     }

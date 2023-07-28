@@ -64,6 +64,8 @@ const Sidebar = ({ requestEmbedding, trainClassifier, changeToImage }: SidebarPr
                 />
                 &nbsp;{processing}
             </Button>)
+        } else if (processing === "Inactive") {
+            return (<Button onClick={trainClassifier} disabled variant={themeBGs[theme][0]} style={{ marginLeft: '24%', boxShadow: "1px 1px  1px grey", color: "#ffffff" }}>Label more classes!</Button>)
         } else {
             return (<Button onClick={trainClassifier} variant={themeBGs[theme][0]} style={{ marginLeft: '28%', boxShadow: "1px 1px  1px grey", color: "#ffffff" }}>Train Classifier!</Button>)
         }

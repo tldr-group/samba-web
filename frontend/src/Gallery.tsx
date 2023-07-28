@@ -98,7 +98,7 @@ const handleImageClick = (props:any) => {
 
 const ImageCard = (props: any) => {
     return (
-        <Card className='m-auto' style={{ width: '300px', height: '300px' }} onClick={() => handleImageClick(props)}>
+        <Card className='m-auto' style={{ width: '300px', height: '300px', cursor: 'pointer'}} onClick={() => handleImageClick(props)}>
             <Card.Img
                 variant="top"
                 src={props.src_img}

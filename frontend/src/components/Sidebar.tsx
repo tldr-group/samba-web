@@ -21,7 +21,6 @@ import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Spinner from "react-bootstrap/Spinner";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import * as _ from "underscore";
-import { relative } from "path";
 
 
 const _getCSSColour = (currentStateVal: any, targetStateVal: any, successPrefix: string, colourIdx: number, theme: Theme): string => {

@@ -113,7 +113,15 @@ interface contextProps {
   settings: [
     settings: Settings,
     setSettings: (e: Settings) => void
-  ]
+  ];
+  path: [
+    path: string,
+    setPath: (e: string) => void
+  ];
+  UID: [
+    UID: string,
+    setUID: (e: string) => void
+  ];
 }
 
 const AppContext = createContext<contextProps | null>(null);

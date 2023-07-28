@@ -16,3 +16,4 @@ yarn.lock
 *azure*
 *.venv*
 *backend/test_resources/weka_default*
+*.env*

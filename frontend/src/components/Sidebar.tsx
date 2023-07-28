@@ -106,7 +106,7 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
         if (name == "Smart Labelling") { // if switching to SAM labelling, requestEmbedding from app (which returns early if it's already set)
             console.log('Smart Labelling')
             requestEmbedding();
-        };
+        }
     };
 
     const _getImg = (l: any) => {
@@ -132,13 +132,16 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
         }
     }
 
-    const _setWidth = (e: any) => { setBrushWidth(e.target.value) }
+    const _setWidth = (e: any) => {
+        const edgeLength: number = e.target.value;
+        setBrushWidth(edgeLength)
+    }
 
 
     return (
         <Card className="text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }} bg={themeBGs[theme][0]}>
-            <Card.Header as="h5">Label</Card.Header>
-            <Card.Body className={`flex`}>
+            <Card.Header as="h5" style={{ marginTop: '-4px', marginBottom: '-4px' }}>Label</Card.Header>
+            <Card.Body className={`flex`} style={{ marginTop: '-5px', marginBottom: '-5px' }}>
                 <>
                     {labels.map(l =>
                         <OverlayTrigger
@@ -152,7 +155,7 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                     )}
                 </>
             </Card.Body>
-            <Card.Body>
+            <Card.Body style={{ marginTop: '-5px', marginBottom: '-5px' }}>
                 Class <p style={{ margin: "0px" }}></p>
                 <ButtonGroup style={{ paddingLeft: "3%", marginLeft: '0%' }}>
                     {classes.map(i => <Button key={i} variant="light" onClick={(e) => setLabelClass(i)} style={{
@@ -166,7 +169,7 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                 {labelType} Width
                 <Form.Range onChange={(e) => _setWidth(e)} min="1" max="100" value={brushWidth} />
             </Card.Body>}
-            {labelType == "Smart Labelling" && <Card.Body>
+            {labelType == "Smart Labelling" && <Card.Body style={{ marginTop: '-5px', marginBottom: '-5px' }}>
                 Smart Label Region
                 <ButtonGroup style={{ paddingLeft: "4%" }}>
                     {regionSizes.map((size, i) => <Button key={i} variant="light" onClick={(e) => setMaskIdx(3 - i)} style={{
@@ -204,15 +207,15 @@ const OverlaysFrame = () => {
 
     return (
         <Card className="text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }} bg={themeBGs[theme][0]}>
-            <Card.Header as="h5">Overlay</Card.Header>
-            <Card.Body className="flex">
+            <Card.Header as="h5" style={{ marginTop: '-4px', marginBottom: '-4px' }}>Overlay</Card.Header>
+            <Card.Body className="flex" style={{ marginTop: '-5px', marginBottom: '-5px' }}>
                 <Form.Select onChange={e => _setOverlayType(e.target.value)} value={overlayType} style={{ backgroundColor: themeBGs[theme][2] }}>
                     <option value="None" >Overlay type</option>
                     <option value="Segmentation">Segmentation</option>
                     <option value="Label">Labels</option>
                 </Form.Select>
             </Card.Body>
-            <Card.Body>
+            <Card.Body style={{ marginTop: '-5px', marginBottom: '-5px' }}>
                 Opacity
                 <Form.Range onChange={e => changeOpacity(e)} min="0" max="255" />
             </Card.Body>
@@ -231,8 +234,8 @@ const NavigationFrame = ({ changeToImage }: NavigationProps) => {
     if (nImages > 1 && imgType != "single") {
         return (
             <Card className="text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }} bg={themeBGs[theme][0]}>
-                <Card.Header as="h5">Navigation</Card.Header>
-                <Card.Body>
+                <Card.Header as="h5" style={{ marginTop: '-4px', marginBottom: '-4px' }}>Navigation</Card.Header>
+                <Card.Body style={{ marginTop: '-5px', marginBottom: '-5px' }}>
                     <ImgSelect changeToImage={changeToImage} />
                 </Card.Body>
             </Card>

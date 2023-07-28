@@ -110,14 +110,14 @@ export const draw = (ctx: CanvasRenderingContext2D, x: number, y: number, width:
 }
 
 export const erase = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number) => {
-  ctx.clearRect(x - width / 2, y - width / 2, width, width)
+  ctx.clearRect(x - width, y - width, 2 * width, 2 * width)
 }
 
 export const drawErase = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, fill = true, hex = "#ffffff") => {
   ctx.strokeStyle = "#000000"; //"#43ff641a"
   ctx.fillStyle = hex;
   ctx.beginPath();
-  ctx.rect(x - width / 2, y - width / 2, width, width)
+  ctx.rect(x - width, y - width, 2 * width, 2 * width)
   if (fill) {
     ctx.fill();
   } else {

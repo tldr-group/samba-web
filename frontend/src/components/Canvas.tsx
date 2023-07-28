@@ -32,8 +32,9 @@ const MultiCanvas = () => {
         labelArr: [labelArr, setLabelArr],
         segArr: [segArr,],
         brushWidth: [brushWidth],
-        labelOpacity: [labelOpacity],
-        segOpacity: [segOpacity,],
+        overlayType: [overlayType, setOverlayType],
+        labelOpacity: [labelOpacity, setLabelOpacity],
+        segOpacity: [segOpacity, setSegOpacity],
         maskIdx: [maskIdx, setMaskIdx],
     } = useContext(AppContext)!;
 
@@ -224,8 +225,26 @@ const MultiCanvas = () => {
             }
         } else if (e.key === 'Escape') {
             resetLabels()
+        } else if (e.key === 'v') {
+            toggleVisibility()
         } else {
             handlePanKey(e);
+        }
+    }
+
+    const toggleVisibility = () => {
+        if (overlayType === "Segmentation") {
+            setSegOpacity(0)
+            setLabelOpacity(200)
+            setOverlayType("Label")
+        } else if (overlayType === "Label") {
+            setSegOpacity(0)
+            setLabelOpacity(0)
+            setOverlayType("None")
+        } else if (overlayType === "None") {
+            setSegOpacity(200)
+            setLabelOpacity(0)
+            setOverlayType("Segmentation")
         }
     }
 

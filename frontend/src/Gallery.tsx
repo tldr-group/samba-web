@@ -13,7 +13,7 @@ import Card from 'react-bootstrap/Card';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { Form } from "react-bootstrap";
 import Modal from 'react-bootstrap/Modal';
-
+import Button from 'react-bootstrap/Button';
 
 const url = `https://sambasegment.blob.core.windows.net`
 const blobServiceClient = new BlobServiceClient(
@@ -50,6 +50,7 @@ const Gallery = () => {
     const [activeSegQuality, setActiveSegQuality] = useState<string>("")
     const [activeAdditionalNotes, setActiveAdditionalNotes] = useState<string>("")
     const [activeIndex, setActiveIndex] = useState<number>(0)
+    const [activeUID, setActiveUID] = useState<string>("")
     const [showInfoModal, setShowInfoModal] = useState<boolean>(false)
     const [segFlag, setSegFlag] = useState<boolean>(false)
 
@@ -91,6 +92,7 @@ const handleImageClick = (props:any) => {
     setActiveImgWidth(metadata.imgWidth)
     setActiveSegQuality(metadata.segQual)
     setActiveAdditionalNotes(metadata.additionalNotes)
+    setActiveUID(metadata.id)
     setActiveIndex(props.index)
     setShowInfoModal(true)
 
@@ -147,6 +149,19 @@ const ImageCard = (props: any) => {
             setModalShow(newModalShow)
         }
     };
+
+    const handleDownload = async (e: any) => {
+        const headers = new Headers();
+        headers.append('Content-Type', 'application/json;charset=utf-8');
+          const a = document.createElement("a")
+          a.download = activeUID + '.zip'
+          a.href = url + '/gallery/' + activeUID + '.zip'
+          a.click()
+    }
+
+    const handleLoad = (e: any) => {
+    }
+
 
     useEffect(() => {
         getGalleryArray(containerClient)
@@ -242,7 +257,10 @@ const ImageCard = (props: any) => {
                             <Form.Label>Additional Notes</Form.Label>
                             <Form.Control disabled type="text" value={activeAdditionalNotes}/>
                         </Form.Group>
-
+                        <div style={{display:'flex', justifyContent:'center'}}>
+                        <Button variant="dark m-1" onClick={handleDownload} >Download data</Button>
+                    <Button variant="dark m-1" onClick={handleLoad} >Load into SAMBA</Button>
+                        </div>
                     </Form>
                 </Modal.Body >
                 <Modal.Footer>

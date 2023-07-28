@@ -16,6 +16,7 @@ from azure.storage.blob import BlobServiceClient
 import dotenv
 import os
 import json
+import zipfile
 
 try:
     CWD = os.environ["APP_PATH"]
@@ -251,12 +252,16 @@ def upload_blob_file(fn, UID, blob_service_client: BlobServiceClient):
 
 async def save_to_gallery_fn(request) -> Response:
     UID = request.json["id"]
+    with zipfile.ZipFile(f"{CWD}/{UID}.zip", 'w') as zipf:
+        for fn in os.listdir(f"{CWD}/{UID}"):
+            zipf.write(f"{CWD}/{UID}/{fn}", arcname=fn)
     try:
         upload_blob_file(f"{CWD}/{UID}/seg_thumbnail.jpg", UID+'_seg.jpg', blob_service_client=get_blob_service_client())
         upload_blob_file(f"{CWD}/{UID}/img_thumbnail.jpg", UID+'_img.jpg', blob_service_client=get_blob_service_client())
         upload_blob_file(f"{CWD}/{UID}/img.png", UID+'_img_full.png', blob_service_client=get_blob_service_client())
         upload_blob_file(f"{CWD}/{UID}/seg.png", UID+'_seg_full.png', blob_service_client=get_blob_service_client())
         upload_blob_file(f"{CWD}/{UID}/metadata.json", UID+'_metadata.json', blob_service_client=get_blob_service_client())
+        upload_blob_file(f"{CWD}/{UID}.zip", UID+'.zip', blob_service_client=get_blob_service_client())
     except Exception as e:
         print(e)
     return Response(status=200)

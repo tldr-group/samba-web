@@ -11,6 +11,8 @@ from math import isclose, pi
 import matplotlib.pyplot as plt
 from tifffile import imread, imwrite
 from skimage.metrics import mean_squared_error
+import time
+import sys
 
 from typing import List, Tuple
 
@@ -32,7 +34,8 @@ FOOTPRINT = ft.make_footprint(sigma=SIGMA)
 CIRCLE = np.pad(FOOTPRINT, ((2, 2), (2, 2)))
 CENTRE = (SIGMA + 2, SIGMA + 2)
 CIRCLE_BYTE = (255 * CIRCLE).astype(np.uint8)
-FIJI_PATH = "/home/ronan/Documents/uni_work/phd/fiji-linux64/Fiji.app/ImageJ-linux64"  # make argparse
+
+FIJI_PATH = sys.argv[1]
 
 
 def _test_centre_val(filtered_arr, val):
@@ -231,7 +234,6 @@ class CompareDefaultFeatures(unittest.TestCase):
         samba = ft.multiscale_advanced_features(
             img, ft.DEAFAULT_FEATURES, ft.N_ALLOWED_CPUS
         ).transpose((2, 0, 1))
-        imwrite("backend/test_resources/samba_default.tif", samba)
         singlescale_mse = self.compare_singlescale_default(weka, samba)
         dog_mse = self.compare_dog_default(weka, samba)
         membrane_mse = self.compare_membrane_projections(weka, samba)
@@ -311,17 +313,18 @@ class CompareDefaultFeatures(unittest.TestCase):
         for name in m_projs_names:
             names.append("membrane_" + name)
 
-        plt.figure(figsize=(16, 16))
+        plt.figure(num=0, figsize=(16, 16))
         x = np.arange(0, len(mses))
         plt.plot(x, mses, ".", ms=10)
         plt.xticks(ticks=x, labels=names, rotation="vertical", fontsize=12)
         plt.yticks(fontsize=12)
         plt.xlabel("Features", fontsize=14)
         plt.ylabel("MSE", fontsize=14)
-        plt.savefig("backend/test_resources/test.png")
+        plt.savefig("backend/test_resources/test_outputs/feature_test.png")
 
 
 def get_scores(gt: np.ndarray, seg: np.ndarray) -> Tuple[float, float]:
+    """Compute iou and dice scores for 2 arrays of same shape."""
     flat_gt = gt.flatten()
     flat_seg = seg.flatten()
     boolean_out = np.where(flat_gt == flat_seg, 1, 0)
@@ -332,23 +335,94 @@ def get_scores(gt: np.ndarray, seg: np.ndarray) -> Tuple[float, float]:
 
 
 class CompareSegmentations(unittest.TestCase):
+    """Integration test of SAMBA segmentations vs Weka (featurising, labels, training, applying)."""
+
     def test_segmentations(self):
+        """
+        Test_segmentations.
+
+        For the three micrographs with N=2,3,4 phases, open the micrograph in Weka, featurise,
+        add rectangular labels from a config file, train and segment via an ImageJ Macro. Then
+        featurise and segment using SAMBA and calculate the Dice score between the two results.
+        Assuming the Dice score is greater than 0.8 for each, then pass.
+        """
+        passed = True
+        dice_scores = []
+        weka_segmentations, samba_segmentations = [], []
+        weka_times, samba_times = [], []
+
+        for n in range(2, 5):
+            fname = f"{n}_phase"
+            weka_arr, samba_arr, weka_t, samba_t = self.get_weka_samba_segs(fname)
+            scores = get_scores(weka_arr, samba_arr)
+            dice_scores.append(scores[1])
+            weka_segmentations.append(weka_arr)
+            samba_segmentations.append(samba_arr)
+            weka_times.append(weka_t)
+            samba_times.append(samba_t)
+
+        self.plots(
+            dice_scores,
+            weka_segmentations,
+            samba_segmentations,
+            weka_times,
+            samba_times,
+        )
+
+        for d in dice_scores:
+            if d < 0.8:
+                passed = False
+
+        assert passed
+
+    def get_weka_samba_segs(
+        self, fname: str
+    ) -> Tuple[np.ndarray, np.ndarray, float, float]:
+        """Given a filename, adjust macro config files, call Weka, segment, save, load SAMBA, segment, then compare the two."""
         set_macro_path()
-        set_config_file("4_phase.tif")
-        # run_weka(FIJI_PATH)
-        img_arr = imread("backend/test_resources/4_phase.tif")
+        set_config_file(f"{fname}.tif")
+        weka_t = run_weka(FIJI_PATH)
+        img_arr = imread(f"backend/test_resources/{fname}.tif")
         weka_arr = imread("backend/test_resources/output.tif")
-        label = get_label_arr("backend/test_resources/4_phase_roi_config.txt", img_arr)
+        label = get_label_arr(f"backend/test_resources/{fname}_roi_config.txt", img_arr)
+        start_t = time.time()
         samba_arr = segment_no_features_get_arr(label, img_arr)
-        scores = get_scores(weka_arr, samba_arr)
-        print(scores)
-        imwrite("backend/test_resources/output2.tif", samba_arr)
-        # imwrite("backend/test_resources/label.tif", label)
+        end_t = time.time()
+        samba_t = end_t - start_t
+        return weka_arr, samba_arr, weka_t, samba_t
+
+    def plots(
+        self,
+        scores: List[float],
+        weka_segs: List[np.ndarray],
+        samba_segs: List[np.ndarray],
+        weka_times: List[float],
+        samba_times: List[float],
+    ) -> None:
+        """Produce 2 plots: segmentation image comparisons w/ dice scores and times."""
+        fig = plt.figure(num=1, constrained_layout=True, figsize=(16, 16))
+        subfigs = fig.subfigures(nrows=3, ncols=1)
+        for row, sfig in enumerate(subfigs):
+            sfig.suptitle(f"{2+row} phase, Dice Score={scores[row]:.4f}", fontsize=20)
+            axs = sfig.subplots(nrows=1, ncols=2)
+            axs[0].imshow(weka_segs[row], cmap="gist_gray")
+            axs[0].set_axis_off()
+            axs[1].imshow(samba_segs[row], cmap="gist_gray")
+            axs[1].set_axis_off()
+            if row == 0:
+                axs[0].set_title("Weka", fontsize=16)
+                axs[1].set_title("SAMBA", fontsize=16)
+        plt.savefig("backend/test_resources/test_outputs/segmentation_comparison.png")
+
+        fig2 = plt.figure(num=2, figsize=(16, 16))
+        x = np.arange(2, 5)
+        plt.plot(x, weka_times, marker=".", ms=15, label="Weka")
+        plt.plot(x, samba_times, marker=".", ms=15, label="SAMBA")
+        plt.legend(fontsize=14)
+        plt.ylabel("Time (s)", fontsize=14)
+        plt.xlabel("Number of phases", fontsize=14)
+        plt.savefig("backend/test_resources/test_outputs/times_comparison.png")
 
 
 if __name__ == "__main__":
-    cases = (TestFeatures, CompareDefaultFeatures)
-    suite = unittest.TestSuite(
-        [unittest.TestLoader().loadTestsFromTestCase(c) for c in cases]
-    )
-    unittest.main()
+    unittest.main(argv=[FIJI_PATH])

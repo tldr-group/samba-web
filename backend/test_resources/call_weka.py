@@ -61,7 +61,7 @@ def get_label_arr(config_file_path: str, img_arr: np.ndarray) -> np.ndarray:
     return labels
 
 
-def run_weka(fiji_path: str) -> None:
+def run_weka(fiji_path: str) -> float:
     """Given path to FIJI installation, run that with the classification macro and default features."""
     start_t = time.time()
     if os.name == "nt":
@@ -71,4 +71,4 @@ def run_weka(fiji_path: str) -> None:
             [f"{fiji_path}", "-macro", f"{run_folder_path}{sep}classify.ijm"]
         )
     end_t = time.time()
-    print(f"Finished in {end_t-start_t}s")
+    return end_t - start_t

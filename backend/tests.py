@@ -13,6 +13,8 @@ from tifffile import imread, imwrite
 from skimage.metrics import mean_squared_error
 import time
 import sys
+from azure.storage.blob import BlobServiceClient
+
 
 from typing import List, Tuple
 
@@ -35,7 +37,35 @@ CIRCLE = np.pad(FOOTPRINT, ((2, 2), (2, 2)))
 CENTRE = (SIGMA + 2, SIGMA + 2)
 CIRCLE_BYTE = (255 * CIRCLE).astype(np.uint8)
 
-FIJI_PATH = sys.argv[1]
+load_weka = False
+try:
+    FIJI_PATH = sys.argv[1]
+    load_weka = True
+except:
+    FIJI_PATH = ""
+    print("No FIJI path supplied so cannot do end-to-end tests.")
+
+URL = "https://sambasegment.blob.core.windows.net/resources/weka_default.tif"
+
+
+def get_weka_default_from_azure() -> np.ndarray:
+    """Grab weka default feature stack for image super1 from azure storage."""
+    account_url = "https://sambasegment.blob.core.windows.net"
+    blob_service_client = BlobServiceClient(account_url)
+    container_client = blob_service_client.get_blob_client(
+        container="resources", blob="weka_default.tif"
+    )
+    with open("backend/test_resources/weka_default.tif", "wb") as f:
+        download_stream = container_client.download_blob()
+        f.write(download_stream.readall())
+    return imread("backend/test_resources/weka_default.tif")
+
+
+try:
+    weka = imread("backend/test_resources/weka_default.tif")
+except FileNotFoundError:
+    get_weka_default_from_azure()
+    weka = imread("backend/test_resources/weka_default.tif")
 
 
 def _test_centre_val(filtered_arr, val):
@@ -229,7 +259,7 @@ class CompareDefaultFeatures(unittest.TestCase):
     def test_compare_defaults(self) -> None:
         """Handler for each test, shares the feature stacks with them so only computed once."""
         passed = True
-        weka = imread("backend/test_resources/weka_default.tif")
+
         img = imread("backend/test_resources/super1.tif").astype(np.float32)
         samba = ft.multiscale_advanced_features(
             img, ft.DEAFAULT_FEATURES, ft.N_ALLOWED_CPUS
@@ -350,6 +380,10 @@ class CompareSegmentations(unittest.TestCase):
         dice_scores = []
         weka_segmentations, samba_segmentations = [], []
         weka_times, samba_times = [], []
+
+        if load_weka is False:
+            assert passed
+            return
 
         for n in range(2, 5):
             fname = f"{n}_phase"

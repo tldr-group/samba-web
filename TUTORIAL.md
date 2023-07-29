@@ -1,7 +1,8 @@
-## SAMBA Tutorial
+# SAMBA Tutorial
 
+## Handling data
+![GIF showing data loading process](https://sambasegment.blob.core.windows.net/resources/data.gif)
 
-### Handling data
 #### Loading
 Click the 'Add' button in the 'Data' dropdown or drag and drop an image file. Accepted types are `.jpg`. `.png` and `.tiff`. The image cannot be larger than 50MB.
 #### Large `.tiff`
@@ -13,7 +14,9 @@ Pressing 'Remove' on the 'Data' tab will remove the current (sub-) image. If the
 #### Clear All
 'Clear all' will remove all images currently loaded. **It is recommended** you use this if you want to process a different dataset.
 
-### Labelling
+## Labelling
+![GIF showing labelling process](https://sambasegment.blob.core.windows.net/resources/labelling.gif)
+
 Labelling is the process of clicking on pixels in the image to assign them to a given, arbitrary class which the segmentation algorithm is then trained against. Important note: **when adding labels on top of other labels, the oldest labels will be kept**. This is useful if you want to label edges around a particle with class 2 that has been smart-labelled with class 1. If you want to remove labels, use the Eraser.
 #### Changing Class
 Change the selected label class by clicking on the corresponding button on the sidebar or by using the **number keys** (i.e '1' => Class 1). Note using the number keys will only work if the focus is on the canvas (*i.e,* the image or the whitespace around has been clicked).
@@ -26,7 +29,9 @@ Once this is pressed, the app will request a SAM embedding from the server (this
 #### Erase
 **Left click and hold** to erase added labels. Like when using the brush, an 'Erase Width' slider will appear in the 'Label' tab.
 
-### Viewing
+## Viewing
+![GIF showing viewing options](https://sambasegment.blob.core.windows.net/resources/viewing.gif)
+
 #### Zoom/Pan
 Use **WASD** or the **arrow keys** to move the image around the canvas. Use the **scroll wheel** to zoom in or out of the image. Everything works as expected with pans and zooms. 
 #### Overlays
@@ -34,7 +39,9 @@ Labels (and later, segmentations) exist as a variable opacity overlay, which can
 #### Themes
 Different colour schemes can be chosen in the 'Settings' tab, including a dark mode.
 
-### Segmenting
+## Segmenting
+![GIF showing segmentation process](https://sambasegment.blob.core.windows.net/resources/segmenting.gif)
+
 The segmentation process involves training a random forest classifier to map image features to the class labels, then applying this classifier to unlabelled pixels. These features are computed on the server in the background when the image is first loaded. For large images, this featurisation can take a while. When 'Train Classifier!' is pressed and the features have been calculated, the labels are sent to the server to train the random forest and generate a segmentation. This is then returned to the user.
 #### Settings
 Under the 'Settings' menu (gear icon), various segmentation related settings can be adjusted. By default, N data points are sampled and used to train the classifier. This can be increased using the 'Number of training points' field, or by ticking the 'Train on all data' box. The 'Rescale segmentations & labels' adjusts how the segmentations are saved - either as 1, 2, 3, ... corresponding to their class (which will appear black), or as evenly spaced intervals over the 0-255 range (such that they display on the resulting image).
@@ -45,7 +52,9 @@ Under the 'Classifier' dropdown, the 'Load' button lets you load a trained `.sko
 #### Apply Classifier
 Under the 'Classifier' dropdown, the 'Apply' button applies a saved trained classifier (either loaded or from trainign) to data.
 
-### Outputs
+## Outputs
+![GIF showing segmentation process](https://sambasegment.blob.core.windows.net/resources/saving.gif)
+
 #### Save Segmentation
 The resulting segmentation can be downloaded as a `.tiff` file. As previously discussed, large `.tiff` files and `.tiff` stacks will be reconstructed. By default, the segmentation will have the classes mapped evenly over the the 0-255 interval, this can be toggled off in the 'Settings' tab.
 #### Share Segmentation
@@ -55,5 +64,5 @@ The added labels will be downloaded. Unlabelled pixels will have a class of 0, *
 #### Save Classifier
 This option in the 'Classifier' tab allows you to download the trained classifier, for use on later datasets either in Python or SAMBA. The available formats are `.skops` (a secure scikit-learn storage format) and `.pkl` (a more common format, but unsecure). Note that `.pkl` classifiers can't be loaded into SAMBA, for security reasons.
 
-### Gallery
+## Gallery
 The gallery page lets you view shared micrographs and their associated segmentations. The toggle switch in the top left lets you view the segmentations. Clicking on a micrograph opens a popup with data descriptions, allowing you to download the data (image, segmentation, labels) associated with that micrograph.

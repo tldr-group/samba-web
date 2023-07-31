@@ -30,12 +30,16 @@ EnsembleMethodName: TypeAlias = Literal["FRF", "XGB", "LGBM"]
 
 
 def get_class_weights(target_data: np.ndarray) -> Tuple[np.ndarray, List[int]]:
-    """
-    Get class weights array.
+    """Get class weights array.
 
     Given flat array of label data ($target_data), create arr of same shape where
     each entry is the class weight corresponding to the class present at the entry
     in target data. Used for balancing training.
+
+    :param target_data: flat arr of class values corresponding to labelled pixels
+    :type target_data: np.ndarray
+    :return: tuple of arrs, same shape as $target_data of both the weights and frequencies of each class
+    :rtype: Tuple[np.ndarray, List[int]]
     """
     weights_arr = np.ones_like(target_data)
     unique_classes = np.unique(target_data)
@@ -54,7 +58,17 @@ def get_class_weights(target_data: np.ndarray) -> Tuple[np.ndarray, List[int]]:
 def get_training_data(
     feature_stack: np.ndarray, labels: np.ndarray, method="cpu"
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Given $feature_stack and $labels, flatten both and reshape accordingly. Add a class offset if using XGB gpu."""
+    """Given $feature_stack and $labels, flatten both and reshape accordingly. Add a class offset if using XGB gpu.
+
+    :param feature_stack: NxHxW arr of features from featurisation
+    :type feature_stack: np.ndarray
+    :param labels: HxW arr of user labels of class values. 0=unlabelled, 1,2,3,... are classes
+    :type labels: np.ndarray
+    :param method: which RF to use, defaults to "cpu"
+    :type method: str, optional
+    :return: flattened arrs of fit data (feature vectors of all labelled pixels) and target data (class values of all labelled pixels)
+    :rtype: Tuple[np.ndarray, np.ndarray]
+    """
     h, w, feat = feature_stack.shape
     flat_labels = labels.reshape((h * w))
     flat_features = feature_stack.reshape((h * w, feat))
@@ -70,7 +84,15 @@ def get_training_data(
 def get_training_data_features_done(
     labels: List[np.ndarray], UID: str
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """For each image, featurise. Then check if it's labelled and if it is get the training data and concat."""
+    """For each img, load cached features. Check if img is labelled and if it is get the training data and concat.
+
+    :param labels: label arr
+    :type labels: List[np.ndarray]
+    :param UID: user ID, points to folder where features are cached
+    :type UID: str
+    :return: tuple of fit data and target data over all (labelled) imgs
+    :rtype: Tuple[np.ndarray, np.ndarray]
+    """
     fit_data_set = False
     all_fit_data: np.ndarray
     all_target_data: np.ndarray
@@ -92,6 +114,15 @@ def get_training_data_features_done(
 def _shuffle_fit_target(
     fit: np.ndarray, target: np.ndarray
 ) -> Tuple[np.ndarray, np.ndarray]:
+    """Shuffle both the fit and target arrs in same way by shuffling an index arr.
+
+    :param fit: flat fit data arr
+    :type fit: np.ndarray
+    :param target: flat target data arr
+    :type target: np.ndarray
+    :return: tuple og shuffled fit and target arrs
+    :rtype: Tuple[np.ndarray, np.ndarray]
+    """
     all_shuffle_inds = np.arange(0, target.shape[0], 1)
     np.random.shuffle(all_shuffle_inds)
     print(f"sampled and shuffled {len(all_shuffle_inds)} points")
@@ -107,7 +138,18 @@ def sample_training_data(
     """Sample training data randomly up to n_points.
 
     Given flat arrays of fit and target data, class frequencies and desired number of points, loop through each class,
-    sample class_freq * n_points randomly of each class, put into array then shuffle once all classes sampled from.
+    sample class_freq * $n_points randomly of each class, put into array then shuffle once all classes sampled from.
+
+    :param fit_data: flat fit data arr
+    :type fit_data: np.ndarray
+    :param target_data: flat target data arr
+    :type target_data: np.ndarray
+    :param class_counts: frequencies of each class
+    :type class_counts: List[int]
+    :param n_points: total number of points to sample over all classes
+    :type n_points: int
+    :return: tuple of shuffled and sampled flat fit data and target data arrs
+    :rtype: Tuple[np.ndarray, np.ndarray]
     """
     sampled_fit_data: np.ndarray
     sampled_target_data: np.ndarray
@@ -147,7 +189,19 @@ def fit(
     target_data: np.ndarray,
     weights: np.ndarray | None,
 ) -> EnsembleMethod:
-    """Apply EnsembleMethod's fit method. This works because they all share the sklearn api."""
+    """Apply EnsembleMethod's fit method with optional class weights. This works because they all share the sklearn api.
+
+    :param model: a sklearn ensemble model (FRF, XGB, LGBM, etc)
+    :type model: EnsembleMethod
+    :param train_data: flat train (fit) data arr
+    :type train_data: np.ndarray
+    :param target_data: flat target data arr
+    :type target_data: np.ndarray
+    :param weights: flat weights arr
+    :type weights: np.ndarray | None
+    :return: trained ensemble model
+    :rtype: EnsembleMethod
+    """
     if weights is None:
         model.fit(train_data, target_data)
     else:
@@ -158,7 +212,19 @@ def fit(
 def apply_features_done(
     model: EnsembleMethod, UID: str, n_imgs: int, reorder: bool = True
 ) -> List[np.ndarray]:
-    """Assuming feature stacks saved in folder, decompress each one, apply trained classifier and return segmentation."""
+    """Assuming feature stacks saved in folder, decompress each one, apply trained classifier and return segmentation.
+
+    :param model: a *trained* sklearn ensemble method
+    :type model: EnsembleMethod
+    :param UID: user ID pointing to folder where data stroed
+    :type UID: str
+    :param n_imgs: number of images to loop over
+    :type n_imgs: int
+    :param reorder: reorder for sending to GUI, defaults to True
+    :type reorder: bool, optional
+    :return: np array of predictions for all images
+    :rtype: List[np.ndarray]
+    """
     out: List[np.ndarray] = []
     for i in range(n_imgs):
         feature_stack = np.load(f"{UID}/features_{i}.npz")["a"]
@@ -181,7 +247,19 @@ def get_model(
     n_features: int = 2,
     max_depth: int = 10,
 ) -> EnsembleMethod:
-    """Initialise and return EnsembleMethod given by $model_name with supplied parameters."""
+    """Initialise and return EnsembleMethod given by $model_name with supplied parameters.
+
+    :param model_name: string corresponding to an sklearn ensemble method, defaults to "FRF"
+    :type model_name: EnsembleMethodName, optional
+    :param n_trees: number of trees in ensemble method, defaults to 200
+    :type n_trees: int, optional
+    :param n_features: number of features considered per split, defaults to 2
+    :type n_features: int, optional
+    :param max_depth: max depth of trees, defaults to 10
+    :type max_depth: int, optional
+    :return: an sklearn ensemble method with desired parameters
+    :rtype: EnsembleMethod
+    """
     depth: int | None = max_depth
     if max_depth == -1:
         depth = None
@@ -210,7 +288,23 @@ def segment_with_features(
     balance_classes: bool = True,
     train_all: bool = False,
 ) -> Tuple[List[np.ndarray], EnsembleMethod, float]:
-    """Assuming a list of feature stacks are saved at the folder, get training data then fit then apply."""
+    """Assuming a list of feature stacks are saved at the folder, get training data, fit then apply.
+
+    :param labels: list of label arrs
+    :type labels: List[np.ndarray]
+    :param UID: user ID pointing to a folder with the features
+    :type UID: str
+    :param model_name: model string, defaults to "FRF"
+    :type model_name: EnsembleMethodName, optional
+    :param n_points: number of training points to sample, defaults to 40000
+    :type n_points: int, optional
+    :param balance_classes: whether to apply weights during training, defaults to True
+    :type balance_classes: bool, optional
+    :param train_all: whether to train on all data, defaults to False
+    :type train_all: bool, optional
+    :return: list of all segmentations (as class probabilities), the sklearn ensemble method and the out-of-bag-score
+    :rtype: Tuple[List[np.ndarray], EnsembleMethod, float]
+    """
     fit_data, target_data = get_training_data_features_done(labels, UID)
     model = get_model(model_name)
     weights: np.ndarray | None
@@ -238,6 +332,15 @@ def segment_no_features_get_arr(
     label_arr: np.ndarray,
     img_arr: np.ndarray,
 ) -> np.ndarray:
+    """For a *single img*, featurise, get training data (with no sampling), fit classifier then segment.
+
+    :param label_arr: arr of labels
+    :type label_arr: np.ndarray
+    :param img_arr: img arr to featurise
+    :type img_arr: np.ndarray
+    :return: segmentation arr as class probabilities.
+    :rtype: np.ndarray
+    """
     feature_stack = multiscale_advanced_features(
         img_arr, DEAFAULT_FEATURES, N_ALLOWED_CPUS
     )

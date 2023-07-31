@@ -12,7 +12,7 @@ from skops.io import dump as skdump
 from skops.io import loads as skloads
 from skops.io import load as skload
 
-from forest_based import segment_with_features, apply_features_done
+from forest_based import segment_with_features, apply_features_done, EnsembleMethod
 
 try:
     CWD = os.environ["APP_PATH"]
@@ -21,6 +21,16 @@ except KeyError:
 
 
 def _get_split_inds(w: int, h: int) -> dict:
+    """Get coordinates to split large image at based on its height and width.
+
+    :param w: img width
+    :type w: int
+    :param h: img height
+    :type h: int
+    :return: dictionary containing list of x coords to split at, y coords to split at, the h and w
+    intervals of the sub-images and the number of sub-images in the x and y directions
+    :rtype: dict
+    """
     nW = ceil(w / 1024)
     nH = ceil(h / 1024)
     dx = w / nW
@@ -38,6 +48,27 @@ def _create_composite_tiff(
     large_h: int = 0,
     rescale=True,
 ) -> np.ndarray:
+    """Create composite tiff.
+
+    For an (large or stack) image that has been split into sub-images, loop through every arr in arr
+    list (these can be img arrs, label arrs or segmentations arrs of shape (dx, dy)) and recomposite.
+    For large images, sub images are placed into a (large_w, large_h) arr based on the indices
+    information from _get_split_inds(). For stacks, sub images are simply placed in sequence.
+
+    :param arr_list: list of arrs of sub-images
+    :type arr_list: List[np.ndarray]
+    :param mode: whether the image is large or a stack
+    :type mode: str
+    :param large_w: width of large image, defaults to 0
+    :type large_w: int, optional
+    :param large_h: height of large image, defaults to 0
+    :type large_h: int, optional
+    :param rescale: whether to rescale class values to make results visible, defaults to True
+    :type rescale: bool, optional
+    :raises Exception: if tiff mode is wrong, throw error
+    :return: a composited tiff arr
+    :rtype: np.ndarray
+    """
     out: np.ndarray
     remasked_arrs = np.array(arr_list)
     max_class = np.amax(remasked_arrs)
@@ -83,6 +114,27 @@ async def _save_as_tiff(
     rescale: bool = True,
     thumbnail: bool = True,
 ) -> int:
+    """Given an arr of sub-images, composite then save to user directory.
+
+    :param arr_list: list of arrs of sub-images
+    :type arr_list: List[np.ndarray]
+    :param mode: whether the image is large or a stack
+    :type mode: str
+    :param UID: user ID pointing to folder to store the tiff
+    :type UID: str
+    :param large_w: width of large image, defaults to 0
+    :type large_w: int, optional
+    :param large_h: height of large image, defaults to 0
+    :type large_h: int, optional
+    :param score: OOB score of classifier, stored in tiff software name
+    :type score: float | None, optional
+    :param rescale: whether to rescale class values to make results visible, defaults to True
+    :type rescale: bool, optional
+    :param thumbnail: whether to save cropped thumbnail for gallery, defaults to True
+    :type thumbnail: bool, optional
+    :return: 0 if successful
+    :rtype: int
+    """
     out = _create_composite_tiff(
         arr_list, mode, large_w=large_w, large_h=large_h, rescale=rescale
     )
@@ -98,12 +150,18 @@ async def _save_as_tiff(
         datetime=True,
         software=sw_name,
     )
-    
+
     try:
         if thumbnail:
-            _,x,y = out.shape
+            _, x, y = out.shape
             t_size = 300
-            Image.fromarray(out[0,x//2-t_size//2:x//2+t_size//2,  y//2-t_size//2:y//2+t_size//2]).save(f"{CWD}/{UID}/seg_thumbnail.jpg")
+            Image.fromarray(
+                out[
+                    0,
+                    x // 2 - t_size // 2 : x // 2 + t_size // 2,
+                    y // 2 - t_size // 2 : y // 2 + t_size // 2,
+                ]
+            ).save(f"{CWD}/{UID}/seg_thumbnail.jpg")
             Image.fromarray(out[0]).save(f"{CWD}/{UID}/seg.png")
     except Exception as e:
         print(e)
@@ -118,7 +176,23 @@ def save_labels(
     large_h: int = 0,
     rescale=True,
 ) -> bytes:
-    """Create composite tiffs of the label arrs and return the bytes. This has 0 for unlabelled pixels."""
+    """Create composite tiffs of the label arrs and return the bytes. This has 0 for unlabelled pixels.
+
+    :param images: list of images. TODO: make this a lsit of (h, w) tuples
+    :type images: List[Image.Image]
+    :param labels_dicts: list of label dictionaries as sent over HTTP
+    :type labels_dicts: List[dict]
+    :param mode: whether the image is large or a stack
+    :type mode: str
+    :param large_w: width of large image, defaults to 0
+    :type large_w: int, optional
+    :param large_h: height of large image, defaults to 0
+    :type large_h: int, optional
+    :param rescale: whether to rescale class values to make results visible, defaults to True
+    :type rescale: bool, optional
+    :return: bytes of the tiff file of the (composited) labels
+    :rtype: bytes
+    """
     label_arrs: List[np.ndarray] = []
     for i in range(len(images)):
         image = images[i]
@@ -134,7 +208,18 @@ def save_labels(
     return file_bytes
 
 
-async def _save_classifier(model, CWD: str, UID: str) -> int:
+async def _save_classifier(model: EnsembleMethod, CWD: str, UID: str) -> int:
+    """Save (trained) ensemble method to user data folder in both .pkl and .skops format.
+
+    :param model: (trained) sklearn ensemble method
+    :type model: EnsembleMethod
+    :param CWD: current directory (found automatically)
+    :type CWD: str
+    :param UID: user ID
+    :type UID: str
+    :return: 0 if successful
+    :rtype: int
+    """
     with open(f"{CWD}/{UID}/classifier.pkl", "wb") as handle:
         dump(model, handle)
     skdump(
@@ -147,7 +232,15 @@ async def _save_classifier(model, CWD: str, UID: str) -> int:
 
 
 async def load_classifier_from_http(file_bytes: bytes, CWD: str, UID: str) -> None:
-    """Use skload to load sklearn model from the bytes, then save to user directory."""
+    """Use skload to load sklearn model from $file_bytes, then save to user directory.
+
+    :param file_bytes: bytes corresponing to skops file of classifier sent over HTTP
+    :type file_bytes: bytes
+    :param CWD: current working directory
+    :type CWD: str
+    :param UID: user id
+    :type UID: str
+    """
     model = skloads(file_bytes)
     skdump(
         model,
@@ -169,12 +262,32 @@ async def segment(
     train_all: bool = True,
     rescale: bool = True,
 ) -> np.ndarray:
-    """
-    Perform FRF segmentation.
+    """Perform FRF segmentation.
 
     Given list of label dicts, convert to arr, reshape to be same as corresponding image. Once
     the background featurisation is complete, then generate training data for RF, train and apply.
     Once result return, convert from probabilities to classes, flatten and return.
+
+    :param images: list of images. TODO: make this a lsit of (h, w) tuples
+    :type images: List[Image.Image]
+    :param labels_dicts: list of label dictionaries as sent over HTTP
+    :type labels_dicts: List[dict]
+    :param UID: user id
+    :type UID: str
+    :param save_mode: whether the image is large or a stack
+    :type save_mode: str
+    :param large_w: width of large image, defaults to 0
+    :type large_w: int, optional
+    :param large_h: height of large image, defaults to 0
+    :type large_h: int, optional
+    :param n_points: number of training points to sample, defaults to 40000
+    :type n_points: int, optional
+    :param train_all: whether to train on all data, defaults to False
+    :type train_all: bool, optional
+    :param rescale: whether to rescale class values to make results visible, defaults to True
+    :type rescale: bool, optional
+    :return: flattened segementations (class values) where labels overwrite predictions if different.
+    :rtype: np.ndarray
     """
     label_arrs: List[np.ndarray] = []
     for i in range(len(images)):
@@ -217,7 +330,23 @@ async def apply(
     large_h: int = 0,
     rescale: bool = True,
 ) -> np.ndarray:
-    """Apply a trained classifier to a collection of images, save the tiff(s) & return the flattened byte arrays."""
+    """Apply a trained classifier to a collection of images, save the tiff(s) & return the flattened byte arrays.
+
+    :param images: list of images.
+    :type images: List[Image.Image]
+    :param UID: user id
+    :type UID: str
+    :param save_mode: whether the image is large or a stack
+    :type save_mode: str
+    :param large_w: width of large image, defaults to 0
+    :type large_w: int, optional
+    :param large_h: height of large image, defaults to 0
+    :type large_h: int, optional
+    :param rescale: whether to rescale class values to make results visible, defaults to True
+    :type rescale: bool, optional
+    :return: flattened segmentations (only class values)
+    :rtype: np.ndarray
+    """
     model = skload(f"{CWD}/{UID}/classifier.skops")
     probs = apply_features_done(model, UID, len(images))
 

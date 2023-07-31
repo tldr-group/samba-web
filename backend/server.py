@@ -66,6 +66,11 @@ def _get_image_from_b64(b64_with_prefix: str):
     return image
 
 
+def _get_shape_tuple(dim_string: str):
+    h, w = dim_string.split(",")
+    return (int(h), int(w))
+
+
 async def generic_response(request, fn: Callable):
     """Given a HTTP request and response function, return corsified response."""
     if "OPTIONS" in request.method:
@@ -168,7 +173,8 @@ async def segment_fn(request) -> Response:
     Get image type and associated variables, if mode is segment then train segmenter on
     images with labels then apply. If mode is apply then just apply.
     """
-    images = [_get_image_from_b64(i) for i in request.json["images"]]
+    img_dims = [_get_shape_tuple(i) for i in request.json["images"]]
+    print(img_dims)
     UID = request.json["id"]
     save_mode = request.json["save_mode"]
     large_w, large_h = request.json["large_w"], request.json["large_h"]
@@ -177,7 +183,7 @@ async def segment_fn(request) -> Response:
         labels_dicts = request.json["labels"]
         n_points, train_all = request.json["n_points"], request.json["train_all"]
         segmentation = await segment(
-            images,
+            img_dims,
             labels_dicts,
             UID,
             save_mode,
@@ -187,7 +193,7 @@ async def segment_fn(request) -> Response:
             train_all,
         )
     elif segment_type == "apply":
-        segmentation = await apply(images, UID, save_mode, large_w, large_h)
+        segmentation = await apply(img_dims, UID, save_mode, large_w, large_h)
     response = Response(segmentation.tobytes())
     response.headers.add("Content-Type", "application/octet-stream")
     return response
@@ -209,6 +215,12 @@ async def save_fn(request) -> Response:
         response = send_file(
             f"{CWD}/{UID}/seg.tiff", mimetype="image/tiff", download_name="seg.tiff"
         )
+    elif save_type == "labels":
+        response = send_file(
+            f"{CWD}/{UID}/labels.tiff",
+            mimetype="image/tiff",
+            download_name="labels.tiff",
+        )
     else:
         file_format = request.json["format"]
         response = send_file(
@@ -223,28 +235,6 @@ async def save_fn(request) -> Response:
 async def save_respond():
     """Save route."""
     response = await generic_response(request, save_fn)
-    return response
-
-
-async def save_labels_fn(request) -> Response:
-    """Save the user labels by recombining them like in save segmentation (stack tiffs or patch)."""
-    images = [_get_image_from_b64(i) for i in request.json["images"]]
-    labels_dicts = request.json["labels"]
-    save_mode = request.json["save_mode"]
-    large_w, large_h = request.json["large_w"], request.json["large_h"]
-    rescale = request.json["rescale"]
-    labels_bytes = save_labels(
-        images, labels_dicts, save_mode, large_w, large_h, rescale
-    )
-    response = Response(labels_bytes)
-    response.headers.add("Content-Type", "application/octet-stream")
-    return response
-
-
-@app.route("/slabel", methods=["POST", "GET", "OPTIONS"])
-async def save_labels_respond():
-    """Save labels response."""
-    response = await generic_response(request, save_labels_fn)
     return response
 
 

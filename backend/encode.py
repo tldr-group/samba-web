@@ -58,7 +58,7 @@ async def featurise(
     :rtype: int
     """
     for i, img in enumerate(images):
-        img_arr = np.array(img.convert("I"))
+        img_arr = np.array(img.convert("L"))
         feature_stack = multiscale_advanced_features(img_arr, selected_features)
         np.savez_compressed(f"{CWD}/{UID}/features_{i + offset}", a=feature_stack)
         if DEBUG:

@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 from tifffile import imwrite
 import os
-from typing import List
+from typing import List, Tuple
 from math import floor, ceil
 from pickle import dump
 from io import BytesIO
@@ -168,14 +168,15 @@ async def _save_as_tiff(
     return 0
 
 
-def save_labels(
-    images: List[Image.Image],
+async def save_labels(
+    img_dims: List[Tuple[int, int]],
     labels_dicts: List[dict],
+    UID: str,
     mode: str,
     large_w: int = 0,
     large_h: int = 0,
     rescale=True,
-) -> bytes:
+) -> int:
     """Create composite tiffs of the label arrs and return the bytes. This has 0 for unlabelled pixels.
 
     :param images: list of images. TODO: make this a lsit of (h, w) tuples
@@ -194,18 +195,17 @@ def save_labels(
     :rtype: bytes
     """
     label_arrs: List[np.ndarray] = []
-    for i in range(len(images)):
-        image = images[i]
+    for i in range(len(img_dims)):
+        h, w = img_dims[i]
         label_dict = labels_dicts[i]
         labels_list = [item for keys, item in label_dict.items()]
-        label_arr = np.array(labels_list).reshape(image.height, image.width)
+        label_arr = np.array(labels_list).reshape(h, w)
         label_arrs.append(label_arr)
     label_out = _create_composite_tiff(label_arrs, mode, large_w, large_h, rescale)
-    file_bytes_io = BytesIO()
-    imwrite(file_bytes_io, label_out, photometric="minisblack")
-    file_bytes_io.seek(0)
-    file_bytes = file_bytes_io.read()
-    return file_bytes
+    imwrite(
+        f"{CWD}/{UID}/labels.tiff", label_out, photometric="minisblack", datetime=True
+    )
+    return 0
 
 
 async def _save_classifier(model: EnsembleMethod, CWD: str, UID: str) -> int:
@@ -252,7 +252,7 @@ async def load_classifier_from_http(file_bytes: bytes, CWD: str, UID: str) -> No
 
 
 async def segment(
-    images: List[Image.Image],
+    img_dims: List[Tuple[int, int]],
     labels_dicts: List[dict],
     UID: str,
     save_mode: str,
@@ -268,8 +268,8 @@ async def segment(
     the background featurisation is complete, then generate training data for RF, train and apply.
     Once result return, convert from probabilities to classes, flatten and return.
 
-    :param images: list of images. TODO: make this a lsit of (h, w) tuples
-    :type images: List[Image.Image]
+    :param img_dims: list of image dimensions
+    :type img_dims: List[Tuple[int, int]]
     :param labels_dicts: list of label dictionaries as sent over HTTP
     :type labels_dicts: List[dict]
     :param UID: user id
@@ -290,11 +290,11 @@ async def segment(
     :rtype: np.ndarray
     """
     label_arrs: List[np.ndarray] = []
-    for i in range(len(images)):
-        image = images[i]
+    for i in range(len(img_dims)):
+        h, w = img_dims[i]
         label_dict = labels_dicts[i]
         labels_list = [item for keys, item in label_dict.items()]
-        label_arr = np.array(labels_list).reshape(image.height, image.width)
+        label_arr = np.array(labels_list).reshape(h, w)
         label_arrs.append(label_arr)
 
     remasked_arrs_list: List[np.ndarray] = []
@@ -317,13 +317,14 @@ async def segment(
     await _save_as_tiff(
         remasked_arrs_list, save_mode, UID, large_w, large_h, score, rescale=rescale
     )
+    await save_labels(img_dims, labels_dicts, UID, save_mode, large_w, large_h, rescale)
     await _save_classifier(model, CWD, UID)
     print(remasked_flattened_arrs.shape, label_arrs[0].shape)
     return remasked_flattened_arrs
 
 
 async def apply(
-    images: List[Image.Image],
+    img_dims: List[Tuple[int, int]],
     UID: str,
     save_mode: str,
     large_w: int = 0,
@@ -332,8 +333,8 @@ async def apply(
 ) -> np.ndarray:
     """Apply a trained classifier to a collection of images, save the tiff(s) & return the flattened byte arrays.
 
-    :param images: list of images.
-    :type images: List[Image.Image]
+    :param img_dims: list of image dimensions
+    :type img_dims: List[Tuple[int, int]]
     :param UID: user id
     :type UID: str
     :param save_mode: whether the image is large or a stack
@@ -348,11 +349,11 @@ async def apply(
     :rtype: np.ndarray
     """
     model = skload(f"{CWD}/{UID}/classifier.skops")
-    probs = apply_features_done(model, UID, len(images))
+    probs = apply_features_done(model, UID, len(img_dims))
 
     arrs_list: List[np.ndarray] = []
     flattened_arrs: np.ndarray
-    for i in range(len(images)):
+    for i in range(len(img_dims)):
         classes = np.argmax(probs[i], axis=0).astype(np.uint8) + 1
         arrs_list.append(classes)
         if i == 0:

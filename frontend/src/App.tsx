@@ -375,12 +375,18 @@ const App = () => {
     setProcessing("Applying");
   }
 
+  const getHWstr = (img: HTMLImageElement) => {
+    const h = String(img.height)
+    const w = String(img.width)
+    return h + "," + w
+  }
+
   const trainClassifier = async (apply: boolean = false) => {
     // Ping our segment endpoint, send it our image and labels then await the array.
     if (image === null) {
       return;
     }
-    const b64images: string[] = imgArrs.map((img, i) => getb64Image(img));
+    const imgDims: string[] = imgArrs.map((img, i) => getHWstr(img));
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     console.log("Started Segementing");
@@ -396,14 +402,14 @@ const App = () => {
       const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
       setLabelArrs(newLabelArrs);
       msg = {
-        "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
+        "images": imgDims, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
         "large_w": largeW, "large_h": largeH, "n_points": settings.nPoints,
         "train_all": settings.trainAll, "rescale": settings.rescale, "type": "segment"
       };
 
     } else {
       msg = {
-        "images": b64images, "id": UID, "save_mode": imgType,
+        "images": imgDims, "id": UID, "save_mode": imgType,
         "large_w": largeW, "large_h": largeH, "n_points": settings.nPoints,
         "train_all": settings.trainAll, "rescale": settings.rescale, "type": "apply"
       };
@@ -482,6 +488,8 @@ const App = () => {
 
   const saveLabels = async () => {
     if (image === null || labelArr === null) { return; }
+    saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID, "rescale": settings.rescale, "type": "labels" }), "labels.tiff")
+    /*
     const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
     setLabelArrs(newLabelArrs);
     const b64images: string[] = imgArrs.map((img, i) => getb64Image(img));
@@ -496,6 +504,7 @@ const App = () => {
     }
     const msg = JSON.stringify(dict);
     saveArrAsTIFF(SAVE_LABEL_ENDPOINT, msg, "label.tiff");
+    */
   }
 
   const saveClassifier = async () => {

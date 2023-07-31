@@ -308,10 +308,10 @@ def segment_with_features(
     fit_data, target_data = get_training_data_features_done(labels, UID)
     model = get_model(model_name)
     weights: np.ndarray | None
+    new_weights: np.ndarray | None
     weights, class_counts = get_class_weights(target_data)
-    if balance_classes is False:
-        weights = None
     if train_all or target_data.shape[0] < n_points:
+        print("all")
         sample_fit_data, sample_target_data = _shuffle_fit_target(
             fit_data,
             target_data,
@@ -322,6 +322,10 @@ def segment_with_features(
             fit_data, target_data, class_counts, n_points
         )
         new_weights, _ = get_class_weights(sample_target_data)
+
+    if balance_classes is False:
+        new_weights = None
+
     model = fit(model, sample_fit_data, sample_target_data, new_weights)
     print(model.oob_score_)
     out_data = apply_features_done(model, UID, len(labels))

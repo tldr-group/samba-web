@@ -15,6 +15,7 @@ import time
 import sys
 from azure.storage.blob import BlobServiceClient
 
+from test_resources.call_weka import sep
 
 from typing import List, Tuple
 
@@ -59,17 +60,17 @@ def get_weka_default_from_azure() -> np.ndarray:
     container_client = blob_service_client.get_blob_client(
         container="resources", blob="weka_default.tif"
     )
-    with open("backend/test_resources/weka_default.tif", "wb") as f:
+    with open(f"backend{sep}test_resources{sep}weka_default.tif", "wb") as f:
         download_stream = container_client.download_blob()
         f.write(download_stream.readall())
-    return imread("backend/test_resources/weka_default.tif")
+    return imread(f"backend{sep}test_resources{sep}weka_default.tif")
 
 
 try:
-    weka = imread("backend/test_resources/weka_default.tif")
+    weka = imread(f"backend{sep}test_resources{sep}weka_default.tif")
 except FileNotFoundError:
     get_weka_default_from_azure()
-    weka = imread("backend/test_resources/weka_default.tif")
+    weka = imread(f"backend{sep}test_resources{sep}weka_default.tif")
 
 
 def _test_centre_val(filtered_arr, val):
@@ -273,7 +274,7 @@ class CompareDefaultFeatures(unittest.TestCase):
         """Handler for each test, shares the feature stacks with them so only computed once."""
         passed = True
 
-        img = imread("backend/test_resources/super1.tif").astype(np.float32)
+        img = imread(f"backend{sep}test_resources{sep}super1.tif").astype(np.float32)
         samba = ft.multiscale_advanced_features(
             img, ft.DEAFAULT_FEATURES, ft.N_ALLOWED_CPUS
         ).transpose((2, 0, 1))
@@ -474,9 +475,11 @@ class CompareSegmentations(unittest.TestCase):
         set_macro_path()
         set_config_file(f"{fname}.tif")
         weka_t = run_weka(FIJI_PATH)
-        img_arr = imread(f"backend/test_resources/{fname}.tif")
-        weka_arr = imread("backend/test_resources/output.tif")
-        label = get_label_arr(f"backend/test_resources/{fname}_roi_config.txt", img_arr)
+        img_arr = imread(f"backend{sep}test_resources{sep}{fname}.tif")
+        weka_arr = imread(f"backend{sep}test_resources{sep}output.tif")
+        label = get_label_arr(
+            f"backend{sep}test_resources{sep}{fname}_roi_config.txt", img_arr
+        )
         start_t = time.time()
         samba_arr = segment_no_features_get_arr(label, img_arr)
         end_t = time.time()
@@ -516,7 +519,9 @@ class CompareSegmentations(unittest.TestCase):
             if row == 0:
                 axs[0].set_title("Weka", fontsize=16)
                 axs[1].set_title("SAMBA", fontsize=16)
-        plt.savefig("backend/test_resources/test_outputs/segmentation_comparison.png")
+        plt.savefig(
+            f"backend{sep}test_resources{sep}test_outputs{sep}segmentation_comparison.png"
+        )
 
         fig2 = plt.figure(num=2, figsize=(16, 16))
         x = np.arange(2, 5)
@@ -525,7 +530,9 @@ class CompareSegmentations(unittest.TestCase):
         plt.legend(fontsize=14)
         plt.ylabel("Time (s)", fontsize=14)
         plt.xlabel("Number of phases", fontsize=14)
-        plt.savefig("backend/test_resources/test_outputs/times_comparison.png")
+        plt.savefig(
+            f"backend{sep}test_resources{sep}test_outputs{sep}times_comparison.png"
+        )
 
 
 if __name__ == "__main__":

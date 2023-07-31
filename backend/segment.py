@@ -12,6 +12,7 @@ from skops.io import dump as skdump
 from skops.io import loads as skloads
 from skops.io import load as skload
 
+from test_resources.call_weka import sep
 from forest_based import segment_with_features, apply_features_done, EnsembleMethod
 
 try:
@@ -143,7 +144,7 @@ async def _save_as_tiff(
         sw_name = f"SAMBA, val. score={score:.3f}"
 
     imwrite(
-        f"{CWD}/{UID}/seg.tiff",
+        f"{CWD}{sep}{UID}{sep}seg.tiff",
         out,
         photometric="minisblack",
         description="foo".encode("utf-8"),
@@ -161,8 +162,8 @@ async def _save_as_tiff(
                     x // 2 - t_size // 2 : x // 2 + t_size // 2,
                     y // 2 - t_size // 2 : y // 2 + t_size // 2,
                 ]
-            ).save(f"{CWD}/{UID}/seg_thumbnail.jpg")
-            Image.fromarray(out[0]).save(f"{CWD}/{UID}/seg.png")
+            ).save(f"{CWD}{sep}{UID}{sep}seg_thumbnail.jpg")
+            Image.fromarray(out[0]).save(f"{CWD}{sep}{UID}{sep}seg.png")
     except Exception as e:
         print(e)
     return 0
@@ -203,7 +204,10 @@ async def save_labels(
         label_arrs.append(label_arr)
     label_out = _create_composite_tiff(label_arrs, mode, large_w, large_h, rescale)
     imwrite(
-        f"{CWD}/{UID}/labels.tiff", label_out, photometric="minisblack", datetime=True
+        f"{CWD}{sep}{UID}{sep}labels.tiff",
+        label_out,
+        photometric="minisblack",
+        datetime=True,
     )
     return 0
 
@@ -220,11 +224,11 @@ async def _save_classifier(model: EnsembleMethod, CWD: str, UID: str) -> int:
     :return: 0 if successful
     :rtype: int
     """
-    with open(f"{CWD}/{UID}/classifier.pkl", "wb") as handle:
+    with open(f"{CWD}{sep}{UID}{sep}classifier.pkl", "wb") as handle:
         dump(model, handle)
     skdump(
         model,
-        f"{CWD}/{UID}/classifier.skops",
+        f"{CWD}{sep}{UID}{sep}classifier.skops",
         compression=ZIP_DEFLATED,
         compresslevel=9,
     )
@@ -244,7 +248,7 @@ async def load_classifier_from_http(file_bytes: bytes, CWD: str, UID: str) -> No
     model = skloads(file_bytes)
     skdump(
         model,
-        f"{CWD}/{UID}/classifier.skops",
+        f"{CWD}{sep}{UID}{sep}classifier.skops",
         compression=ZIP_DEFLATED,
         compresslevel=9,
     )
@@ -348,7 +352,7 @@ async def apply(
     :return: flattened segmentations (only class values)
     :rtype: np.ndarray
     """
-    model = skload(f"{CWD}/{UID}/classifier.skops")
+    model = skload(f"{CWD}{sep}{UID}{sep}classifier.skops")
     probs = apply_features_done(model, UID, len(img_dims))
 
     arrs_list: List[np.ndarray] = []

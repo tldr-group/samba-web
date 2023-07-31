@@ -12,6 +12,7 @@ memoise things like feature computation) that is part of a GUI app.
 """
 import numpy as np
 from features import multiscale_advanced_features, N_ALLOWED_CPUS, DEAFAULT_FEATURES
+from test_resources.call_weka import sep
 
 print(N_ALLOWED_CPUS)
 
@@ -97,7 +98,7 @@ def get_training_data_features_done(
     all_fit_data: np.ndarray
     all_target_data: np.ndarray
     for i, label in enumerate(labels):
-        feature_stack = np.load(f"{UID}/features_{i}.npz")["a"]  # need to index
+        feature_stack = np.load(f"{UID}{sep}features_{i}.npz")["a"]  # need to index
         is_labelled = np.sum(label) >= 1
         if is_labelled:
             fit_data, target_data = get_training_data(feature_stack, label)
@@ -227,7 +228,7 @@ def apply_features_done(
     """
     out: List[np.ndarray] = []
     for i in range(n_imgs):
-        feature_stack = np.load(f"{UID}/features_{i}.npz")["a"]
+        feature_stack = np.load(f"{UID}{sep}features_{i}.npz")["a"]
         h, w, feat = feature_stack.shape
         flat_apply_data = feature_stack.reshape((h * w, feat))
         out_probs = model.predict_proba(flat_apply_data)

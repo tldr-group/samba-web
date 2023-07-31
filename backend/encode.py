@@ -8,6 +8,7 @@ from io import BytesIO
 
 from tifffile import imwrite
 
+from test_resources.call_weka import sep
 from features import DEAFAULT_FEATURES, multiscale_advanced_features
 
 DEBUG = False
@@ -60,8 +61,10 @@ async def featurise(
     for i, img in enumerate(images):
         img_arr = np.array(img.convert("L"))
         feature_stack = multiscale_advanced_features(img_arr, selected_features)
-        np.savez_compressed(f"{CWD}/{UID}/features_{i + offset}", a=feature_stack)
+        np.savez_compressed(
+            f"{CWD}{sep}{UID}{sep}features_{i + offset}", a=feature_stack
+        )
         if DEBUG:
             transpose = feature_stack.transpose((2, 0, 1))
-            imwrite(f"{CWD}/{UID}/features_{i + offset}.tiff", transpose)
+            imwrite(f"{CWD}{sep}{UID}{sep}features_{i + offset}.tiff", transpose)
     return 0

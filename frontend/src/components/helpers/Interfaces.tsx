@@ -1,5 +1,4 @@
 import { Tensor } from "onnxruntime-web";
-import internal from "stream";
 
 export type Label = "Smart Labelling" | "Polygon" | "Brush" | "Erase"
 

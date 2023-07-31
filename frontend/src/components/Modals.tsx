@@ -1,6 +1,5 @@
 /*Modals.tsx
 The three large modals: Welcome, Settings, Features, the smaller error modal and post segmentation toast.
-
 */
 
 import React, { useContext, useEffect, useRef, useState } from "react";
@@ -25,7 +24,7 @@ const BigModal = ({ requestEmbedding }: LabelFrameProps) => {
         theme: [theme,]
     } = useContext(AppContext)!;
 
-    const handleClose = () => { setModalShow({ welcome: false, settings: false, features: false }) }
+    const handleClose = () => { setModalShow({ welcome: false, settings: false, features: false }) };
 
     return (
         <Modal show={modalShow.welcome || modalShow.settings || modalShow.features} onHide={handleClose} size="lg" >
@@ -38,11 +37,12 @@ const BigModal = ({ requestEmbedding }: LabelFrameProps) => {
 
 const WelcomeModalContent = () => {
     const setNoShow = (e: any) => {
-        console.log(e.target.checked)
+        // Initial welcome popup: permanently hideable 
+        console.log(e.target.checked);
         if (e.target.checked == true) {
-            localStorage.setItem("showHelp", "false")
+            localStorage.setItem("showHelp", "false");
         } else {
-            localStorage.setItem("showHelp", "true")
+            localStorage.setItem("showHelp", "true");
         }
     }
 
@@ -69,27 +69,27 @@ const FeatureModalContent = ({ closeModal, requestEmbedding }: FeatureModalProps
     } = useContext(AppContext)!;
 
     const updateClose = () => {
-        closeModal()
-        requestEmbedding()
+        closeModal();
+        requestEmbedding();
     }
 
     const updateFeatures = (prev: any, newKey: string, newVal: string) => {
-        const newFeats = prev
-        newFeats[newKey] = parseFloat(newVal)
-        setFeatures(newFeats as Features)
+        const newFeats = prev;
+        newFeats[newKey] = parseFloat(newVal);
+        setFeatures(newFeats as Features);
     }
 
     const change = (e: any, feats: Features, newKey: string, newVal: string) => {
-        updateFeatures(feats, newKey, newVal)
+        updateFeatures(feats, newKey, newVal);
     }
 
 
     const getElemForDict = (key: string, value: string, i: number) => {
-        const numeric = ["Membrane Thickness", "Membrane Patch Size", "Minimum Sigma", "Maximum Sigma"]
-        const startVal = 14
-        const vals: number[][] = [[1, 5, 1, 1], [5, 25, 17, 2], [0, 64, 0.5, 0.5], [0, 64, 16, 0.5]]
+        const numeric = ["Membrane Thickness", "Membrane Patch Size", "Minimum Sigma", "Maximum Sigma"];
+        const startVal = 14;
+        const vals: number[][] = [[1, 5, 1, 1], [5, 25, 17, 2], [0, 64, 0.5, 0.5], [0, 64, 16, 0.5]];
         if (numeric.includes(key)) {
-            let [a, b, c, d] = vals[i - startVal]
+            let [a, b, c, d] = vals[i - startVal];
             return (<InputGroup key={i}>
                 <InputGroup.Text>{key}</InputGroup.Text>
                 <Form.Control type="number" width={3}
@@ -121,28 +121,29 @@ const FeatureModalContent = ({ closeModal, requestEmbedding }: FeatureModalProps
 
 
 const SettingsModalContent = () => {
+    // Settings menu: sets theme, n_sample points, rescale, classifier format. 
     const {
         theme: [theme, setTheme],
         settings: [settings, setSettings],
     } = useContext(AppContext)!;
 
-    const themes = Object.keys(themeBGs)
+    const themes = Object.keys(themeBGs);
     const change = (e: any) => { setTheme(e.target.value as Theme) }
     const setN = (e: any) => {
-        console.log(typeof (e.target.value))
-        setSettings({ nPoints: parseInt(e.target.value), trainAll: settings.trainAll, rescale: settings.rescale, format: settings.format })
+        console.log(typeof (e.target.value));
+        setSettings({ nPoints: parseInt(e.target.value), trainAll: settings.trainAll, rescale: settings.rescale, format: settings.format });
     }
     const setAll = (e: any) => {
-        const state = e.target.value == "on" ? true : false
-        setSettings({ nPoints: settings.nPoints, trainAll: state, rescale: settings.rescale, format: settings.format })
+        const state = e.target.value == "on" ? true : false;
+        setSettings({ nPoints: settings.nPoints, trainAll: state, rescale: settings.rescale, format: settings.format });
     }
     const setRescale = (e: any) => {
-        const state = e.target.value == "on" ? true : false
-        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: state, format: settings.format })
+        const state = e.target.value == "on" ? true : false;
+        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: state, format: settings.format });
     }
 
     const setFormat = (e: any) => {
-        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: settings.rescale, format: e.target.value })
+        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: settings.rescale, format: e.target.value });
     }
 
     return (
@@ -239,21 +240,21 @@ const PostSegToast = () => {
     } = useContext(AppContext)!;
 
 
-    const [shareSeg, setShareSeg] = useState(false)
-    const [segQual, setSegQual] = useState(5)
-    const [materialName, setMaterialName] = useState('unknown')
-    const [resolution, setResolution] = useState('unknown')
-    const [instrumentType, setInstrumentType] = useState('unknown')
-    const [additionalNotes, setAdditionalNotes] = useState('unknown')
-    const [showMetaToast, setShowMetaToast] = useState(false)
-
-    const url = `https://sambasegment.blob.core.windows.net`
+    const [shareSeg, setShareSeg] = useState(false);
+    const [segQual, setSegQual] = useState(5);
+    const [materialName, setMaterialName] = useState('unknown');
+    const [resolution, setResolution] = useState('unknown');
+    const [instrumentType, setInstrumentType] = useState('unknown');
+    const [additionalNotes, setAdditionalNotes] = useState('unknown');
+    const [showMetaToast, setShowMetaToast] = useState(false);
+    // Backend url
+    const url = `https://sambasegment.blob.core.windows.net`;
 
     const blobServiceClient = new BlobServiceClient(
         url
     );
 
-    const containerClient = blobServiceClient.getContainerClient('gallery')
+    const containerClient = blobServiceClient.getContainerClient('gallery');
 
     const saveToGallery = async () => {
         //  SAVE IMAGE TO BACKEND
@@ -261,15 +262,15 @@ const PostSegToast = () => {
         const getb64Image = (img: HTMLImageElement) => {
             // Convert HTML Image to b64 string encoding by drawing onto canvas. Used for sending over HTTP
             const tempCanvas = document.createElement("canvas");
-            tempCanvas.width = img.width
-            tempCanvas.height = img.height
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
             const ctx = tempCanvas.getContext("2d");
-            ctx?.drawImage(img, 0, 0, img.width, img.height)
-            const b64image = tempCanvas.toDataURL("image/jpeg")
-            return [b64image, tempCanvas.width, tempCanvas.height]
+            ctx?.drawImage(img, 0, 0, img.width, img.height);
+            const b64image = tempCanvas.toDataURL("image/jpeg");
+            return [b64image, tempCanvas.width, tempCanvas.height];
         }
         const b64 = getb64Image(imgArrs[0]);
-        const b64images = b64[0]
+        const b64images = b64[0];
         const metadata = { "id": UID, "segQual": segQual, "imgWidth": b64[1], "imgHeight": b64[2], "materialName": materialName, "resolution": resolution, "instrumentType": instrumentType, "additionalNotes": additionalNotes }
         const headers = new Headers();
         headers.append('Content-Type', 'application/json;charset=utf-8');
@@ -293,74 +294,74 @@ const PostSegToast = () => {
 
     const handleShareSend = (e: any) => {
         if (shareSeg) {
-            setShowToast(false)
-            setShowMetaToast(true)
+            setShowToast(false);
+            setShowMetaToast(true);
         }
-        toggleToast()
+        toggleToast();
     }
 
     const handleMetaSend = (e: any) => {
         console.log("sending to gallery")
-        saveToGallery()
-        toggleMetaToast()
+        saveToGallery();
+        toggleMetaToast();
     }
 
 
     return (
         <>
-        <ToastContainer className="p-5" position="bottom-end">
-            <Toast show={showToast} onClose={toggleToast}>
-                <Toast.Header className="roundedme-2"><strong className="me-auto">Share Segmentation?</strong></Toast.Header>
-                <Toast.Body>
-                    <InputGroup>
-                        <InputGroup.Text>Segmentation quality:</InputGroup.Text>
-                        <Form.Control type="number" min={0} max={10} value={segQual} width={1} size="sm" onChange={(e) => setSegQual(Number(e.target.value))}></Form.Control>
-                    </InputGroup>
+            <ToastContainer className="p-5" position="bottom-end">
+                <Toast show={showToast} onClose={toggleToast}>
+                    <Toast.Header className="roundedme-2"><strong className="me-auto">Share Segmentation?</strong></Toast.Header>
+                    <Toast.Body>
+                        <InputGroup>
+                            <InputGroup.Text>Segmentation quality:</InputGroup.Text>
+                            <Form.Control type="number" min={0} max={10} value={segQual} width={1} size="sm" onChange={(e) => setSegQual(Number(e.target.value))}></Form.Control>
+                        </InputGroup>
 
-                    <Form style={{ margin: '10px' }}>
-                        <Form.Check type="switch" id="share-seg" label="Share segmentation in a future open dataset?">
-                        </Form.Check>
-                        <Form.Check type="switch" id="share-gallery">
-                            <Form.Check.Input type="checkbox" onChange={(e) => setShareSeg(e.target.checked)} />
-                            <Form.Check.Label>Share segmentation in the gallery page?</Form.Check.Label>
-                        </Form.Check>
-                    </Form>
-                    <Button variant="dark" onClick={handleShareSend} style={{ marginLeft: '16rem' }} >Send!</Button>
-                </Toast.Body>
-            </Toast>
-        </ToastContainer >
-        
-        <ToastContainer className="p-5" position="middle-center">
-            <Toast show={showMetaToast} onClose={toggleMetaToast}>
-                <Toast.Header className="roundedme-2"><strong className="me-auto">Add metadata</strong></Toast.Header>
-                <Toast.Body>
-                    <Form style={{ margin: '10px' }}>
-                        <Form.Group className="mb-3" controlId="formBasicEmail">
-                            <Form.Label>Material Name</Form.Label>
-                            <Form.Control type="text" placeholder="Enter material name" onChange={(e) => setMaterialName(e.target.value)} />
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId="formBasicPassword">
-                            <Form.Label>Resolution (µm/pixel)</Form.Label>
-                            <Form.Control type="text" placeholder="Enter resolution" onChange={(e) => setResolution(e.target.value)} />
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId="formBasicPassword">
-                            <Form.Label>Instrument Type</Form.Label>
-                            <Form.Control type="text" placeholder="Enter instrument type" onChange={(e) => setInstrumentType(e.target.value)} />
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId="formBasicPassword">
-                            <Form.Label>Additional Notes</Form.Label>
-                            <Form.Control type="text" placeholder="Enter additional notes" onChange={(e) => setAdditionalNotes(e.target.value)} />
-                        </Form.Group>
-                    </Form>
-                    <div style={{display:'flex', justifyContent:'center'}}>
-                    <Button variant="dark" onClick={handleMetaSend} >Send</Button>
-                    </div>
+                        <Form style={{ margin: '10px' }}>
+                            <Form.Check type="switch" id="share-seg" label="Share segmentation in a future open dataset?">
+                            </Form.Check>
+                            <Form.Check type="switch" id="share-gallery">
+                                <Form.Check.Input type="checkbox" onChange={(e) => setShareSeg(e.target.checked)} />
+                                <Form.Check.Label>Share segmentation in the gallery page?</Form.Check.Label>
+                            </Form.Check>
+                        </Form>
+                        <Button variant="dark" onClick={handleShareSend} style={{ marginLeft: '16rem' }} >Send!</Button>
                     </Toast.Body>
-                    
                 </Toast>
-        </ToastContainer>
-        
-</>
+            </ToastContainer >
+
+            <ToastContainer className="p-5" position="middle-center">
+                <Toast show={showMetaToast} onClose={toggleMetaToast}>
+                    <Toast.Header className="roundedme-2"><strong className="me-auto">Add metadata</strong></Toast.Header>
+                    <Toast.Body>
+                        <Form style={{ margin: '10px' }}>
+                            <Form.Group className="mb-3" controlId="formBasicEmail">
+                                <Form.Label>Material Name</Form.Label>
+                                <Form.Control type="text" placeholder="Enter material name" onChange={(e) => setMaterialName(e.target.value)} />
+                            </Form.Group>
+                            <Form.Group className="mb-3" controlId="formBasicPassword">
+                                <Form.Label>Resolution (µm/pixel)</Form.Label>
+                                <Form.Control type="text" placeholder="Enter resolution" onChange={(e) => setResolution(e.target.value)} />
+                            </Form.Group>
+                            <Form.Group className="mb-3" controlId="formBasicPassword">
+                                <Form.Label>Instrument Type</Form.Label>
+                                <Form.Control type="text" placeholder="Enter instrument type" onChange={(e) => setInstrumentType(e.target.value)} />
+                            </Form.Group>
+                            <Form.Group className="mb-3" controlId="formBasicPassword">
+                                <Form.Label>Additional Notes</Form.Label>
+                                <Form.Control type="text" placeholder="Enter additional notes" onChange={(e) => setAdditionalNotes(e.target.value)} />
+                            </Form.Group>
+                        </Form>
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <Button variant="dark" onClick={handleMetaSend} >Send</Button>
+                        </div>
+                    </Toast.Body>
+
+                </Toast>
+            </ToastContainer>
+
+        </>
     )
 }
 

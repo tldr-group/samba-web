@@ -46,29 +46,31 @@ const MultiCanvas = () => {
     const animatedOverlayRef = useRef<HTMLCanvasElement>(null);
     const animatedCanvasRef = useRef<HTMLCanvasElement>(null);
 
-    const polyPoints = useRef<Array<Offset>>([]);
+    const polyPoints = useRef<Array<Offset>>([]); //current polygon points
     const animationRef = useRef<number>(0);
 
     const zoom = useRef<number>(1);
-    const cameraOffset = useRef<Offset>({ x: 0, y: 0 })
-    const mousePos = useRef<Offset>({ x: 0, y: 0 })
+    const cameraOffset = useRef<Offset>({ x: 0, y: 0 });
+    const mousePos = useRef<Offset>({ x: 0, y: 0 });
 
     const containerRef = useRef<HTMLDivElement>(null);
-    const [canvSize, setCanvSize] = useState<Offset>({ x: 300, y: 150 })
+    const [canvSize, setCanvSize] = useState<Offset>({ x: 300, y: 150 });
 
     const [labelImg, setLabelImg] = useState<HTMLImageElement | null>(null);
     const [segImg, setSegImg] = useState<HTMLImageElement | null>(null);
 
     // Our images - when we update them their corresponding canvas changes. 
-    const groundTruths = [image, segImg, labelImg, maskImg]
+    const groundTruths = [image, segImg, labelImg, maskImg];
     // Our canvases - updated when our images update but also can update them (i.e when drawing labels.)
-    const refs = [imgCanvasRef, segCanvasRef, labelCanvasRef, animatedCanvasRef, animatedOverlayRef]
+    const refs = [imgCanvasRef, segCanvasRef, labelCanvasRef, animatedCanvasRef, animatedOverlayRef];
     // Track mouse state (for drag drawing)
     const clicking = useRef<boolean>(false);
 
-    const uniqueLabels = useRef<Set<number>>(new Set());
+    const uniqueLabels = useRef<Set<number>>(new Set()); // used to track when we can press segment 
 
     const updateSAM = () => {
+        /* Called when user clicks using SAM labelling: gets natural (image) coordinates of click and 
+        adds that to clicks state, which has a listener in app to feed them into the decoder.*/
         const canvX = mousePos.current.x;
         const canvY = mousePos.current.y;
         const ctx = getctx(animatedCanvasRef);
@@ -86,20 +88,24 @@ const MultiCanvas = () => {
 
     const handleClick = (e: any) => {
         // Start tracking user click
-        const drawing = (labelType == "Brush" || labelType == "Erase")
+        const drawing = (labelType == "Brush" || labelType == "Erase");
         if (drawing) { clicking.current = true; }
     };
 
     const addCanvasToArr = (canvas: HTMLCanvasElement, img: HTMLImageElement, oldArr: Uint8ClampedArray, erase = false) => {
+        /* Once label confirmed, transfer the data from the animation canvas to the label canvas. Start by drawing animated
+        canvas to the right size (i.e natural coordinates), then get image data from that, then add that image data to
+        to the labels arr by looping over every element and setting unset elements in labelArr to the class value of
+        the new image data. */
         const transferCtx = transferLabels(canvas, img, cameraOffset.current, zoom.current);
         if (transferCtx === undefined || image === null) { return; };
         // (relatively) slow operation as needs to draw onto full image size
         const imageData = transferCtx.getImageData(0, 0, image?.width, image?.height);
-        const currentClass = (erase === true) ? 0 : labelClass
+        const currentClass = (erase === true) ? 0 : labelClass;
         if (labelClass > 0) {
-            const set = uniqueLabels.current
-            const n_labels = set.size + 1
-            set.add(labelClass)
+            const set = uniqueLabels.current;
+            const n_labels = set.size + 1;
+            set.add(labelClass);
             if (n_labels > 1) { setProcessing("None") }
         }
         const arr = addImageDataToArray(imageData, oldArr, currentClass, erase);
@@ -107,15 +113,17 @@ const MultiCanvas = () => {
     }
 
     const finishPolygon = (polygon: Array<Offset>, labelIdx: number, labelImg: HTMLImageElement, ctx: CanvasRenderingContext2D) => {
+        // Finish polygon, add it to label arr, reset polygon.
         const c = colours[labelClass];
         const hex = rgbaToHex(c[0], c[1], c[2], 255);
-        drawPolygon(ctx, polygon, hex, true)
-        const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr)
+        drawPolygon(ctx, polygon, hex, true);
+        const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr);
         if (arr !== undefined) { setLabelArr(arr); }
-        polyPoints.current = []
+        polyPoints.current = [];
     }
 
     const checkSnap = (x: number, y: number, points: Array<Offset>) => {
+        // Check if mouse hover close enough to the starting polygon point to 'snap'
         if (points.length <= 1) {
             return { success: false, x: -1, y: -1 };
         }
@@ -142,37 +150,39 @@ const MultiCanvas = () => {
         if (drawing && leftClick) { clicking.current = false; };
         if ((labelType == "Brush" || labelType == "Smart Labelling") && leftClick) {
             // Draw what was on our animated canvas (brush or SAM) onto the label canvas
-            const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr)
+            const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr);
             if (arr !== undefined) { setLabelArr(arr); }
             clearctx(animatedCanvasRef);
         } else if (labelType == "Smart Labelling" && rightClick) {
             // Update SAM type when right clicking
             const newMaskIdx = (maskIdx % 3) + 1;
             setMaskIdx((newMaskIdx));
-            updateSAM()
+            updateSAM();
         } else if (labelType == "Erase") {
             // Erase directly on labels (so get real time preview). Not currently working
             const labelctx = getctx(labelCanvasRef);
             if (labelctx === null) { return }
-            const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr, true)
+            const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr, true);
             if (arr !== undefined) { setLabelArr(arr); }
             clearctx(animatedCanvasRef);
             //setLabelArr(arr);
         } else if (labelType === "Polygon" && leftClick) {
-            const snap = checkSnap(mousePos.current.x, mousePos.current.y, polyPoints.current)
+            // Check for snap and finish or add another point
+            const snap = checkSnap(mousePos.current.x, mousePos.current.y, polyPoints.current);
             if (snap.success) {
-                finishPolygon(polyPoints.current, labelClass, labelImg, ctx)
-                clearctx(animatedCanvasRef)
+                finishPolygon(polyPoints.current, labelClass, labelImg, ctx);
+                clearctx(animatedCanvasRef);
             } else {
                 const newPoly = appendArr(polyPoints.current, mousePos.current);
                 polyPoints.current = newPoly;
             }
         } else if (labelType === "Polygon" && rightClick) {
-            const animctx = getctx(animatedOverlayRef)
+            // Finish on right click
+            const animctx = getctx(animatedOverlayRef);
             if (animctx === null) { return }
             const newPoly = appendArr(polyPoints.current, mousePos.current);
-            finishPolygon(newPoly, labelClass, labelImg, ctx)
-            clearctx(animatedCanvasRef)
+            finishPolygon(newPoly, labelClass, labelImg, ctx);
+            clearctx(animatedCanvasRef);
         }
     };
 
@@ -210,21 +220,20 @@ const MultiCanvas = () => {
         // Adjust the zoom level based on scroll wheel delta
         //e.preventDefault()
         const delta = e.deltaY * SCROLL_SENSITIVITY > 0 ? -0.1 : 0.1; // Change the zoom increment as needed
-        const speed = (zoom.current < 1) ? SCROLL_SPEED * zoom.current : SCROLL_SPEED
+        const speed = (zoom.current < 1) ? SCROLL_SPEED * zoom.current : SCROLL_SPEED;
         let newZoom = zoom.current + delta * speed;
         newZoom = Math.min(newZoom, MAX_ZOOM);
         newZoom = Math.max(newZoom, MIN_ZOOM);
         if (image === null) { return }
-        const newOffset = computeNewZoomOffset(zoom.current, newZoom, mousePos.current, cameraOffset.current)
+        const newOffset = computeNewZoomOffset(zoom.current, newZoom, mousePos.current, cameraOffset.current);
         drawAllCanvases(newZoom, newOffset); //cameraOffset.current
-        //drawAllCanvases(newZoom, cameraOffset.current)
         resetLabels();
         zoom.current = newZoom;
-        cameraOffset.current = newOffset
+        cameraOffset.current = newOffset;
     };
 
     const handleKeyPress = (e: any) => {
-        console.log(e.key)
+        // Keypresses are either: setting class, cancelling, changing visibility or panning
         if (e.key >= '0' && e.key <= '6') {
             // Perform desired actions for number key press
             console.log('Number key pressed:', e.key);
@@ -233,31 +242,33 @@ const MultiCanvas = () => {
                 updateSAM();
             }
         } else if (e.key === 'Escape') {
-            resetLabels()
+            resetLabels();
         } else if (e.key === 'v') {
-            toggleVisibility()
+            toggleVisibility();
         } else {
             handlePanKey(e);
         }
     }
 
     const toggleVisibility = () => {
+        // Cycle through overlay visibilities
         if (overlayType === "Segmentation") {
-            setSegOpacity(0)
-            setLabelOpacity(200)
-            setOverlayType("Label")
+            setSegOpacity(0);
+            setLabelOpacity(200);
+            setOverlayType("Label");
         } else if (overlayType === "Label") {
-            setSegOpacity(0)
-            setLabelOpacity(0)
-            setOverlayType("None")
+            setSegOpacity(0);
+            setLabelOpacity(0);
+            setOverlayType("None");
         } else if (overlayType === "None") {
-            setSegOpacity(200)
-            setLabelOpacity(0)
-            setOverlayType("Segmentation")
+            setSegOpacity(200);
+            setLabelOpacity(0);
+            setOverlayType("Segmentation");
         }
     }
 
     const handlePanKey = (e: any) => {
+        // Move image around with arrow keys
         let redraw = false;
         let newOffset: Offset;
         const c = cameraOffset.current;
@@ -287,22 +298,25 @@ const MultiCanvas = () => {
     }
 
     const resetLabels = () => {
-        polyPoints.current = []
-        clearctx(animatedCanvasRef)
-        clearctx(animatedOverlayRef)
-        setMaskImg(null)
+        // Simple reset, triggered on esc key or moving out of bounds
+        polyPoints.current = [];
+        clearctx(animatedCanvasRef);
+        clearctx(animatedOverlayRef);
+        setMaskImg(null);
     }
 
     const resetAnimation = () => {
-        window.cancelAnimationFrame(animationRef.current)
-        animation()
+        window.cancelAnimationFrame(animationRef.current);
+        animation();
     }
 
     const animation = () => {
+        /* Uses requestAnimationFrame to update animation canvas every user frame, allowing
+        for brush/erase/polygon preview. Needs to be erased and drawn every frame. */
         if (animatedOverlayRef.current === null) { return; }
-        const ctx = getctx(animatedOverlayRef)
+        const ctx = getctx(animatedOverlayRef);
         if (ctx === null) { return; }
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         const c = colours[labelClass];
         const hex = rgbaToHex(c[0], c[1], c[2], 255);
         if (labelType === "Brush") {
@@ -310,11 +324,11 @@ const MultiCanvas = () => {
         } else if (labelType === "Erase") {
             drawErase(ctx, mousePos.current.x, mousePos.current.y, brushWidth, false);
         } else if (labelType === "Polygon") {
-            const pointsPlaced = (polyPoints.current.length > 0)
+            const pointsPlaced = (polyPoints.current.length > 0);
             if (pointsPlaced) {
                 drawPolygon(ctx, polyPoints.current, hex);
                 drawPolygon(ctx, [polyPoints.current[polyPoints.current.length - 1], mousePos.current], hex);
-                const snap = checkSnap(mousePos.current.x, mousePos.current.y, polyPoints.current)
+                const snap = checkSnap(mousePos.current.x, mousePos.current.y, polyPoints.current);
                 if (snap.success) {
                     draw(ctx, snap.x, snap.y, 10, hex, false);
                 }
@@ -324,6 +338,7 @@ const MultiCanvas = () => {
     }
 
     const drawAllCanvases = (updateZoom: number, updateOffset: Offset) => {
+        // For each of our 4 canvases, clear them then draw the data.
         for (let i = 0; i < refs.length - 1; i++) {
             const ctx = getctx(refs[i])
             const gt = groundTruths[i]
@@ -345,12 +360,15 @@ const MultiCanvas = () => {
     }
 
     const updateImgOnArr = (arr: Uint8ClampedArray, img: HTMLImageElement | null, opacity: number, setterFn: any) => {
+        /* 'Polymorphic' function used in listeners to set the image on the canvas when the corresponding array 
+        is changed (i.e when a label is added) */
         if (img === null) { return; }
         const newImageData = arrayToImageData(arr, img.height, img.width, 0, null, opacity);
         const newImage = imageDataToImage(newImageData);
         setterFn(newImage);
     }
 
+    // Global state listeners, mostly of arrays.
     useEffect(() => {
         console.log('Image changed');
         let ctx = getctx(imgCanvasRef);
@@ -362,64 +380,64 @@ const MultiCanvas = () => {
         setSegImg(newSegImg);
 
         if (ctx !== null) { drawImage(ctx, image, cameraOffset.current, zoom.current); }
-        animation()
+        animation(); //start the animation loop
     }, [image])
 
     useEffect(() => {
-        drawImgOnUpdate(animatedCanvasRef, maskImg)
+        drawImgOnUpdate(animatedCanvasRef, maskImg);
     }, [maskImg])
 
     useEffect(() => {
-        updateImgOnArr(labelArr, image, labelOpacity, setLabelImg)
-    }, [labelArr, labelOpacity])
+        updateImgOnArr(labelArr, image, labelOpacity, setLabelImg);
+    }, [labelArr, labelOpacity]) //update the label img when opacity changed OR when label arr changes
 
     useEffect(() => {
-        updateImgOnArr(segArr, image, segOpacity, setSegImg)
+        updateImgOnArr(segArr, image, segOpacity, setSegImg);
     }, [segArr, segOpacity])
 
     useEffect(() => {
-        drawImgOnUpdate(labelCanvasRef, labelImg)
+        drawImgOnUpdate(labelCanvasRef, labelImg);
     }, [labelImg])
 
     useEffect(() => {
-        drawImgOnUpdate(segCanvasRef, segImg)
+        drawImgOnUpdate(segCanvasRef, segImg);
     }, [segImg])
 
     useEffect(() => {
-        resetLabels()
+        resetLabels();
     }, [labelType]) // clear animated canvas when switching
 
     useEffect(() => {
+        // Window resize listener
         for (let ref of refs) {
-            const canv = ref.current
+            const canv = ref.current;
             if (canv) {
-                canv.width = canvSize.x
-                canv.height = canvSize.y
+                canv.width = canvSize.x;
+                canv.height = canvSize.y;
             }
         }
         if (image === null) { return }
-        const centreOffset = computeCentreOffset(image, canvSize.x, canvSize.y)
-        console.log(centreOffset)
-        cameraOffset.current = centreOffset
-        drawAllCanvases(zoom.current, centreOffset)
+        const centreOffset = computeCentreOffset(image, canvSize.x, canvSize.y);
+        console.log(centreOffset);
+        cameraOffset.current = centreOffset;
+        drawAllCanvases(zoom.current, centreOffset);
     }, [canvSize])
 
     useEffect(() => {
+        // When first load listener
         const resizeCanvs = () => {
-            const container = containerRef.current
+            const container = containerRef.current;
             if (container) {
-                const newCanvSize = { x: container.clientWidth, y: container.clientHeight }
-                setCanvSize(newCanvSize)
+                const newCanvSize = { x: container.clientWidth, y: container.clientHeight };
+                setCanvSize(newCanvSize);
             }
         }
-        resizeCanvs()
-        window.addEventListener('resize', resizeCanvs)
+        resizeCanvs();
+        window.addEventListener('resize', resizeCanvs);
     }, [])
 
-    useEffect(() => { resetAnimation() }, [labelType, brushWidth, labelClass])
+    useEffect(() => { resetAnimation() }, [labelType, brushWidth, labelClass]);
 
-
-    // Fixed canvas width will cause errors later i.e lack of resizing //onWheel={handleScroll} onKeyUp={e => onKeyUp(e)}
     return (
         <div onMouseDown={handleClick}
             onMouseMove={handleClickMove}

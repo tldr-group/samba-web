@@ -22,29 +22,29 @@ const ort = require("onnxruntime-web");
 import npyjs from "npyjs";
 
 const MODEL_DIR = "/model/sam_onnx_quantized_example.onnx";
-const DEFAULT_IMAGE = "/assets/data/default_image.png"
-const DEFAULT_EMBEDDING = "/assets/data/default_encoding.npy"
+const DEFAULT_IMAGE = "/assets/data/default_image.png";
+const DEFAULT_EMBEDDING = "/assets/data/default_encoding.npy";
 
 // URLS of our API endpoints - change when live
 //const PATH = "https://samba-segment.azurewebsites.net/"
-const PATH = "http://127.0.0.1:5000"
-const INIT_ENDPOINT = PATH + "/init"
-const ENCODE_ENDPOINT = PATH + "/encoding"
-const FEATURISE_ENDPOINT = PATH + "/featurising"
-const DELETE_ENDPOINT = PATH + "/delete"
-const SEGMENT_ENDPOINT = PATH + "/segmenting"
-const SAVE_ENDPOINT = PATH + "/saving"
-const LOAD_CLASSIFIER_ENDPOINT = PATH + "/lclassifier"
-const SAVE_LABEL_ENDPOINT = PATH + "/slabel"
+const PATH = "http://127.0.0.1:5000";
+const INIT_ENDPOINT = PATH + "/init";
+const ENCODE_ENDPOINT = PATH + "/encoding";
+const FEATURISE_ENDPOINT = PATH + "/featurising";
+const DELETE_ENDPOINT = PATH + "/delete";
+const SEGMENT_ENDPOINT = PATH + "/segmenting";
+const SAVE_ENDPOINT = PATH + "/saving";
+const LOAD_CLASSIFIER_ENDPOINT = PATH + "/lclassifier";
+const SAVE_LABEL_ENDPOINT = PATH + "/slabel";
 
 const getb64Image = (img: HTMLImageElement): string => {
   // Convert HTML Image to b64 string encoding by drawing onto canvas. Used for sending over HTTP
   const tempCanvas = document.createElement("canvas");
-  tempCanvas.width = img.width
-  tempCanvas.height = img.height
+  tempCanvas.width = img.width;
+  tempCanvas.height = img.height;
   const ctx = tempCanvas.getContext("2d");
-  ctx?.drawImage(img, 0, 0, img.width, img.height)
-  const b64image = tempCanvas.toDataURL("image/jpeg")
+  ctx?.drawImage(img, 0, 0, img.width, img.height);
+  const b64image = tempCanvas.toDataURL("image/jpeg");
   return b64image
 }
 
@@ -56,10 +56,12 @@ const updateArr = (oldArr: Array<any>, idx: number, setVal: any) => {
 };
 
 const appendToArr = (oldArr: Array<any>, toAdd: Array<any>) => {
+  // Functional array appending
   return oldArr.concat(toAdd)
 }
 
 const deleteIdx = (oldArr: Array<any>, idx: number) => {
+  // Functional array deleting
   const newArr = oldArr.filter((v, i) => (i != idx));
   return newArr
 }
@@ -71,14 +73,15 @@ const getRandomInt = (max: number) => {
 
 const getUID = () => {
   // 'Unique' session identifier for a client: UNIX timestamp + 5 digit random code. Odds of collision negligible.
-  const maxes = [9, 9, 9, 9, 9]
-  const id = maxes.map((v, i) => String(getRandomInt(v)))
+  const maxes = [9, 9, 9, 9, 9];
+  const id = maxes.map((v, i) => String(getRandomInt(v)));
   return String(Date.now()) + id.join('')
 }
 
 const UID = getUID()
 
 const App = () => {
+  // Global state of our app: shared with lots of subcomponents via Context
   const {
     clicks: [clicks],
     imgType: [imgType,],
@@ -113,9 +116,10 @@ const App = () => {
   // The modelScale state variable keeps track of the scale values.
   const [modelScale, setModelScale] = useState<modelScaleProps | null>(null);
 
-  const [segmentFlag, setSegmentFlag] = useState<boolean>(false)
-  const [featureFlag, setFeatureFlag] = useState<boolean>(false)
-  const [applyFlag, setApplyFlag] = useState<boolean>(false)
+  // Flags to check if featurising done (to block segmentation request on frontend)
+  const [segmentFlag, setSegmentFlag] = useState<boolean>(false);
+  const [featureFlag, setFeatureFlag] = useState<boolean>(false);
+  const [applyFlag, setApplyFlag] = useState<boolean>(false);
 
   useEffect(() => {
     // Initialize the ONNX model on load
@@ -126,22 +130,23 @@ const App = () => {
         const model = await InferenceSession.create(URL);
         setModel(model);
       } catch (e) {
-        const error = e as Error
-        setErrorObject({ msg: "Failed to initialise model", stackTrace: error.toString() })
+        const error = e as Error;
+        setErrorObject({ msg: "Failed to initialise model", stackTrace: error.toString() });
         console.log(e);
       }
     };
     initModel();
     initBackend();
-    setPath(PATH)
-    setUID(UID)
-    const showHelp = localStorage.getItem("showHelp")
+    setPath(PATH);
+    setUID(UID);
+    const showHelp = localStorage.getItem("showHelp");
     if (showHelp === null || showHelp === "true") {
-      setModalShow({ welcome: true, settings: false, features: false })
+      setModalShow({ welcome: true, settings: false, features: false });
     }
   }, []);
 
   const initBackend = async () => {
+    // Create user data folder on backend
     try {
       const headers = new Headers();
       headers.append('Content-Type', 'application/json;charset=utf-8');
@@ -165,7 +170,7 @@ const App = () => {
       const nullSegs: Array<Uint8ClampedArray> = [];
       const nullTensors: Array<any | null> = [];
       for (let i = 0; i < hrefs.length; i++) {
-        const href = hrefs[i]
+        const href = hrefs[i];
         const img = new Image();
         img.src = href;
         img.onload = () => {
@@ -184,51 +189,53 @@ const App = () => {
           }
           // Set the arrays once only when very last image is loaded
           if (i === hrefs.length - 1) {
-            updateAllArrs(imgs, nullLabels, nullSegs, nullTensors)
+            updateAllArrs(imgs, nullLabels, nullSegs, nullTensors);
           }
         };
       }
     } catch (e) {
-      const error = e as Error
-      setErrorObject({ msg: "Failed to load images from href", stackTrace: error.toString() })
+      const error = e as Error;
+      setErrorObject({ msg: "Failed to load images from href", stackTrace: error.toString() });
       console.log(e);
     }
   };
 
   const updateAllArrs = (imgs: Array<HTMLImageElement>, labels: Array<Uint8ClampedArray>,
     segs: Array<Uint8ClampedArray>, tensors: Array<any>) => {
+    // Used to set all arrays once image loaded
     if (imgArrs.length > 0) {
-      const isStack = (imgType === "stack")
-      const sizeMatches = (imgs[0].width === imgArrs[0].width && imgs[0].height === imgArrs[0].height)
+      const isStack = (imgType === "stack");
+      const sizeMatches = (imgs[0].width === imgArrs[0].width && imgs[0].height === imgArrs[0].height);
       if (isStack && !sizeMatches) {
-        setErrorObject({ msg: "Size of two stacks don't match!", stackTrace: "" })
+        setErrorObject({ msg: "Size of two stacks don't match!", stackTrace: "" });
         return
       }
     }
-    requestFeatures(imgs, imgArrs.length)
-    const newImgs = appendToArr(imgArrs, imgs)
+    requestFeatures(imgs, imgArrs.length);
+    const newImgs = appendToArr(imgArrs, imgs);
     setImgArrs(newImgs);
-    const newLabels = appendToArr(labelArrs, labels)
+    const newLabels = appendToArr(labelArrs, labels);
     setLabelArrs(newLabels);
-    const newSegArrs = appendToArr(segArrs, segs)
+    const newSegArrs = appendToArr(segArrs, segs);
     setSegArrs(newSegArrs);
-    const newTensors = appendToArr(tensorArrs, tensors)
+    const newTensors = appendToArr(tensorArrs, tensors);
     setTensorArrs(newTensors);
   }
 
   const deleteAllFiles = async () => {
+    // Delete arrays locally and ping endpoint to delete on server
     try {
       const headers = new Headers();
       headers.append('Content-Type', 'application/json;charset=utf-8');
       await fetch(DELETE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "idx": -1 }) });
-      setImgArrs([])
-      setLabelArrs([])
-      setSegArrs([])
-      setTensorArrs([])
-      setImage(null)
-      setLabelArr(new Uint8ClampedArray(1))
-      setSegArr(new Uint8ClampedArray(1))
-      setTensor(null)
+      setImgArrs([]);
+      setLabelArrs([]);
+      setSegArrs([]);
+      setTensorArrs([]);
+      setImage(null);
+      setLabelArr(new Uint8ClampedArray(1));
+      setSegArr(new Uint8ClampedArray(1));
+      setTensor(null);
     } catch (e) {
       const error = e as Error;
       setErrorObject({ msg: "Failed to delete files.", stackTrace: error.toString() });
@@ -237,7 +244,7 @@ const App = () => {
 
   const deleteCurrentFile = async () => {
     if (imgArrs.length == 1) { //delete all if one file
-      deleteAllFiles()
+      deleteAllFiles();
       return
     }
 
@@ -245,12 +252,12 @@ const App = () => {
       const headers = new Headers();
       headers.append('Content-Type', 'application/json;charset=utf-8');
       await fetch(DELETE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "idx": imgIdx }) });
-      const newIdx = (imgIdx == 0) ? 1 : imgIdx - 1
-      changeToImage(imgIdx, newIdx)
-      setImgArrs(deleteIdx(imgArrs, imgIdx))
-      setSegArrs(deleteIdx(segArrs, imgIdx))
-      setLabelArrs(deleteIdx(labelArrs, imgIdx))
-      setTensorArrs(deleteIdx(tensorArrs, imgIdx))
+      const newIdx = (imgIdx == 0) ? 1 : imgIdx - 1;
+      changeToImage(imgIdx, newIdx);
+      setImgArrs(deleteIdx(imgArrs, imgIdx));
+      setSegArrs(deleteIdx(segArrs, imgIdx));
+      setLabelArrs(deleteIdx(labelArrs, imgIdx));
+      setTensorArrs(deleteIdx(tensorArrs, imgIdx));
       setImgIdx(imgIdx) // CHECK THIS AT SOME POINT
     } catch (e) {
       const error = e as Error;
@@ -260,15 +267,15 @@ const App = () => {
 
   const changeToImage = (oldIdx: number, newIdx: number) => {
     // Update arrs with arrs of old image, then switch to new one.
-    const newLabelArrs = updateArr(labelArrs, oldIdx, labelArr)
-    const newSegArrs = updateArr(segArrs, oldIdx, segArr)
-    const newTensorArrs = updateArr(tensorArrs, oldIdx, tensor)
-    setLabelArrs(newLabelArrs)
-    setSegArrs(newSegArrs)
-    setTensorArrs(newTensorArrs)
+    const newLabelArrs = updateArr(labelArrs, oldIdx, labelArr);
+    const newSegArrs = updateArr(segArrs, oldIdx, segArr);
+    const newTensorArrs = updateArr(tensorArrs, oldIdx, tensor);
+    setLabelArrs(newLabelArrs);
+    setSegArrs(newSegArrs);
+    setTensorArrs(newTensorArrs);
 
     // Set samScale of model for new image
-    const img = imgArrs[newIdx]
+    const img = imgArrs[newIdx];
     const { height, width, samScale } = handleImageScale(img);
     setModelScale({
       height: height,
@@ -280,10 +287,11 @@ const App = () => {
     setImage(img);
     setLabelArr(newLabelArrs[newIdx]);
     setSegArr(newSegArrs[newIdx]);
-    setTensor(newTensorArrs[newIdx])
+    setTensor(newTensorArrs[newIdx]);
   }
 
   const loadDefault = async () => {
+    // Load default image and sam embedding
     const url = new URL(DEFAULT_IMAGE, location.origin);
     await loadImages([url.href]);
     let npLoader = new npyjs();
@@ -294,6 +302,7 @@ const App = () => {
   }
 
   const requestFeatures = async (imgs: Array<HTMLImageElement>, offset: number = 0) => {
+    // Request featurisation of images on backend. Offset in case new image added.
     const b64images: string[] = imgs.map((img, i) => getb64Image(img));
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
@@ -301,9 +310,7 @@ const App = () => {
     try {
       await fetch(FEATURISE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "images": b64images, "id": UID, "features": features, "offset": offset }) });
       console.log("Finished Featurising");
-      //const segFeat = { feature: true, segment: segmentFeature.segment }
-      //setSegmentFeature(segFeat)
-      setFeatureFlag(true)
+      setFeatureFlag(true);
     } catch (e) {
       const error = e as Error;
       setErrorObject({ msg: "Failed to featurise.", stackTrace: error.toString() });
@@ -311,12 +318,12 @@ const App = () => {
   }
 
   const requestEmbedding = async () => {
-    // Ping our encode enpoint, request and await an embedding, then set it.
+    // Ping our encode enpoint, request and await a SAM embedding, then set it.
     if (tensor != null || image === null) { // Early return if we already have one
       return;
     }
-    console.log(UID)
-    setProcessing("Encoding")
+    console.log(UID);
+    setProcessing("Encoding");
     const b64image = getb64Image(image);
     let npLoader = new npyjs();
     const headers = new Headers();
@@ -331,27 +338,29 @@ const App = () => {
     } catch (e) {
       const error = e as Error;
       setErrorObject({ msg: "Failed to encode image.", stackTrace: error.toString() });
-      setLabelType("Brush")
+      setLabelType("Brush");
     }
     setProcessing("None");
     return
   };
 
   const checkToSegment = (featFlag: boolean, segFlag: boolean, appFlag: boolean) => {
+    // Check if segment & feature flag set or apply & feature flag set, then train
     if (featFlag == true && segFlag == true) {
-      trainClassifier()
+      trainClassifier();
     } else if (featFlag == true && appFlag == true) {
-      trainClassifier(true)
+      trainClassifier(true);
     }
   }
 
   const trainPressed = () => {
+    // Set segment flag when pressed: will wait till features done before training
     if (image == null || labelArr == null) { return }
 
     if (segmentFlag === true) {
-      checkToSegment(featureFlag, true, false)
+      checkToSegment(featureFlag, true, false);
     } else {
-      setSegmentFlag(true)
+      setSegmentFlag(true);
     }
     setProcessing("Segmenting");
   }
@@ -359,9 +368,9 @@ const App = () => {
   const applyPressed = () => {
     if (image == null) { return }
     if (applyFlag === true) {
-      checkToSegment(featureFlag, false, true)
+      checkToSegment(featureFlag, false, true);
     } else {
-      setApplyFlag(true)
+      setApplyFlag(true);
     }
     setProcessing("Applying");
   }
@@ -381,9 +390,9 @@ const App = () => {
       largeH = largeImg.height;
     }
 
-    let msg
+    // We need to send lots of info to classifier to cover different image types
+    let msg;
     if (apply == false && labelArr != null) {
-      console.log(imgIdx)
       const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
       setLabelArrs(newLabelArrs);
       msg = {
@@ -409,9 +418,9 @@ const App = () => {
       setErrorObject({ msg: "Failed to segment.", stackTrace: error.toString() });
     }
     if (apply === false) {
-      setSegmentFlag(false)
+      setSegmentFlag(false);
     } else {
-      setApplyFlag(false)
+      setApplyFlag(false);
     }
     setProcessing("None");
     setOverlayType("Segmentation")
@@ -424,22 +433,22 @@ const App = () => {
     const dataView = new DataView(buffer);
     const arrayLength = buffer.byteLength;
 
-    let newSegArrs: Array<Uint8ClampedArray> = []
-    let [idx, j, limit]: number[] = [1, 0, imgArrs[0].width * imgArrs[0].height]
+    let newSegArrs: Array<Uint8ClampedArray> = [];
+    let [idx, j, limit]: number[] = [1, 0, imgArrs[0].width * imgArrs[0].height];
     let tempArr = new Uint8ClampedArray(limit).fill(0);
 
     for (let i = 0; i < arrayLength; i++) {
       if (j == limit) {
-        j = 0
-        newSegArrs.push(tempArr)
+        j = 0;
+        newSegArrs.push(tempArr);
         if (idx < imgArrs.length) {
-          limit = imgArrs[idx].width * imgArrs[idx].height
+          limit = imgArrs[idx].width * imgArrs[idx].height;
           tempArr = new Uint8ClampedArray(limit).fill(0);
-          idx += 1
+          idx += 1;
         }
       }
       tempArr[j] = dataView.getUint8(i);
-      j += 1
+      j += 1;
     }
     newSegArrs.push(tempArr); //needed for the last one where j < limit
     setSegArrs(newSegArrs);
@@ -447,16 +456,17 @@ const App = () => {
   }
 
   const saveArrAsTIFF = async (ENDPOINT: string, body_text: any, fname: string) => {
+    // Request segmentation tiff on backend and download via 'clicking' on temporary element
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     try {
-      let resp = await fetch(ENDPOINT, { method: 'POST', headers: headers, body: body_text })
+      let resp = await fetch(ENDPOINT, { method: 'POST', headers: headers, body: body_text });
       const buffer = await resp.arrayBuffer();
-      const a = document.createElement("a")
-      a.download = fname
+      const a = document.createElement("a");
+      a.download = fname;
       const file = new Blob([buffer], { type: "image/tiff" });
       a.href = URL.createObjectURL(file);
-      a.click()
+      a.click();
     } catch (e) {
       const error = e as Error;
       setErrorObject({ msg: "Failed to dowload TIFF.", stackTrace: error.toString() });
@@ -464,6 +474,7 @@ const App = () => {
   }
 
   const onSaveClick = async () => {
+    // Download segmentation tiff and show 'Share' toast popup
     if (image === null || segArr === null) { return; }
     saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID, "rescale": settings.rescale, "type": "segmentation" }), "seg.tiff")
     setShowToast(true);
@@ -474,30 +485,31 @@ const App = () => {
     const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
     setLabelArrs(newLabelArrs);
     const b64images: string[] = imgArrs.map((img, i) => getb64Image(img));
-    let [largeW, largeH]: Array<number> = [0, 0]
+    let [largeW, largeH]: Array<number> = [0, 0];
     if (imgType === "large" && largeImg !== null) {
-      largeW = largeImg.width
-      largeH = largeImg.height
+      largeW = largeImg.width;
+      largeH = largeImg.height;
     }
     const dict = {
       "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
       "large_w": largeW, "large_h": largeH, "rescale": settings.rescale
     }
-    const msg = JSON.stringify(dict)
-    saveArrAsTIFF(SAVE_LABEL_ENDPOINT, msg, "label.tiff")
+    const msg = JSON.stringify(dict);
+    saveArrAsTIFF(SAVE_LABEL_ENDPOINT, msg, "label.tiff");
   }
 
   const saveClassifier = async () => {
+    // Download classifier from backend, parameterised by backend choice in settings
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
     try {
       let resp = await fetch(SAVE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "format": settings.format, "type": "classifier" }) })
       const buffer = await resp.arrayBuffer();
-      const a = document.createElement("a")
-      a.download = "classifier" + settings.format
+      const a = document.createElement("a");
+      a.download = "classifier" + settings.format;
       const file = new Blob([buffer], { type: "application/octet-stream" });
       a.href = URL.createObjectURL(file);
-      a.click()
+      a.click();
     } catch (e) {
       const error = e as Error;
       setErrorObject({ msg: "Failed to dowload classifier.", stackTrace: error.toString() });
@@ -505,6 +517,7 @@ const App = () => {
   }
 
   const loadClassifier = async (file: File) => {
+    // Load a classifier from local file, send to backend.
     const headers = new Headers();
     const reader = new FileReader();
     const extension = file.name.split('.').pop()?.toLowerCase();
@@ -512,11 +525,11 @@ const App = () => {
     reader.readAsDataURL(file)
 
     reader.onload = () => {
-      console.log("loading classifier")
+      console.log("loading classifier");
       if (isSkops) {
         headers.append('Content-Type', 'application/json;charset=utf-8');
         try {
-          const b64 = reader.result
+          const b64 = reader.result;
           let resp = fetch(LOAD_CLASSIFIER_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "bytes": b64 }) });
         } catch (error: any) {
           setErrorObject({ msg: "Failed to load classifier", stackTrace: error.message as string });

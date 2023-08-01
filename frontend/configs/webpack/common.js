@@ -71,6 +71,7 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       template: "./src/assets/index.html",
+      favicon: "./src/assets/icons/favicon.png"
     }),
     new FriendlyErrorsWebpackPlugin(),
     new webpack.ProvidePlugin({

@@ -89,8 +89,8 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
         <Navbar bg={themeBGs[theme][0]} variant="dark" expand="lg" style={{ boxShadow: "1px 1px  1px grey" }
         }>
             <Container>
-                <Navbar.Brand style={{ fontSize: "2em", padding: "0px", marginRight: "5px" }}>&#128378;</Navbar.Brand>
-                <Navbar.Brand>SAMBA</Navbar.Brand>
+                <Navbar.Brand><img src="/assets/icons/favicon.png" width="40" height="40" className="d-inline-block align-top" /></Navbar.Brand>
+                <Navbar.Brand style={{ marginLeft: "-25px", marginTop: "3px" }}>AMBA</Navbar.Brand>
                 <Navbar.Toggle aria-controls="basic-navbar-nav" />
                 <Navbar.Collapse id="basic-navbar-nav">
                     <Nav className="me-auto">

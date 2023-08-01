@@ -55,26 +55,27 @@ const Gallery = () => {
     const [segFlag, setSegFlag] = useState<boolean>(false)
 
 
-async function getGalleryArray(containerClient: any) {
+    async function getGalleryArray(containerClient: any) {
 
-    let iterator = containerClient.listBlobsFlat()
-    const segArr = [];
-    const imgArr = [];
-    const metaArr = [] as any[];
+        let iterator = containerClient.listBlobsFlat()
+        const segArr = [];
+        const imgArr = [];
+        const metaArr = [] as any[];
 
-    for await (const i of iterator){
-        if (i.name.includes('seg.jpg')){segArr.push(i.name)}
-    else if (i.name.includes('img.jpg')){imgArr.push(i.name)}
-    else if (i.name.includes('metadata.json')){
-        fetch(url+ '/gallery/' + i.name)
-    .then((response) => response.json())
-    .then((json) => metaArr.push(json));}
+        for await (const i of iterator) {
+            if (i.name.includes('seg.jpg')) { segArr.push(i.name) }
+            else if (i.name.includes('img.jpg')) { imgArr.push(i.name) }
+            else if (i.name.includes('metadata.json')) {
+                fetch(url + '/gallery/' + i.name)
+                    .then((response) => response.json())
+                    .then((json) => metaArr.push(json));
+            }
+        }
+        setImgGalleryArray(imgArr)
+        setSegGalleryArray(segArr)
+        setGalleryMetaArray(metaArr)
+
     }
-    setImgGalleryArray(imgArr)
-    setSegGalleryArray(segArr)
-    setGalleryMetaArray(metaArr)
-    
-}
 
 
     const toggleInfoModal = () => {
@@ -82,54 +83,54 @@ async function getGalleryArray(containerClient: any) {
     }
 
 
-const handleImageClick = (props:any) => {
-    const metadata = galleryMetaArray[props.index]
-    console.log(metadata)
-    setActiveMaterialName(metadata.materialName)
-    setActiveResolution(metadata.resolution)
-    setActiveInstrumentType(metadata.instrumentType)
-    setActiveImgHeight(metadata.imgHeight)
-    setActiveImgWidth(metadata.imgWidth)
-    setActiveSegQuality(metadata.segQual)
-    setActiveAdditionalNotes(metadata.additionalNotes)
-    setActiveUID(metadata.id)
-    setActiveIndex(props.index)
-    setShowInfoModal(true)
+    const handleImageClick = (props: any) => {
+        const metadata = galleryMetaArray[props.index]
+        console.log(metadata)
+        setActiveMaterialName(metadata.materialName)
+        setActiveResolution(metadata.resolution)
+        setActiveInstrumentType(metadata.instrumentType)
+        setActiveImgHeight(metadata.imgHeight)
+        setActiveImgWidth(metadata.imgWidth)
+        setActiveSegQuality(metadata.segQual)
+        setActiveAdditionalNotes(metadata.additionalNotes)
+        setActiveUID(metadata.id)
+        setActiveIndex(props.index)
+        setShowInfoModal(true)
 
-}
+    }
 
-const ImageCard = (props: any) => {
-    return (
-        <Card className='m-auto' style={{ width: '300px', height: '300px', cursor: 'pointer'}} onClick={() => handleImageClick(props)}>
-            <Card.Img
-                variant="top"
-                src={props.src_img}
-                style={{
-                    opacity: props.segFlag ? 0 : 1,
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    transition: 'opacity 0.5s ease', // Add a transition for smooth fading
-                }}
-            />
-            <Card.Img
-                variant="top"
-                src={props.src_seg}
-                style={{
-                    opacity: props.segFlag ? 1 : 0,
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    transition: 'opacity 0.5s ease', // Add a transition for smooth fading
-                }}
-            />
-        </Card>
-    )
-}
+    const ImageCard = (props: any) => {
+        return (
+            <Card className='m-auto' style={{ width: '300px', height: '300px', cursor: 'pointer' }} onClick={() => handleImageClick(props)}>
+                <Card.Img
+                    variant="top"
+                    src={props.src_img}
+                    style={{
+                        opacity: props.segFlag ? 0 : 1,
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        transition: 'opacity 0.5s ease', // Add a transition for smooth fading
+                    }}
+                />
+                <Card.Img
+                    variant="top"
+                    src={props.src_seg}
+                    style={{
+                        opacity: props.segFlag ? 1 : 0,
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        transition: 'opacity 0.5s ease', // Add a transition for smooth fading
+                    }}
+                />
+            </Card>
+        )
+    }
 
 
     const icons: string[][] = [
@@ -153,10 +154,10 @@ const ImageCard = (props: any) => {
     const handleDownload = async (e: any) => {
         const headers = new Headers();
         headers.append('Content-Type', 'application/json;charset=utf-8');
-          const a = document.createElement("a")
-          a.download = activeUID + '.zip'
-          a.href = url + '/gallery/' + activeUID + '.zip'
-          a.click()
+        const a = document.createElement("a")
+        a.download = activeUID + '.zip'
+        a.href = url + '/gallery/' + activeUID + '.zip'
+        a.click()
     }
 
     const handleLoad = (e: any) => {
@@ -172,8 +173,8 @@ const ImageCard = (props: any) => {
             <Navbar bg={themeBGs[theme][0]} variant="dark" expand="lg" style={{ boxShadow: "1px 1px  1px grey" }
             }>
                 <Container>
-                    <Navbar.Brand style={{ fontSize: "2em", padding: "0px", marginRight: "5px" }}>&#128378;</Navbar.Brand>
-                    <Navbar.Brand>SAMBA</Navbar.Brand>
+                    <Navbar.Brand><img src="/assets/icons/favicon.png" width="40" height="40" className="d-inline-block align-top" /></Navbar.Brand>
+                    <Navbar.Brand style={{ marginLeft: "-25px", marginTop: "3px" }}>AMBA</Navbar.Brand>
                     <Navbar.Brand>Gallery</Navbar.Brand>
                     <Navbar.Toggle aria-controls="basic-navbar-nav" />
                     <Navbar.Collapse id="basic-navbar-nav">
@@ -219,14 +220,14 @@ const ImageCard = (props: any) => {
                 <Row >
 
                     {galleryImgArray.map((img, i) =>
-                        <Col style={{marginTop: "1rem"}} xl={3} lg={4} md={6} sm={12}>
+                        <Col style={{ marginTop: "1rem" }} xl={3} lg={4} md={6} sm={12}>
                             <ImageCard key={i} index={i} src_img={url + '/gallery/' + img} src_seg={url + '/gallery/' + gallerySegArray[i]} title={"Image " + i} segFlag={segFlag} />
                         </Col>
                     )}
 
                 </Row>
             </Container>
-            
+
             <Modal show={showInfoModal} onHide={toggleInfoModal} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Image {activeIndex}</Modal.Title>
@@ -235,31 +236,31 @@ const ImageCard = (props: any) => {
                     <Form>
                         <Form.Group className="mb-3" controlId="formBasicEmail">
                             <Form.Label>Material Name</Form.Label>
-                            <Form.Control disabled type="text" value={activeMaterialName}/>
+                            <Form.Control disabled type="text" value={activeMaterialName} />
                         </Form.Group>
                         <Form.Group className="mb-3" controlId="formBasicEmail">
                             <Form.Label>Resolution (µm per pixel)</Form.Label>
-                            <Form.Control disabled type="text" value={activeResolution}/>
+                            <Form.Control disabled type="text" value={activeResolution} />
                         </Form.Group>
                         <Form.Group className="mb-3" controlId="formBasicEmail">
                             <Form.Label>Instrument Type</Form.Label>
-                            <Form.Control disabled type="text" value={activeInstrumentType}/>
+                            <Form.Control disabled type="text" value={activeInstrumentType} />
                         </Form.Group>
                         <Form.Group className="mb-3" controlId="formBasicEmail">
                             <Form.Label>Image Size (h, w)</Form.Label>
-                            <Form.Control disabled type="text" value={activeImgHeight+', '+activeImgWidth}/>
+                            <Form.Control disabled type="text" value={activeImgHeight + ', ' + activeImgWidth} />
                         </Form.Group>
                         <Form.Group className="mb-3" controlId="formBasicEmail">
                             <Form.Label>Segmentation Quality</Form.Label>
-                            <Form.Control disabled type="number" value={activeSegQuality}/>
+                            <Form.Control disabled type="number" value={activeSegQuality} />
                         </Form.Group>
                         <Form.Group className="mb-3" controlId="formBasicEmail">
                             <Form.Label>Additional Notes</Form.Label>
-                            <Form.Control disabled type="text" value={activeAdditionalNotes}/>
+                            <Form.Control disabled type="text" value={activeAdditionalNotes} />
                         </Form.Group>
-                        <div style={{display:'flex', justifyContent:'center'}}>
-                        <Button variant="dark m-1" onClick={handleDownload} >Download data</Button>
-                    <Button variant="dark m-1" onClick={handleLoad} >Load into SAMBA</Button>
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <Button variant="dark m-1" onClick={handleDownload} >Download data</Button>
+                            <Button variant="dark m-1" onClick={handleLoad} >Load into SAMBA</Button>
                         </div>
                     </Form>
                 </Modal.Body >

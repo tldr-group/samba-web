@@ -107,7 +107,7 @@ const MultiCanvas = () => {
         const currentClass = (erase === true) ? 0 : labelClass;
         if (labelClass > 0) {
             const set = uniqueLabels.current;
-            const n_labels = set.size + 1;
+            const n_labels = (set.has(labelClass)) ? set.size : set.size + 1;
             set.add(labelClass);
             if (n_labels > 1) { setProcessing("None") }
         }

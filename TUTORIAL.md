@@ -15,7 +15,7 @@ Pressing 'Remove' on the 'Data' tab will remove the current (sub-) image. If the
 'Clear all' will remove all images currently loaded. **It is recommended** you use this if you want to process a different dataset.
 
 ## Labelling
-![GIF showing labelling process](https://sambasegment.blob.core.windows.net/resources/labelling.gif)
+![GIF showing labelling process](https://sambasegment.blob.core.windows.net/resources/labelling_compressed.gif)
 
 Labelling is the process of clicking on pixels in the image to assign them to a given, arbitrary class which the segmentation algorithm is then trained against. Important note: **when adding labels on top of other labels, the oldest labels will be kept**. This is useful if you want to label edges around a particle with class 2 that has been smart-labelled with class 1. If you want to remove labels, use the Eraser.
 #### Changing Class

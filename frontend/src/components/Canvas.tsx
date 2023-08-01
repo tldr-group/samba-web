@@ -17,6 +17,9 @@ const SCROLL_SENSITIVITY = 0.0005
 const SCROLL_SPEED = 1
 const PAN_OFFSET = 20
 
+const UA = navigator.userAgent
+const firefox = (UA.search("Firefox") == -1) ? false : true
+
 const appendArr = (oldArr: Array<any>, newVal: any) => {
     return [...oldArr, newVal];
 };
@@ -350,7 +353,19 @@ const MultiCanvas = () => {
         };
     }
 
-    const drawImgOnUpdate = (canvasRef: RefObject<HTMLCanvasElement>, img: HTMLImageElement | null) => {
+    const asyncImgDraw = async (canvasRef: RefObject<HTMLCanvasElement>, img: HTMLImageElement | null) => {
+        // Firefox needs slight delay between labels added and arrs updating for some reason
+        const ctx = getctx(canvasRef);
+        if (img === null || ctx === null) {
+            return;
+        };
+        clearctx(canvasRef);
+        await new Promise(r => setTimeout(r, 0.1));
+        drawImage(ctx, img, cameraOffset.current, zoom.current);
+    }
+
+    const instantImgDraw = (canvasRef: RefObject<HTMLCanvasElement>, img: HTMLImageElement | null) => {
+        // Chromium broswers don't need an update so this avoids the flickering
         const ctx = getctx(canvasRef);
         if (img === null || ctx === null) {
             return;
@@ -358,6 +373,8 @@ const MultiCanvas = () => {
         clearctx(canvasRef);
         drawImage(ctx, img, cameraOffset.current, zoom.current);
     }
+
+    const drawImgOnUpdate = (firefox) ? asyncImgDraw : instantImgDraw
 
     const updateImgOnArr = (arr: Uint8ClampedArray, img: HTMLImageElement | null, opacity: number, setterFn: any) => {
         /* 'Polymorphic' function used in listeners to set the image on the canvas when the corresponding array 

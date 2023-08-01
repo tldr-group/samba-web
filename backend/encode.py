@@ -5,6 +5,7 @@ from PIL import Image
 from typing import List
 import os
 from io import BytesIO
+import torch.cuda as cuda
 
 from tifffile import imwrite
 
@@ -13,6 +14,10 @@ from features import DEAFAULT_FEATURES, multiscale_advanced_features
 
 DEBUG = False
 
+GPU_DESIRED = False
+GPU_POSSIBLE = cuda.is_available()
+GPU = GPU_DESIRED and GPU_POSSIBLE
+
 try:
     CWD = os.environ["APP_PATH"]
 except KeyError:
@@ -20,6 +25,9 @@ except KeyError:
 
 sam = sam_model_registry["vit_b"](checkpoint="sam_vit_b_01ec64.pth")
 sam_predictor = SamPredictor(sam)
+if GPU:
+    DEVICE = cuda.torch.device("cuda:0")
+    sam_predictor.to(DEVICE)
 
 
 def encode(image: Image.Image) -> bytes:
@@ -33,7 +41,11 @@ def encode(image: Image.Image) -> bytes:
     rgb_arr = np.array(image)
     sam_predictor.set_image(rgb_arr)
     file_bytes_io = BytesIO()
-    np.save(file_bytes_io, sam_predictor.features)
+    if GPU:
+        features = sam_predictor.features.cpu()
+    else:
+        features = sam_predictor.features
+    np.save(file_bytes_io, features)
     file_bytes_io.seek(0)
     file_bytes = file_bytes_io.read()
     return file_bytes

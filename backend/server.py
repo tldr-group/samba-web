@@ -29,10 +29,7 @@ except KeyError:
 
 cors_urls = ["*"]
 if server:
-    cors_urls = [
-        "https://sambasegment.z33.web.core.windows.net/",
-        "http://www.sambasegment.com/",
-    ]
+    cors_urls = []
 
 
 credential: str | None
@@ -56,18 +53,28 @@ app = Flask(
 )
 
 
-# these 2 functions from user Niels B on stack overflow: https://stackoverflow.com/questions/25594893/how-to-enable-cors-in-flask
 def _build_cors_preflight_response():
     response = make_response()
-    for c in cors_urls:
-        response.headers.add("Access-Control-Allow-Origin", c)
-    response.headers.add("Access-Control-Allow-Headers", "*")
-    response.headers.add("Access-Control-Allow-Methods", "*")
+    response = add_cors_headers(response)
     return response
 
 
-def _corsify_actual_response(response):
-    response.headers.add("Access-Control-Allow-Origin", "*")
+URL_WHITELIST = [
+    "https://sambasegment.z33.web.core.windows.net",
+    "http://www.sambasegment.com",
+    "https://www.sambasegment.com",
+    "https://sambasegment.azureedge.net",
+    "http://localhost:8080",
+    "https://localhost:8080",
+]
+
+
+def add_cors_headers(response):
+    request_url = request.headers["Origin"]  # url_root  # headers["Origin"]
+    if request_url in URL_WHITELIST:
+        response.headers.add("Access-Control-Allow-Origin", request_url)
+        response.headers.add("Access-Control-Allow-Headers", "*")
+        response.headers.add("Access-Control-Allow-Methods", "*")
     return response
 
 
@@ -90,14 +97,14 @@ async def generic_response(request, fn: Callable):
     elif "POST" in request.method:
         try:
             response = await fn(request)
-            return _corsify_actual_response(response)
+            return add_cors_headers(response)  # _corsify_actual_response(response)
         except Exception as e:
             print(e)
             response = Response(f"{{'msg': '{e}' }}", 400, mimetype="application/json")
-            return _corsify_actual_response(response)
+            return add_cors_headers(response)  # _corsify_actual_response(response)
     else:
         response = jsonify(success=False)
-        return _corsify_actual_response(response)
+        return add_cors_headers(response)  # _corsify_actual_response(response)
 
 
 @app.route("/")

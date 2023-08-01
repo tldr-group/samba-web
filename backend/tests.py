@@ -13,6 +13,9 @@ from tifffile import imread, imwrite
 from skimage.metrics import mean_squared_error
 import time
 import sys
+from azure.storage.blob import BlobServiceClient
+
+from test_resources.call_weka import sep
 
 from typing import List, Tuple
 
@@ -35,7 +38,39 @@ CIRCLE = np.pad(FOOTPRINT, ((2, 2), (2, 2)))
 CENTRE = (SIGMA + 2, SIGMA + 2)
 CIRCLE_BYTE = (255 * CIRCLE).astype(np.uint8)
 
-FIJI_PATH = sys.argv[1]
+load_weka = False
+try:
+    FIJI_PATH = sys.argv[1]
+    load_weka = True
+except:
+    FIJI_PATH = ""
+    print("No FIJI path supplied so cannot do end-to-end tests.")
+
+URL = "https://sambasegment.blob.core.windows.net/resources/weka_default.tif"
+
+
+def get_weka_default_from_azure() -> np.ndarray:
+    """Grab weka default feature stack for image super1 from azure storage.
+
+    :return: arr of weka default features downloaded from azure storage
+    :rtype: np.ndarray
+    """
+    account_url = "https://sambasegment.blob.core.windows.net"
+    blob_service_client = BlobServiceClient(account_url)
+    container_client = blob_service_client.get_blob_client(
+        container="resources", blob="weka_default.tif"
+    )
+    with open(f"backend{sep}test_resources{sep}weka_default.tif", "wb") as f:
+        download_stream = container_client.download_blob()
+        f.write(download_stream.readall())
+    return imread(f"backend{sep}test_resources{sep}weka_default.tif")
+
+
+try:
+    weka = imread(f"backend{sep}test_resources{sep}weka_default.tif")
+except FileNotFoundError:
+    get_weka_default_from_azure()
+    weka = imread(f"backend{sep}test_resources{sep}weka_default.tif")
 
 
 def _test_centre_val(filtered_arr, val):
@@ -51,8 +86,7 @@ class TestFeatures(unittest.TestCase):
     """Test featurisation functions in features.py."""
 
     def test_footprint(self) -> None:
-        """
-        Footprint test.
+        """Footprint test.
 
         Check if ratio of footprint circle to footprint square is close to pi*r^2/(2*r+1)^2 - obviously
         not exact as we're comparing discrete value to analytic expression.
@@ -67,8 +101,7 @@ class TestFeatures(unittest.TestCase):
         assert isclose(footprint_ratio, analytic_ratio, rel_tol=0.05)
 
     def test_sobel(self) -> None:
-        """
-        Sobel filter test.
+        """Sobel filter test.
 
         Perform sobel edge detection on our circle array - should return some outline of the circle.
         Then subtract the original circle and measure circumfrence. If it's similar to the analytic
@@ -80,8 +113,7 @@ class TestFeatures(unittest.TestCase):
         assert isclose(circumfrence, 2 * pi * SIGMA, rel_tol=0.15)
 
     def test_mean(self) -> None:
-        """
-        Mean filter test.
+        """Mean filter test.
 
         Mean filter w/ footprint of size $SIGMA on our test arr $CIRCLE_BYTE. Because mean filter is same
         size as circle, the mean of the centre should be unity (times a scaling factor) and the sum
@@ -91,8 +123,7 @@ class TestFeatures(unittest.TestCase):
         _test_centre_val(filtered, 255)
 
     def test_max(self) -> None:
-        """
-        Max filter test.
+        """Max filter test.
 
         Max filter radius $SIGMA on our test arr $CIRCLE_BYTE should be 255 almost everywhere except top
         corners (as they are more than $SIGMA pixels away from disk).
@@ -103,8 +134,7 @@ class TestFeatures(unittest.TestCase):
         assert isclose(top_left_val, 0, abs_tol=1e-6)
 
     def test_min(self) -> None:
-        """
-        Min filter test.
+        """Min filter test.
 
         Min filter radius $SIGMA on our test arr $CIRCLE_BYTE should be 0 almost everywhere except
         centre - so centre value AND sum should equal 255.
@@ -114,8 +144,7 @@ class TestFeatures(unittest.TestCase):
         _test_sum(filtered, 255)
 
     def test_median(self) -> None:
-        """
-        Median filter test.
+        """Median filter test.
 
         Median filter radius $SIGMA on our test arr $CIRCLE_BYTE should be the circle again but smaller.
         Again centre should be 255 and egdes 0.
@@ -126,8 +155,7 @@ class TestFeatures(unittest.TestCase):
         assert isclose(top_left_val, 0, abs_tol=1e-6)
 
     def test_neighbours(self) -> None:
-        """
-        Neighbour filter test.
+        """Neighbour filter test.
 
         Compute nearest neighbours of 5x5 arr of 0's filled with 3x3 square of 1's and sum them. Compare to the
         analytic result (which is just convolution of 3x3 equally wegihted kernel and the image.)
@@ -148,8 +176,7 @@ class TestFeatures(unittest.TestCase):
         assert number_of_neighbours.all() == number_of_neighbours_analytic.all()
 
     def test_membrane_projection(self) -> None:
-        """
-        Membrane projection filter test.
+        """Membrane projection filter test.
 
         Membrane projections emphasise lines of similar value pixels. Here we test it on a line of pixels -
         the max value should be in the centre and it should decrease montonically from that.
@@ -165,8 +192,7 @@ class TestFeatures(unittest.TestCase):
             prev_val = current_val
 
     def test_bilateral(self) -> None:
-        """
-        Bilateral filter test.
+        """Bilateral filter test.
 
         Bilateral filter is mean of values in [5, 10] footprint with [50, 100] pixel values of the centre pixel.
         With a bilevel square - one half 20, one half 100 - our bilateral filter with window threhsold 50 won't do
@@ -185,7 +211,13 @@ class TestFeatures(unittest.TestCase):
 
 
 def weka_dog_per_sigma(sigma: int) -> int:
-    """Get number of DoGs at given length scale when iterating through each filter."""
+    """Get number of DoGs at given length scale when iterating through each filter. Note there are weird offsets to account for looping.
+
+    :param sigma: scale paramter
+    :type sigma: int
+    :return: number of DoGs at given sigma.
+    :rtype: int
+    """
     if sigma < 2:
         return 0
     else:
@@ -194,14 +226,28 @@ def weka_dog_per_sigma(sigma: int) -> int:
 
 
 def norm(arr: np.ndarray) -> np.ndarray:
-    """Normalise array by subtracting its min then dividing my max of new arr. Works for mixes of positive and negative."""
+    """Normalise array by subtracting its min then dividing my max of new arr. Works for mixes of positive and negative.
+
+    :param arr: arr to normalise
+    :type arr: np.ndarray
+    :return: normalised arr
+    :rtype: np.ndarray
+    """
     offset = arr - np.amin(arr)
     normed = offset / np.amax(offset)
     return np.abs(normed)
 
 
 def norm_get_mse(filter_1: np.ndarray, filter_2: np.ndarray) -> float:
-    """Normalise both filters (arrays) and get the mse."""
+    """Normalise both filters (arrays) and get the mse.
+
+    :param filter_1: first arr
+    :type filter_1: np.ndarray
+    :param filter_2: second arr
+    :type filter_2: np.ndarray
+    :return: mean squared error between normalised arrs
+    :rtype: float
+    """
     n1 = norm(filter_1)
     n2 = norm(filter_2)
     return mean_squared_error(n1, n2)
@@ -224,13 +270,11 @@ class CompareDefaultFeatures(unittest.TestCase):
     of filter and save them. A default threshold of 0.01 (i.e 1%) is the fail cut-off.
     """
 
-    # todo: use sphinx api docstring style for autogenerated docs
-
     def test_compare_defaults(self) -> None:
         """Handler for each test, shares the feature stacks with them so only computed once."""
         passed = True
-        weka = imread("backend/test_resources/weka_default.tif")
-        img = imread("backend/test_resources/super1.tif").astype(np.float32)
+
+        img = imread(f"backend{sep}test_resources{sep}super1.tif").astype(np.float32)
         samba = ft.multiscale_advanced_features(
             img, ft.DEAFAULT_FEATURES, ft.N_ALLOWED_CPUS
         ).transpose((2, 0, 1))
@@ -244,8 +288,18 @@ class CompareDefaultFeatures(unittest.TestCase):
                 passed = False
         assert passed
 
-    def compare_singlescale_default(self, weka, samba) -> List[float]:
-        """Compare each singlescale feature, accounting for ordering differences."""
+    def compare_singlescale_default(
+        self, weka: np.ndarray, samba: np.ndarray
+    ) -> List[float]:
+        """Compare each singlescale feature, accounting for ordering differences.
+
+        :param weka: arr of weka features (NxHxW)
+        :type weka: np.ndarray
+        :param samba: arr of SAMBA features (MxHxW). M < N and is in different order
+        :type samba: np.ndarray
+        :return: List of MSEs when comparing different singlescale features.
+        :rtype: List[float]
+        """
         mses: List[float] = []
 
         for i in range(len(length_scales) * SAMBA_PER_LENGTH_SCALE):
@@ -259,8 +313,16 @@ class CompareDefaultFeatures(unittest.TestCase):
             mses.append(mse)
         return mses
 
-    def compare_dog_default(self, weka, samba) -> List[float]:
-        """Compare DoG filters: in Weka these appear per length scale, in SAMBA these appear near the end."""
+    def compare_dog_default(self, weka: np.ndarray, samba: np.ndarray) -> List[float]:
+        """Compare Difference Of Gaussian (DoG) filters: in Weka these appear per length scale, in SAMBA these appear near the end.
+
+        :param weka: arr of weka features (NxHxW)
+        :type weka: np.ndarray
+        :param samba: arr of SAMBA features (MxHxW). M < N and is in different order
+        :type samba: np.ndarray
+        :return: List of MSEs when comparing different DoG features.
+        :rtype: List[float]
+        """
         mses: List[float] = []
         length_scales = [0, 1, 2, 4, 8, 16]
         samba_DoG_offset = len(length_scales) * SAMBA_PER_LENGTH_SCALE
@@ -276,8 +338,18 @@ class CompareDefaultFeatures(unittest.TestCase):
             prev_total_n_dog += n_dog
         return mses
 
-    def compare_membrane_projections(self, weka, samba) -> List[float]:
-        """Compare membrane projection filters, for both tools these are at the end of the filter stacks."""
+    def compare_membrane_projections(
+        self, weka: np.ndarray, samba: np.ndarray
+    ) -> List[float]:
+        """Compare membrane projection filters, for both tools these are at the end of the filter stacks.
+
+        :param weka: arr of weka features (NxHxW)
+        :type weka: np.ndarray
+        :param samba: arr of SAMBA features (MxHxW). M < N and is in different order
+        :type samba: np.ndarray
+        :return: List of MSEs when comparing different membrane projections.
+        :rtype: List[float]
+        """
         mses = []
         for i in range(6):
             idx = i - 6
@@ -288,7 +360,11 @@ class CompareDefaultFeatures(unittest.TestCase):
         return mses
 
     def plot_mses_save(self, mses: List[float]) -> None:
-        """Plot all the MSEs with correct names."""
+        """Plot all the MSEs with correct names.
+
+        :param mses: list of MSEs of (all) features.
+        :type mses: List[float]
+        """
         names: list[str] = []
         scale_filter_names = [
             "Gauss",
@@ -324,7 +400,15 @@ class CompareDefaultFeatures(unittest.TestCase):
 
 
 def get_scores(gt: np.ndarray, seg: np.ndarray) -> Tuple[float, float]:
-    """Compute iou and dice scores for 2 arrays of same shape."""
+    """Compute iou and dice scores for 2 arrays of same shape.
+
+    :param gt: reference arr - the weka segmentation
+    :type gt: np.ndarray
+    :param seg: comparison arr - SAMBA segmentation
+    :type seg: np.ndarray
+    :return: tuple of iou_score and dice similarity
+    :rtype: Tuple[float, float]
+    """
     flat_gt = gt.flatten()
     flat_seg = seg.flatten()
     boolean_out = np.where(flat_gt == flat_seg, 1, 0)
@@ -338,8 +422,7 @@ class CompareSegmentations(unittest.TestCase):
     """Integration test of SAMBA segmentations vs Weka (featurising, labels, training, applying)."""
 
     def test_segmentations(self):
-        """
-        Test_segmentations.
+        """Test_segmentations.
 
         For the three micrographs with N=2,3,4 phases, open the micrograph in Weka, featurise,
         add rectangular labels from a config file, train and segment via an ImageJ Macro. Then
@@ -350,6 +433,10 @@ class CompareSegmentations(unittest.TestCase):
         dice_scores = []
         weka_segmentations, samba_segmentations = [], []
         weka_times, samba_times = [], []
+
+        if load_weka is False:
+            assert passed
+            return
 
         for n in range(2, 5):
             fname = f"{n}_phase"
@@ -378,13 +465,21 @@ class CompareSegmentations(unittest.TestCase):
     def get_weka_samba_segs(
         self, fname: str
     ) -> Tuple[np.ndarray, np.ndarray, float, float]:
-        """Given a filename, adjust macro config files, call Weka, segment, save, load SAMBA, segment, then compare the two."""
+        """Given a filename, adjust macro config files, call Weka, segment, save, load SAMBA, segment, then compare the two.
+
+        :param fname: filename
+        :type fname: str
+        :return: tuple of weka segmentation arr, samba segmentation arr, time to compute weka segmentation, time to compute samba segmentation
+        :rtype: Tuple[np.ndarray, np.ndarray, float, float]
+        """
         set_macro_path()
         set_config_file(f"{fname}.tif")
         weka_t = run_weka(FIJI_PATH)
-        img_arr = imread(f"backend/test_resources/{fname}.tif")
-        weka_arr = imread("backend/test_resources/output.tif")
-        label = get_label_arr(f"backend/test_resources/{fname}_roi_config.txt", img_arr)
+        img_arr = imread(f"backend{sep}test_resources{sep}{fname}.tif")
+        weka_arr = imread(f"backend{sep}test_resources{sep}output.tif")
+        label = get_label_arr(
+            f"backend{sep}test_resources{sep}{fname}_roi_config.txt", img_arr
+        )
         start_t = time.time()
         samba_arr = segment_no_features_get_arr(label, img_arr)
         end_t = time.time()
@@ -399,7 +494,19 @@ class CompareSegmentations(unittest.TestCase):
         weka_times: List[float],
         samba_times: List[float],
     ) -> None:
-        """Produce 2 plots: segmentation image comparisons w/ dice scores and times."""
+        """Produce 2 plots: segmentation image comparisons w/ dice scores and times.
+
+        :param scores: list of dice scores for each phase segmentation compared
+        :type scores: List[float]
+        :param weka_segs: list of weka segmentation arrs for each phase segmentation compared
+        :type weka_segs: List[np.ndarray]
+        :param samba_segs: list of SAMBA segmentation arrs for each phase segmentation compared
+        :type samba_segs: List[np.ndarray]
+        :param weka_times: list of times taken by Weka to segment
+        :type weka_times: List[float]
+        :param samba_times: list of times taken by SAMBA to segment
+        :type samba_times: List[float]
+        """
         fig = plt.figure(num=1, constrained_layout=True, figsize=(16, 16))
         subfigs = fig.subfigures(nrows=3, ncols=1)
         for row, sfig in enumerate(subfigs):
@@ -412,7 +519,9 @@ class CompareSegmentations(unittest.TestCase):
             if row == 0:
                 axs[0].set_title("Weka", fontsize=16)
                 axs[1].set_title("SAMBA", fontsize=16)
-        plt.savefig("backend/test_resources/test_outputs/segmentation_comparison.png")
+        plt.savefig(
+            f"backend{sep}test_resources{sep}test_outputs{sep}segmentation_comparison.png"
+        )
 
         fig2 = plt.figure(num=2, figsize=(16, 16))
         x = np.arange(2, 5)
@@ -421,7 +530,9 @@ class CompareSegmentations(unittest.TestCase):
         plt.legend(fontsize=14)
         plt.ylabel("Time (s)", fontsize=14)
         plt.xlabel("Number of phases", fontsize=14)
-        plt.savefig("backend/test_resources/test_outputs/times_comparison.png")
+        plt.savefig(
+            f"backend{sep}test_resources{sep}test_outputs{sep}times_comparison.png"
+        )
 
 
 if __name__ == "__main__":

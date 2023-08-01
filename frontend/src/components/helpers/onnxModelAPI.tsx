@@ -1,3 +1,4 @@
+// From Meta's Segment Anything Model: https://github.com/facebookresearch/segment-anything/tree/main/demo
 import { Tensor } from "onnxruntime-web";
 import { modeDataProps } from "./Interfaces";
 

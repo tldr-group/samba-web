@@ -55,6 +55,10 @@ export function arrayToImageData(input: any, width: number, height: number,
 function isPixelSet(p: number[]) { return (p[0] > 0 || p[1] > 0 || p[2] > 0) }
 
 export function addImageDataToArray(imageData: ImageData, arr: Uint8ClampedArray, classVal: number, erase: boolean = false): Uint8ClampedArray {
+  /* Given some $imageData (i.e a new label from animated canvas) and an $arr, loop through the image data, find pixels that
+  have been set and set the corresponding pixel in $arr with the $classVal. This assumes the label class the animated canvas
+  was set with is the same label class we're labelling with, but they're set in the same place so this is always true. If
+  we're erasing, set the erased pixels to 0 in the arr. */
   const newArr = new Uint8ClampedArray(arr.length);
   const data = imageData.data;
   for (let i = 0; i < arr.length; i++) {
@@ -81,7 +85,7 @@ export function imageDataToImage(imageData: ImageData) {
 
 // Canvas elements can be created from ImageData
 function imageDataToCanvas(imageData: ImageData) {
-  // canvas created on demand?
+  // canvas created on demand
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   canvas.width = imageData.width;
@@ -98,8 +102,9 @@ export function onnxMaskToImage(input: any, width: number, height: number, mask_
 
 
 export const draw = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, colour: string, fill: boolean = true) => {
+  // Brushstroke: a circle at x, y with radius and colour
   ctx.fillStyle = colour; //"#43ff641a"
-  ctx.strokeStyle = colour
+  ctx.strokeStyle = colour;
   ctx.beginPath();
   ctx.ellipse(x, y, width, width, 0, 0, 2 * Math.PI);
   if (fill) {
@@ -110,14 +115,15 @@ export const draw = (ctx: CanvasRenderingContext2D, x: number, y: number, width:
 }
 
 export const erase = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number) => {
-  ctx.clearRect(x - width / 2, y - width / 2, width, width)
+  // Erase: clearing a rect on label canvas.
+  ctx.clearRect(x - width, y - width, 2 * width, 2 * width)
 }
 
 export const drawErase = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, fill = true, hex = "#ffffff") => {
   ctx.strokeStyle = "#000000"; //"#43ff641a"
   ctx.fillStyle = hex;
   ctx.beginPath();
-  ctx.rect(x - width / 2, y - width / 2, width, width)
+  ctx.rect(x - width, y - width, 2 * width, 2 * width)
   if (fill) {
     ctx.fill();
   } else {
@@ -126,18 +132,19 @@ export const drawErase = (ctx: CanvasRenderingContext2D, x: number, y: number, w
 }
 
 export const drawPolygon = (ctx: CanvasRenderingContext2D, polygon: Array<Offset>, colour: string, fill: boolean = false) => {
-  const p0 = polygon[0]
+  // Loop through each point in polygon and draw it.
+  const p0 = polygon[0];
   ctx.fillStyle = colour;
   ctx.strokeStyle = colour;
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(p0.x, p0.y)
+  ctx.moveTo(p0.x, p0.y);
   for (let i = 1; i < polygon.length; i++) {
-    const p = polygon[i]
-    ctx.lineTo(p.x, p.y)
+    const p = polygon[i];
+    ctx.lineTo(p.x, p.y);
   }
   if (fill === true) {
-    ctx.closePath()
+    ctx.closePath();
     ctx.fill();
   } else {
     ctx.stroke();
@@ -153,7 +160,6 @@ export const clearctx = (ref: RefObject<HTMLCanvasElement>) => {
 const filled = (p: number[]) => { return (p[0] > 0 && p[1] > 0 && p[2] > 0) }
 
 export const getxy = (e: any): [number, number] => {
-  // if i make this work with zoom will everything just work?
   let el = e.nativeEvent.target;
   const rect = el.getBoundingClientRect();
   let x = e.clientX - rect.left;
@@ -162,108 +168,87 @@ export const getxy = (e: any): [number, number] => {
 }
 
 export const transferLabels = (animCanv: HTMLCanvasElement, labelImage: HTMLImageElement, offset: Offset, zoom: number) => {
-  const [sx0, sy0, sw, sh, dx, dy, dw, dh] = getZoomPanCoords(animCanv.width, animCanv.height, labelImage, offset, zoom)
+  /*Given a (potnetially zoomed) animated canvas* with labels on it, create a transfer canvas, draw LabelImg onto it (full size),
+  then draw correct bit of animCanv onto it in the right position on transfer canvas
+  then just get all of transfer canvas and convert it to label array as before. */
+  const [sx0, sy0, sw, sh, dx, dy, dw, dh] = getZoomPanCoords(animCanv.width, animCanv.height, labelImage, offset, zoom);
   const transferCanvas = document.createElement("canvas");
   const transferCtx = transferCanvas.getContext("2d");
   if (transferCtx === null) { return; };
   transferCanvas.width = labelImage.width;
   transferCanvas.height = labelImage.height;
-  transferCtx.clearRect(sx0, sy0, sw, sh)
+  transferCtx.clearRect(sx0, sy0, sw, sh);
   transferCtx.drawImage(animCanv, dx, dy, dw, dh, sx0, sy0, sw, sh);
   return transferCtx;
 }
-/*Given a (potnetially zoomed) animated canvas* with labels on it, create a transfer canvas, draw LabelImg onto it (full size),
-then draw correct bit of animCanv onto it in the right position on transfer canvas(inverse of my drawImg - maybe generalise that) 
-then just get all of transfer canvas and convert it to label array as before. */
+
 
 export const getZoomPanCoords = (cw: number, ch: number, image: HTMLImageElement, offset: Offset, zoom: number) => {
-  const [w, h] = [image.width, image.height]
-  const [zw, zh] = [w * zoom, h * zoom]
-  let [sx0, sx1, sy0, sy1] = [0, 0, 0, 0]
-  let [dx, dy, dw, dh] = [0, 0, 0, 0]
+  // Get the zoomed&panned coordinates with which to draw the images.
+  const [w, h] = [image.width, image.height];
+  const [zw, zh] = [w * zoom, h * zoom];
+  let [sx0, sx1, sy0, sy1] = [0, 0, 0, 0];
+  let [dx, dy, dw, dh] = [0, 0, 0, 0];
 
-  /*
-  if (zw <= cw) {
-    sx0 = 0
-    sx1 = w
-    dx = offset.x
-    dw = zw
-  } else {
-    sx0 = offset.x
-    sx1 = cw / zoom
-    dx = 0
-    dw = cw
-  }
-
-  if (zh <= ch) {
-    sy0 = 0
-    sy1 = h
-    dy = offset.y
-    dh = zh
-  } else {
-    sy0 = offset.y
-    sy1 = ch / zoom
-    dy = 0
-    dh = ch
-  }
-  */
-  sx1 = w
-  sy1 = h
-  dw = zw
-  dh = zh
-  dx = offset.x
-  dy = offset.y
+  sx1 = w;
+  sy1 = h;
+  dw = zw;
+  dh = zh;
+  dx = offset.x;
+  dy = offset.y;
 
   return [sx0, sy0, sx1, sy1, dx, dy, dw, dh]
 }
 
 export const getZoomPanXY = (canvX: number, canvY: number, ctx: CanvasRenderingContext2D, image: HTMLImageElement, offset: Offset, zoom: number) => {
-  const [sx0, sy0, sw, sh, dx, dy, dw, dh] = getZoomPanCoords(ctx.canvas.width, ctx.canvas.height, image, offset, zoom)
-  const fracX = (canvX - dx) / dw
-  const fracY = (canvY - dy) / dh
-  const naturalX = (fracX * sw) + sx0
-  const naturalY = (fracY * sh) + sy0
+  // Get the natural (image) coordinates of a click at (canvX, canvY) given our zoom and pan
+  const [sx0, sy0, sw, sh, dx, dy, dw, dh] = getZoomPanCoords(ctx.canvas.width, ctx.canvas.height, image, offset, zoom);
+  const fracX = (canvX - dx) / dw;
+  const fracY = (canvY - dy) / dh;
+  const naturalX = (fracX * sw) + sx0;
+  const naturalY = (fracY * sh) + sy0;
   return [naturalX, naturalY]
 }
 
 export const computeCentreOffset = (image: HTMLImageElement, cx: number, cy: number): Offset => {
-  const [iw, ih] = [image.width, image.height]
+  // Get the offset with which to centre our image
+  const [iw, ih] = [image.width, image.height];
   return { x: (cx - iw) / 2, y: (cy - ih) / 2 }
 }
 
 export const computeNewZoomOffset = (currentZoom: number, newZoom: number, mousePos: Offset, currentOffset: Offset) => {
-  const [ix, iy] = [(mousePos.x - currentOffset.x) / currentZoom, (mousePos.y - currentOffset.y) / currentZoom]
-  const [ox, oy] = [mousePos.x - newZoom * ix, mousePos.y - newZoom * iy]
+  const [ix, iy] = [(mousePos.x - currentOffset.x) / currentZoom, (mousePos.y - currentOffset.y) / currentZoom];
+  const [ox, oy] = [mousePos.x - newZoom * ix, mousePos.y - newZoom * iy];
   return { x: ox, y: oy }
 }
 
 
 export const drawImage = (ctx: CanvasRenderingContext2D, image: HTMLImageElement, offset: Offset, zoom: number) => {
   // split into 2 funcitons - one to get coords and one to draw, then reverse the coords for transfert.
-  const [sx0, sy0, sx1, sy1, dx, dy, dw, dh] = getZoomPanCoords(ctx.canvas.width, ctx.canvas.height, image, offset, zoom)
+  const [sx0, sy0, sx1, sy1, dx, dy, dw, dh] = getZoomPanCoords(ctx.canvas.width, ctx.canvas.height, image, offset, zoom);
   //console.log(sx0, sy0, sx1, sy1, dx, dy, dw, dh)
-  ctx.drawImage(image, sx0, sy0, sx1, sy1, dx, dy, dw, dh)
+  ctx.drawImage(image, sx0, sy0, sx1, sy1, dx, dy, dw, dh);
 }
 
-
+// Methods to map our large image into a smaller one
 export const getSplitInds = (image: HTMLImageElement) => {
   const nW = Math.ceil(image.width / 1024);
   const nH = Math.ceil(image.height / 1024);
   const dx = image.width / nW;
   const dy = image.height / nH;
-  const wInds = Array.from({ length: nW }, (x, i) => dx * i)
-  const hInds = Array.from({ length: nH }, (x, i) => dy * i)
-  const inds = { 'w': wInds, 'h': hInds, 'dx': dx, 'dy': dy, 'nW': nW, 'nH': nH }
+  const wInds = Array.from({ length: nW }, (x, i) => dx * i);
+  const hInds = Array.from({ length: nH }, (x, i) => dy * i);
+  const inds = { 'w': wInds, 'h': hInds, 'dx': dx, 'dy': dy, 'nW': nW, 'nH': nH };
   return inds
 }
 
 
 export const getXYfromI = (i: number, arrW: number) => {
-  const y = Math.floor(i / arrW)
-  const x = i % arrW
+  const y = Math.floor(i / arrW);
+  const x = i % arrW;
   return [x, y]
 }
 
 export const getIfromXY = (x: number, y: number, arrW: number) => {
-  return y * arrW + x
+  return y * arrW + x;
 }

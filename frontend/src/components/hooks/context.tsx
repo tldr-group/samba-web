@@ -23,7 +23,7 @@ const AppContextProvider = (props: {
   // Labelling stuff
   const [clicks, setClicks] = useState<Array<modelInputProps> | null>(null);
   const [maskImg, setMaskImg] = useState<HTMLImageElement | null>(null);
-  const [maskIdx, setMaskIdx] = useState<number>(2);
+  const [maskIdx, setMaskIdx] = useState<number>(3);
   const [labelClass, setLabelClass] = useState<number>(1);
   const [labelType, setLabelType] = useState<Label>("Brush");
   const [brushWidth, setBrushWidth] = useState<number>(20);
@@ -32,7 +32,7 @@ const AppContextProvider = (props: {
   const [overlayType, setOverlayType] = useState<"Segmentation" | "Label" | "None">("None");
   const [labelOpacity, setLabelOpacity] = useState<number>(0.6 * 255);
   const [segOpacity, setSegOpacity] = useState<number>(0.9 * 255);
-  const [processing, setProcessing] = useState<"None" | "Encoding" | "Segmenting" | "Applying">("None");
+  const [processing, setProcessing] = useState<"None" | "Encoding" | "Segmenting" | "Applying" | "Inactive">("Inactive");
 
   // Segment Feature stuff
   const [features, setFeatures] = useState<Features>(defaultFeatures)

@@ -17,11 +17,22 @@ import os
 import json
 import zipfile
 
+from test_resources.call_weka import sep
+
 # Very important: this environment variable is only present on webapp. If running locally, this fails and we use cwd instead.
+server = False
 try:
     CWD = os.environ["APP_PATH"]
+    server = True
 except KeyError:
     CWD = os.getcwd()
+
+cors_urls = ["*"]
+if server:
+    cors_urls = [
+        "https://sambasegment.z33.web.core.windows.net/",
+        "http://www.sambasegment.com/",
+    ]
 
 
 credential: str | None
@@ -48,7 +59,8 @@ app = Flask(
 # these 2 functions from user Niels B on stack overflow: https://stackoverflow.com/questions/25594893/how-to-enable-cors-in-flask
 def _build_cors_preflight_response():
     response = make_response()
-    response.headers.add("Access-Control-Allow-Origin", "*")
+    for c in cors_urls:
+        response.headers.add("Access-Control-Allow-Origin", c)
     response.headers.add("Access-Control-Allow-Headers", "*")
     response.headers.add("Access-Control-Allow-Methods", "*")
     return response
@@ -64,6 +76,11 @@ def _get_image_from_b64(b64_with_prefix: str):
     imgdata = base64.standard_b64decode(b64)
     image = Image.open(BytesIO(imgdata))
     return image
+
+
+def _get_shape_tuple(dim_string: str):
+    h, w = dim_string.split(",")
+    return (int(h), int(w))
 
 
 async def generic_response(request, fn: Callable):
@@ -94,7 +111,7 @@ async def init_fn(request) -> Response:
     """Call when user connects for first time. Creates a temporary folder in app directory."""
     UID = request.json["id"]
     try:
-        os.mkdir(f"{CWD}/{UID}")
+        os.mkdir(f"{CWD}{sep}{UID}")
     except FileExistsError:
         pass
     delete_old_folders(UID)
@@ -131,9 +148,9 @@ async def delete_fn(request) -> Response:
     UID = request.json["id"]
     img_idx = request.json["idx"]
     if img_idx == -1:
-        success = delete_all_features(f"{CWD}/{UID}")
+        success = delete_all_features(f"{CWD}{sep}{UID}")
     else:
-        success = delete_feature_file(f"{CWD}/{UID}", img_idx)
+        success = delete_feature_file(f"{CWD}{sep}{UID}", img_idx)
     return jsonify(success=True)
 
 
@@ -168,7 +185,8 @@ async def segment_fn(request) -> Response:
     Get image type and associated variables, if mode is segment then train segmenter on
     images with labels then apply. If mode is apply then just apply.
     """
-    images = [_get_image_from_b64(i) for i in request.json["images"]]
+    img_dims = [_get_shape_tuple(i) for i in request.json["images"]]
+    print(img_dims)
     UID = request.json["id"]
     save_mode = request.json["save_mode"]
     large_w, large_h = request.json["large_w"], request.json["large_h"]
@@ -177,7 +195,7 @@ async def segment_fn(request) -> Response:
         labels_dicts = request.json["labels"]
         n_points, train_all = request.json["n_points"], request.json["train_all"]
         segmentation = await segment(
-            images,
+            img_dims,
             labels_dicts,
             UID,
             save_mode,
@@ -187,7 +205,7 @@ async def segment_fn(request) -> Response:
             train_all,
         )
     elif segment_type == "apply":
-        segmentation = await apply(images, UID, save_mode, large_w, large_h)
+        segmentation = await apply(img_dims, UID, save_mode, large_w, large_h)
     response = Response(segmentation.tobytes())
     response.headers.add("Content-Type", "application/octet-stream")
     return response
@@ -207,12 +225,20 @@ async def save_fn(request) -> Response:
     save_type = request.json["type"]
     if save_type == "segmentation":
         response = send_file(
-            f"{CWD}/{UID}/seg.tiff", mimetype="image/tiff", download_name="seg.tiff"
+            f"{CWD}{sep}{UID}{sep}seg.tiff",
+            mimetype="image/tiff",
+            download_name="seg.tiff",
+        )
+    elif save_type == "labels":
+        response = send_file(
+            f"{CWD}{sep}{UID}{sep}labels.tiff",
+            mimetype="image/tiff",
+            download_name="labels.tiff",
         )
     else:
         file_format = request.json["format"]
         response = send_file(
-            f"{CWD}/{UID}/classifier{file_format}",
+            f"{CWD}{sep}{UID}{sep}classifier{file_format}",
             mimetype="application/octet-stream",
             download_name=f"classifier{file_format}",
         )
@@ -223,28 +249,6 @@ async def save_fn(request) -> Response:
 async def save_respond():
     """Save route."""
     response = await generic_response(request, save_fn)
-    return response
-
-
-async def save_labels_fn(request) -> Response:
-    """Save the user labels by recombining them like in save segmentation (stack tiffs or patch)."""
-    images = [_get_image_from_b64(i) for i in request.json["images"]]
-    labels_dicts = request.json["labels"]
-    save_mode = request.json["save_mode"]
-    large_w, large_h = request.json["large_w"], request.json["large_h"]
-    rescale = request.json["rescale"]
-    labels_bytes = save_labels(
-        images, labels_dicts, save_mode, large_w, large_h, rescale
-    )
-    response = Response(labels_bytes)
-    response.headers.add("Content-Type", "application/octet-stream")
-    return response
-
-
-@app.route("/slabel", methods=["POST", "GET", "OPTIONS"])
-async def save_labels_respond():
-    """Save labels response."""
-    response = await generic_response(request, save_labels_fn)
     return response
 
 
@@ -305,15 +309,17 @@ def _map_fname_to_zip_fname(fname: str) -> str:
 
 async def save_to_gallery_fn(request) -> Response:
     UID = request.json["id"]
-    with zipfile.ZipFile(f"{CWD}/{UID}/{UID}.zip", "w") as zipf:
-        for fn in os.listdir(f"{CWD}/{UID}"):
+    with zipfile.ZipFile(f"{CWD}{sep}{UID}{sep}{UID}.zip", "w") as zipf:
+        for fn in os.listdir(f"{CWD}{sep}{UID}"):
             fname, extension = fn.split(".")
             zip_name = _map_fname_to_zip_fname(fname)
             if extension in ["png", "jpg", "json", "tiff"]:
-                zipf.write(f"{CWD}/{UID}/{fn}", arcname=f"{UID}_{zip_name}.{extension}")
+                zipf.write(
+                    f"{CWD}{sep}{UID}{sep}{fn}", arcname=f"{UID}_{zip_name}.{extension}"
+                )
     try:
         upload_blob_file(
-            f"{CWD}/{UID}/{UID}.zip",
+            f"{CWD}{sep}{UID}{sep}{UID}.zip",
             UID + ".zip",
             blob_service_client=get_blob_service_client(),
         )
@@ -335,7 +341,7 @@ async def save_image_fn(request) -> Response:
         image = _get_image_from_b64(request.json["images"])
         x, y = image.size
         t_size = 300
-        image.save(f"{CWD}/{UID}/img.png")
+        image.save(f"{CWD}{sep}{UID}{sep}img.png")
         image = image.crop(
             (
                 x // 2 - t_size // 2,
@@ -344,11 +350,11 @@ async def save_image_fn(request) -> Response:
                 y // 2 + t_size // 2,
             )
         )
-        image.save(f"{CWD}/{UID}/img_thumbnail.jpg")
+        image.save(f"{CWD}{sep}{UID}{sep}img_thumbnail.jpg")
 
         # Save metadata as a json file
         metadata = request.json["metadata"]
-        with open(f"{CWD}/{UID}/metadata.json", "w") as f:
+        with open(f"{CWD}{sep}{UID}{sep}metadata.json", "w") as f:
             json.dump(metadata, f)
 
     except Exception as e:

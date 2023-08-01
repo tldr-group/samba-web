@@ -56,8 +56,8 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
             if (type === "image") {
                 loadFromFile(file);
             } else {
-                console.log("classifier")
-                loadClassifier(file)
+                console.log("classifier");
+                loadClassifier(file);
             }
         };
     }
@@ -73,14 +73,15 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
     const navigate = useNavigate(); // goto gallery 'page' in the SPA (if use link then hosting doesn't work)
 
     const iconClick = (e: any, i: string) => {
+        // For out link icon click, perform correct action
         if (i === "Settings") {
-            const newModalShow: ModalShow = { welcome: false, settings: true, features: false }
-            setModalShow(newModalShow)
+            const newModalShow: ModalShow = { welcome: false, settings: true, features: false };
+            setModalShow(newModalShow);
         } else if (i === "Gallery") {
-            navigate("/gallery")
+            navigate("/gallery");
         } else if (i === "Features") {
-            const newModalShow: ModalShow = { welcome: false, settings: false, features: true }
-            setModalShow(newModalShow)
+            const newModalShow: ModalShow = { welcome: false, settings: false, features: true };
+            setModalShow(newModalShow);
         }
     };
 

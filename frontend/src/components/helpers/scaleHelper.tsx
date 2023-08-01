@@ -1,3 +1,4 @@
+// From Meta's Segment Anything Model: https://github.com/facebookresearch/segment-anything/tree/main/demo
 // Helper function for handling image scaling needed for SAM
 const handleImageScale = (image: HTMLImageElement) => {
   // Input images to SAM must be resized so the longest side is 1024

@@ -16,16 +16,20 @@ run_folder_path = os.path.dirname(os.path.realpath(__file__))
 
 def set_macro_path() -> None:
     """Open the macro and add the path of the folder this script is in to it."""
-    with open(f"{run_folder_path}/classify.ijm", "r+") as f:
+    with open(f"{run_folder_path}{sep}classify.ijm", "r+") as f:
         lines = f.readlines()
     line = f'path = "{run_folder_path}{sep}"\n'
     lines[0] = line
-    with open(f"{run_folder_path}/classify.ijm", "w+") as f:
+    with open(f"{run_folder_path}{sep}classify.ijm", "w+") as f:
         f.writelines(lines)
 
 
 def set_config_file(fname: str) -> None:
-    """Open the config settings txt file, write the features we want to enable in weka (the defaults)."""
+    """Open the config settings txt file, write the features we want to enable in weka (the defaults).
+
+    :param fname: short filename (without extension)
+    :type fname: str
+    """
     with open(f"{run_folder_path}{sep}classification_config.txt", "w+") as file:
         # the image we want to segment is first line of this file
         file.write(f"{fname}\n")
@@ -41,6 +45,15 @@ def set_config_file(fname: str) -> None:
 
 
 def get_label_arr(config_file_path: str, img_arr: np.ndarray) -> np.ndarray:
+    """Open given weka style roi file, loop through and add those labels to empty array.
+
+    :param config_file_path: path to the roi config file containing reactangular rois
+    :type config_file_path: str
+    :param img_arr: np array of the image with shape (h, w)
+    :type img_arr: np.ndarray
+    :return: a (h, w) array where labelled regions have class value c=1,2,3,.. and unlabelled pixels have value=0
+    :rtype: np.ndarray
+    """
     with open(config_file_path) as f:
         lines = f.read().splitlines()
     labels = np.zeros_like(img_arr)
@@ -62,7 +75,13 @@ def get_label_arr(config_file_path: str, img_arr: np.ndarray) -> np.ndarray:
 
 
 def run_weka(fiji_path: str) -> float:
-    """Given path to FIJI installation, run that with the classification macro and default features."""
+    """Given path to FIJI installation, run that with the classification macro and default features.
+
+    :param fiji_path: path to FIJI binary on the system.
+    :type fiji_path: str
+    :return: time taken to run the macro (including boot time)
+    :rtype: float
+    """
     start_t = time.time()
     if os.name == "nt":
         os.system(f"{fiji_path} -macro {run_folder_path}{sep}classify.ijm")

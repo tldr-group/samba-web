@@ -53,7 +53,13 @@ DEAFAULT_FEATURES = {
 
 # %% ===================================HELPER FUNCTIONS===================================
 def make_footprint(sigma: int) -> np.ndarray:
-    """Return array of zeros with centreed circle of radius sigma set to 1."""
+    """Return array of zeros with centreed circle of radius sigma set to 1.
+
+    :param sigma: radius of footprint
+    :type sigma: int
+    :return: array with disk radius sigma set to 1
+    :rtype: np.ndarray
+    """
     circle_footprint = np.zeros((2 * sigma + 1, 2 * sigma + 1))
     centre = (sigma, sigma)
     rr, cc = disk(centre, sigma)
@@ -65,23 +71,42 @@ def make_footprint(sigma: int) -> np.ndarray:
 
 
 def singlescale_gaussian(img: np.ndarray, sigma: int) -> np.ndarray:
-    """Gaussian blur of each pixel in $img of scale/radius $sigma."""
+    """Gaussian blur of each pixel in $img of scale/radius $sigma.
+
+    :param img: img arr
+    :type img: np.ndarray
+    :param sigma: radius for footprint
+    :type sigma: int
+    :return: filtered array
+    :rtype: np.ndarray
+    """
     # weka adds a weird 0.4 multiplier to its gaussian, so have added it here
     return filters.gaussian(img, 0.4 * sigma, preserve_range=True)
 
 
 def singlescale_edges(gaussian_filtered: np.ndarray) -> np.ndarray:
-    """Sobel filter applied to gaussian filtered arr of scale sigma to detect edges."""
+    """Sobel filter applied to gaussian filtered arr of scale sigma to detect edges.
+
+    :param gaussian_filtered: img array (that has optionally been gaussian blurred)
+    :type gaussian_filtered: np.ndarray
+    :return: sobel filtered (edge-detecting) array
+    :rtype: np.ndarray
+    """
     return filters.sobel(gaussian_filtered)
 
 
 def singlescale_hessian(gaussian_filtered: np.ndarray) -> Tuple[np.ndarray, ...]:
-    """Compute mod, trace, det and eigenvalues of Hessian matrix of $gaussian_filtered image (i.e for every pixel)."""
+    """Compute mod, trace, det and eigenvalues of Hessian matrix of $gaussian_filtered image (i.e for every pixel).
+
+    :param gaussian_filtered: img array (that has optionally been gaussian blurred)
+    :type gaussian_filtered: np.ndarray
+    :return: 5 arrays the same shape as input that are the module, trace, determinant and first 2 eigenvalues of the hessian at that pixel
+    :rtype: Tuple[np.ndarray, ...]
+    """
     H_elems = [
         np.gradient(np.gradient(gaussian_filtered)[ax0], axis=ax1)
         for ax0, ax1 in combinations_with_replacement(range(gaussian_filtered.ndim), 2)
     ]
-    # H_elems = feature.hessian_matrix(gaussian_filtered, use_gaussian_derivatives=False)
     a, b, d = H_elems
     mod = np.sqrt(a**2 + b**2 + d**2)
     trace = a + d
@@ -93,55 +118,83 @@ def singlescale_hessian(gaussian_filtered: np.ndarray) -> Tuple[np.ndarray, ...]
     return (mod, trace, det, eig1 / 2.0, eig2 / 2.0)
 
 
-def singlescale_hessian_weka(gaussian_filtered: np.ndarray) -> Tuple[np.ndarray, ...]:
-    """Compute hessian weka style by using sobel (gradient) operator twice."""
-    x = filters.sobel_h(gaussian_filtered)
-    y = filters.sobel_v(gaussian_filtered)
-    xx = filters.sobel_h(x)
-    yy = filters.sobel_v(y)
-    xy = filters.sobel_v(x)
-    mod = np.sqrt(xx * xx + xy * xy + yy * yy)
-    trace = xx + yy
-    det = xx * yy - xy * xy
-    eigvals = feature.hessian_matrix_eigvals([xx, xy, yy])
-    return (mod, trace, det, *eigvals)
-
-
 def singlescale_mean(
     byte_img: np.ndarray, sigma_rad_footprint: np.ndarray
 ) -> np.ndarray:
-    """Mean pixel intensity over footprint $sigma_rad_footprint. Needs img in np.uint8 format."""
+    """Mean pixel intensity over footprint $sigma_rad_footprint. Needs img in np.uint8 format.
+
+    :param byte_img: img arr in uint8 format
+    :type byte_img: np.ndarray
+    :param sigma_rad_footprint: radius of footprint
+    :type sigma_rad_footprint: np.ndarray
+    :return: mean filtered img
+    :rtype: np.ndarray
+    """
     return filters.rank.mean(byte_img, sigma_rad_footprint)
 
 
 def singlescale_median(
     byte_img: np.ndarray, sigma_rad_footprint: np.ndarray
 ) -> np.ndarray:
-    """Median pixel intensity over footprint $sigma_rad_footprint."""
+    """Median pixel intensity over footprint $sigma_rad_footprint. Needs img in np.uint8 format.
+
+    :param byte_img: img arr in uint8 format
+    :type byte_img: np.ndarray
+    :param sigma_rad_footprint: radius of footprint
+    :type sigma_rad_footprint: np.ndarray
+    :return: mean filtered img
+    :rtype: np.ndarray
+    """
     return filters.rank.median(byte_img, sigma_rad_footprint)
 
 
 def singlescale_maximum(
     byte_img: np.ndarray, sigma_rad_footprint: np.ndarray
 ) -> np.ndarray:
-    """Maximum pixel intensity over footprint $sigma_rad_footprint."""
+    """Maximum pixel intensity over footprint $sigma_rad_footprint. Needs img in np.uint8 format.
+
+    :param byte_img: img arr in uint8 format
+    :type byte_img: np.ndarray
+    :param sigma_rad_footprint: radius of footprint
+    :type sigma_rad_footprint: np.ndarray
+    :return: mean filtered img
+    :rtype: np.ndarray
+    """
     return filters.rank.maximum(byte_img, sigma_rad_footprint)
 
 
 def singlescale_minimum(
     byte_img: np.ndarray, sigma_rad_footprint: np.ndarray
 ) -> np.ndarray:
-    """Minimum pixel intensity over footprint $sigma_rad_footprint."""
+    """Minimum pixel intensity over footprint $sigma_rad_footprint. Needs img in np.uint8 format.
+
+    :param byte_img: img arr in uint8 format
+    :type byte_img: np.ndarray
+    :param sigma_rad_footprint: radius of footprint
+    :type sigma_rad_footprint: np.ndarray
+    :return: mean filtered img
+    :rtype: np.ndarray
+    """
     return filters.rank.minimum(byte_img, sigma_rad_footprint)
 
 
-def singlescale_entropy(img: np.ndarray, sigma_rad_footprint: np.ndarray) -> np.ndarray:
-    """Compute entropy of $n_bins histogram of $img in $sigma_rad_footprint. Memory intensive."""
+def singlescale_entropy(
+    byte_img: np.ndarray, sigma_rad_footprint: np.ndarray
+) -> np.ndarray:
+    """Compute entropy of $n_bins histogram of $img in $sigma_rad_footprint. Memory intensive.
+
+    :param byte_img: img arr in uint8 format
+    :type byte_img: np.ndarray
+    :param sigma_rad_footprint: radius of footprint
+    :type sigma_rad_footprint: np.ndarray
+    :return: mean filtered img
+    :rtype: np.ndarray
+    """
     # lots of nans here because of np.divide
     entropies = []
     for n_bins in [32, 64, 128]:  # was 32, 64, 128, 256
         histogram = filters.rank.windowed_histogram(
-            img, sigma_rad_footprint, n_bins=n_bins
+            byte_img, sigma_rad_footprint, n_bins=n_bins
         )  # -> (H, W, N) array
         probs = np.divide(histogram, np.amax(histogram, axis=-1, keepdims=True))
         entropy = np.sum(-probs * np.log2(probs, where=(probs > 0)), axis=-1)
@@ -150,29 +203,29 @@ def singlescale_entropy(img: np.ndarray, sigma_rad_footprint: np.ndarray) -> np.
 
 
 def singlescale_structure_tensor(img: np.ndarray, sigma: int) -> np.ndarray:
-    """Compute structure tensor eigenvalues of $img in $sigma radius."""
+    """Compute structure tensor eigenvalues of $img in $sigma radius.
+
+    :param img: img arr
+    :type img: np.ndarray
+    :param sigma: scale parameter
+    :type sigma: int
+    :return: largest two eigenvalues of structure tensor at each pixel
+    :rtype: np.ndarray
+    """
     tensor = feature.structure_tensor(img, sigma)
     eigvals = feature.structure_tensor_eigenvalues(tensor)
     return eigvals[:2]
 
 
 def singlescale_neighbours(img: np.ndarray, sigma: int) -> List[np.ndarray]:
-    """Singlescale neighbours.
+    """Find nearest neighbours of $img by convolving $sigma-dilated 3x3 kernel with $img.
 
-    Find nearest neighbours of $img by convolving $sigma-dilated 3x3 kernel with $img.
-    i.e sigma = 1:
-    111
-    101
-    111
-
-    i.e sigma = 2:
-    10101
-    00000
-    10001
-    00000
-    10101
-
-    etc.
+    :param img: img arr
+    :type img: np.ndarray
+    :param sigma: dilation of kernel (i.e distance nearest neighbours found over)
+    :type sigma: int
+    :return: 8 arrays containing the values $sigma pixels away from each pixel in the Moore nieghbourhood
+    :rtype: List[np.ndarray]
     """
     sigma = int(sigma)
     kernel = np.zeros((2 * sigma + 1, 2 * sigma + 1), dtype=np.uint8)
@@ -196,7 +249,15 @@ def singlescale_neighbours(img: np.ndarray, sigma: int) -> List[np.ndarray]:
 def singlescale_higher_order_derivatives(
     img: np.ndarray, sigma_rad_footprint: np.ndarray
 ) -> List[np.ndarray]:
-    """Compute d^n intensity gradients, n in [4, 6, 8, 10] of $img in $simga radius."""
+    """Compute d^n intensity gradients, n in [4, 6, 8, 10] of $img in $simga radius.
+
+    :param img: img arr
+    :type img: np.ndarray
+    :param sigma_rad_footprint: radius of footprint over which gradients computed
+    :type sigma_rad_footprint: np.ndarray
+    :return: list of arrs for each order of derivative in [4, 6, 8, 10]
+    :rtype: List[np.ndarray]
+    """
     derivatives = []
     deriv_n = img
     for order in range(1, 11):
@@ -208,14 +269,28 @@ def singlescale_higher_order_derivatives(
 
 
 def singlescale_laplacian(img: np.ndarray, sigma: int) -> np.ndarray:
-    """Compute laplacian of $img on scale $simga. Not currently working."""
+    """Compute laplacian of $img on scale $simga. Not currently working.
+
+    :param img: img arr
+    :type img: np.ndarray
+    :param sigma: scale parameter
+    :type sigma: int
+    :return: laplacian filtered img arr
+    :rtype: np.ndarray
+    """
     sigma = int(sigma)
     return filters.laplace(img, sigma)
 
 
 # %% ===================================SCALE-FREE FEATURES===================================
 def bilateral(img: np.ndarray) -> np.ndarray:
-    """For $sigma in [5, 10], for $value_range in [50, 100], compute mean of pixels in $sigma radius inside $value_range window for each pixel."""
+    """For $sigma in [5, 10], for $value_range in [50, 100], compute mean of pixels in $sigma radius inside $value_range window for each pixel.
+
+    :param img: img arr
+    :type img: np.ndarray
+    :return: bilateral filtered arrs stacked in a single np array
+    :rtype: np.ndarray
+    """
     bilaterals = []
     for spatial_radius in [5, 10]:
         footprint = make_footprint(spatial_radius)
@@ -228,7 +303,13 @@ def bilateral(img: np.ndarray) -> np.ndarray:
 
 
 def difference_of_gaussians(gaussian_blurs: List[np.ndarray]) -> List[np.ndarray]:
-    """For each possible combination of arr in $gaussian_blurs (representing different $sigma scales), compute their difference."""
+    """Compute their difference of each arr in $gaussian_blurs (representing different $sigma scales) with smaller arrs.
+
+    :param gaussian_blurs: list of arrs of img filtered with gaussian blur at different length scales
+    :type gaussian_blurs: List[np.ndarray]
+    :return: list of differences of each blurred img with smaller length scales.
+    :rtype: List[np.ndarray]
+    """
     # weka computes dog for  each filter of a *lower* sigma
     dogs = []
     for i in range(len(gaussian_blurs)):
@@ -245,13 +326,23 @@ def membrane_projections(
     membrane_thickness: int = 1,
     num_workers: int | None = N_ALLOWED_CPUS,
 ) -> List[np.ndarray]:
-    """
-    Membrane projections.
+    """Membrane projections.
 
     Create a $membrane_patch_size^2 array with $membrane_thickness central columns set to 1, other entries set to 0.
     Next compute 30 different rotations of membrane kernel ($theta in [0, 180, step=6 degrees]).
     Convolve each of these kernels with $img to get HxWx30 array, then z-project the array by taking
     the sum, mean, std, median, max and min to get a HxWx6 array out.
+
+    :param img: img arr
+    :type img: np.ndarray
+    :param membrane_patch_size: size of kernel, defaults to 19
+    :type membrane_patch_size: int, optional
+    :param membrane_thickness: width of line down the middle, defaults to 1
+    :type membrane_thickness: int, optional
+    :param num_workers: number of threads, defaults to N_ALLOWED_CPUS
+    :type num_workers: int | None, optional
+    :return: List of 6 z-projections of membrane convolutions
+    :rtype: List[np.ndarray]
     """
     kernel = np.zeros((membrane_patch_size, membrane_patch_size))
     x0 = membrane_patch_size // 2 - membrane_thickness // 2
@@ -293,7 +384,37 @@ def singlescale_advanced_features_singlechannel(
     neighbours=True,
     derivatives=True,
 ) -> Tuple[np.ndarray, ...]:
-    """Compute all *selected* singlescale features for scale $sigma. Done s.t things like radial sigma kernel can be reused."""
+    """Compute all *selected* singlescale features for scale $sigma. Done s.t things like radial sigma kernel can be reused.
+
+    :param unconverted_img: original img arr
+    :type unconverted_img: np.ndarray
+    :param sigma: length scale for the singlescale features
+    :type sigma: int
+    :param intensity: if gaussian blur enabled, defaults to True
+    :type intensity: bool, optional
+    :param edges: if sobel enabled, defaults to True
+    :type edges: bool, optional
+    :param texture: if hessian enabled, defaults to True
+    :type texture: bool, optional
+    :param mean: if mean filter enabled, defaults to True
+    :type mean: bool, optional
+    :param median: if median filter enabled, defaults to True
+    :type median: bool, optional
+    :param minimum: if minimum filter enabled, defaults to True
+    :type minimum: bool, optional
+    :param maximum: if maximum filter enabled, defaults to True
+    :type maximum: bool, optional
+    :param entropy: if entropy filter enabled, defaults to True
+    :type entropy: bool, optional
+    :param structure: if structure tensor eigenvaleus filter enabled, defaults to True
+    :type structure: bool, optional
+    :param neighbours: if neighbours filter enabled, defaults to True
+    :type neighbours: bool, optional
+    :param derivatives: if derivatives filter enabled, defaults to True
+    :type derivatives: bool, optional
+    :return: tuple of outputs of enabled filters
+    :rtype: Tuple[np.ndarray, ...]
+    """
     img = np.ascontiguousarray(img_as_float32(unconverted_img))
     results: Tuple[np.ndarray, ...] = ()
     gaussian_filtered = singlescale_gaussian(img, sigma)
@@ -304,6 +425,7 @@ def singlescale_advanced_features_singlechannel(
     if texture == 1:
         results += (*singlescale_hessian(gaussian_filtered),)
 
+    # following filters need an uint8 image to work
     byte_img = unconverted_img.astype(np.uint8)
     circle_footprint = make_footprint(int(np.ceil(sigma)))
     if mean == 1:
@@ -321,6 +443,7 @@ def singlescale_advanced_features_singlechannel(
     if entropy == 1:
         entropy = singlescale_entropy(byte_img, circle_footprint)
         results += (*entropy,)
+
     if structure == 1:
         structure_eigvals = singlescale_structure_tensor(img, sigma)
         results += (
@@ -355,12 +478,20 @@ def multiscale_advanced_features(
     feature_dict: dict,
     num_workers: int | None = None,
 ) -> np.ndarray:
-    """
-    Multiscale advanced features.
+    """Multiscale advanced features.
 
     Compute each of the selected features in $feature_dict.
     Singlescale features are computed over a ranged of length scales $sigma on different execution threads.
     Scale invariant features are computed onced.
+
+    :param img: img arr
+    :type img: np.ndarray
+    :param feature_dict: dictionary containing which filters user wants to enable, in format of $DEFAULT_FEATURES
+    :type feature_dict: dict
+    :param num_workers: number of threads to use, defaults to None
+    :type num_workers: int | None, optional
+    :return: np array of outputs of all enabled filters applied to $img
+    :rtype: np.ndarray
     """
     features: Iterable[np.ndarray] = zero_scale_filters(
         img, edges=feature_dict["Sobel Filter"], hess=feature_dict["Hessian"]

@@ -28,6 +28,7 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier,
   const flexCenterClasses = "flex items-center justify-center";
 
   const loadTIFF = (result: ArrayBuffer) => {
+    // Given a tiff file, parse with UTIF then load. If large, load as a large image, if a stack, load as a stack.
     const tifs = UTIF.decode(result);
     const hrefs: Array<string> = [];
     for (let tif of tifs) {
@@ -55,6 +56,7 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier,
   }
 
   const loadPNGJPEG = (href: string) => {
+    // Load PNG or JPEF image via href.
     const img = new Image();
     img.src = href;
     img.onload = () => {
@@ -63,8 +65,8 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier,
         setImgType("large");
       }
       else {
-        const type = (imgArrs.length == 0) ? "single" : "multi"
-        console.log(type)
+        const type = (imgArrs.length == 0) ? "single" : "multi";
+        console.log(type);
         loadImages([href]);
         setImgType(type);
       }
@@ -72,6 +74,8 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier,
   }
 
   const loadLargeImage = (img: HTMLImageElement) => {
+    /* Load a large image. Split it into sub-images whose dimensions are the largest even number
+    smaller than 1024. Load each sub image.*/
     const hrefs: string[] = [];
     const inds = getSplitInds(img);
     const canvas = document.createElement("canvas");
@@ -99,6 +103,7 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier,
   }
 
   const loadFromFile = (file: File) => {
+    // Load a file: reject if too large or not a JPG/PNG/TIFF then call correct function.
     const reader = new FileReader();
     const extension = file.name.split('.').pop()?.toLowerCase();
     const isTIF = (extension === "tif" || extension === "tiff");
@@ -128,9 +133,9 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier,
       }
     };
     if (isTIF) {
-      reader.readAsArrayBuffer(file);
+      reader.readAsArrayBuffer(file); //array buffer for tif
     } else {
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(file); //href for png jpeg
     };
   }
 
@@ -156,6 +161,7 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier,
 
 
 const DragDrop = ({ loadDefault, loadFromFile }: DragDropProps) => {
+  // Drag and drop for file upload
   const handleDrag = (e: any) => { e.preventDefault(); }
   const handeDrop = (e: any) => {
     e.preventDefault();

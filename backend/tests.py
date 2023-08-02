@@ -273,7 +273,7 @@ class CompareDefaultFeatures(unittest.TestCase):
         passed = True
 
         img = imread(f"backend{sep}test_resources{sep}super1.tif").astype(np.float32)
-        samba = ft.multiscale_advanced_features(img, ft.DEAFAULT_FEATURES, ft.N_ALLOWED_CPUS).transpose((2, 0, 1))
+        samba = ft.multiscale_advanced_features(img, ft.DEAFAULT_FEATURES, 1).transpose((2, 0, 1))
         singlescale_mse = self.compare_singlescale_default(weka, samba)
         dog_mse = self.compare_dog_default(weka, samba)
         membrane_mse = self.compare_membrane_projections(weka, samba)

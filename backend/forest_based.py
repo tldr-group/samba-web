@@ -7,25 +7,20 @@ feature stack to a set of user labels in pixel space. Finally, we apply this tra
 classifier to the whole image to generate a segmentation for each image in the app.
 
 This is written in 2 styles: functional backbone that can be composed to be used on
-say a cloud function or as a smaller part of a threaded classifier object (which can 
-memoise things like feature computation) that is part of a GUI app.  
+say a cloud function or as a smaller part of a threaded classifier object (which can
+memoise things like feature computation) that is part of a GUI app.
 """
 import numpy as np
 from features import multiscale_advanced_features, N_ALLOWED_CPUS, DEAFAULT_FEATURES
 from test_resources.call_weka import sep
-
-print(N_ALLOWED_CPUS)
-
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import HistGradientBoostingClassifier
-
-
 from typing import List, Tuple, TypeAlias, Literal
 
-EnsembleMethod: TypeAlias = (
-    RandomForestClassifier | GradientBoostingClassifier | HistGradientBoostingClassifier
-)
+print(N_ALLOWED_CPUS)
+
+EnsembleMethod: TypeAlias = RandomForestClassifier | GradientBoostingClassifier | HistGradientBoostingClassifier
 
 EnsembleMethodName: TypeAlias = Literal["FRF", "XGB", "LGBM"]
 
@@ -56,9 +51,7 @@ def get_class_weights(target_data: np.ndarray) -> Tuple[np.ndarray, List[int]]:
     return weights_arr, class_freqs
 
 
-def get_training_data(
-    feature_stack: np.ndarray, labels: np.ndarray, method="cpu"
-) -> Tuple[np.ndarray, np.ndarray]:
+def get_training_data(feature_stack: np.ndarray, labels: np.ndarray, method="cpu") -> Tuple[np.ndarray, np.ndarray]:
     """Given $feature_stack and $labels, flatten both and reshape accordingly. Add a class offset if using XGB gpu.
 
     :param feature_stack: NxHxW arr of features from featurisation
@@ -67,7 +60,8 @@ def get_training_data(
     :type labels: np.ndarray
     :param method: which RF to use, defaults to "cpu"
     :type method: str, optional
-    :return: flattened arrs of fit data (feature vectors of all labelled pixels) and target data (class values of all labelled pixels)
+    :return: flattened arrs of fit data (feature vectors of all labelled pixels) and
+        target data (class values of all labelled pixels)
     :rtype: Tuple[np.ndarray, np.ndarray]
     """
     h, w, feat = feature_stack.shape
@@ -82,9 +76,7 @@ def get_training_data(
     return fit_data, target_data
 
 
-def get_training_data_features_done(
-    labels: List[np.ndarray], UID: str
-) -> Tuple[np.ndarray, np.ndarray]:
+def get_training_data_features_done(labels: List[np.ndarray], UID: str) -> Tuple[np.ndarray, np.ndarray]:
     """For each img, load cached features. Check if img is labelled and if it is get the training data and concat.
 
     :param labels: label arr
@@ -112,9 +104,7 @@ def get_training_data_features_done(
     return (all_fit_data, all_target_data)
 
 
-def _shuffle_fit_target(
-    fit: np.ndarray, target: np.ndarray
-) -> Tuple[np.ndarray, np.ndarray]:
+def _shuffle_fit_target(fit: np.ndarray, target: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Shuffle both the fit and target arrs in same way by shuffling an index arr.
 
     :param fit: flat fit data arr
@@ -161,9 +151,7 @@ def sample_training_data(
 
         matching_inds = np.nonzero(np.where(target_data == class_val, 1, 0))
         class_filtered_fit = fit_data[matching_inds]
-        class_filtered_target = (
-            np.zeros(shape=(class_filtered_fit.shape[0],)) + class_val
-        )
+        class_filtered_target = np.zeros(shape=(class_filtered_fit.shape[0],)) + class_val
         print(f"sampling up to {n_points_per_class} points for class {class_val}")
 
         shuffle_inds = np.arange(0, len(class_filtered_fit), 1)
@@ -177,9 +165,7 @@ def sample_training_data(
             sampled_target_data = sampled_target
         else:
             sampled_fit_data = np.concatenate((sampled_fit_data, sampled_fit), axis=0)
-            sampled_target_data = np.concatenate(
-                (sampled_target_data, sampled_target), axis=0
-            )
+            sampled_target_data = np.concatenate((sampled_target_data, sampled_target), axis=0)
     # now globally shuffle our data
     return _shuffle_fit_target(sampled_fit_data, sampled_target_data)
 
@@ -210,9 +196,7 @@ def fit(
     return model
 
 
-def apply_features_done(
-    model: EnsembleMethod, UID: str, n_imgs: int, reorder: bool = True
-) -> List[np.ndarray]:
+def apply_features_done(model: EnsembleMethod, UID: str, n_imgs: int, reorder: bool = True) -> List[np.ndarray]:
     """Assuming feature stacks saved in folder, decompress each one, apply trained classifier and return segmentation.
 
     :param model: a *trained* sklearn ensemble method
@@ -273,9 +257,7 @@ def get_model(
             oob_score=True,
         )
     elif model_name == "XGB":
-        model = GradientBoostingClassifier(
-            n_estimators=n_trees, max_features=n_features, max_depth=depth
-        )
+        model = GradientBoostingClassifier(n_estimators=n_trees, max_features=n_features, max_depth=depth)
     elif model_name == "LGBM_cpu":
         model = HistGradientBoostingClassifier()
     return model
@@ -319,9 +301,7 @@ def segment_with_features(
         )
         new_weights = weights
     else:
-        sample_fit_data, sample_target_data = sample_training_data(
-            fit_data, target_data, class_counts, n_points
-        )
+        sample_fit_data, sample_target_data = sample_training_data(fit_data, target_data, class_counts, n_points)
         new_weights, _ = get_class_weights(sample_target_data)
 
     if balance_classes is False:
@@ -346,9 +326,7 @@ def segment_no_features_get_arr(
     :return: segmentation arr as class probabilities.
     :rtype: np.ndarray
     """
-    feature_stack = multiscale_advanced_features(
-        img_arr, DEAFAULT_FEATURES, N_ALLOWED_CPUS
-    )
+    feature_stack = multiscale_advanced_features(img_arr, DEAFAULT_FEATURES, N_ALLOWED_CPUS)
     fit_data, target_data = get_training_data(feature_stack, label_arr)
     model = get_model("FRF")
     model = fit(model, fit_data, target_data, None)

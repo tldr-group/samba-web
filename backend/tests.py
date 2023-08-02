@@ -180,7 +180,7 @@ class TestFeatures(unittest.TestCase):
         """
         line = np.zeros((64, 64))
         line[:, 32] = 1
-        z_projs = ft.membrane_projections(line)
+        z_projs = ft.membrane_projections(line, num_workers=1)
         filtered = z_projs[0]
         prev_val = filtered[32, 32]
         for i in range(1, 5):

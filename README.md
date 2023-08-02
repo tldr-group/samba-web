@@ -1,10 +1,16 @@
-## Segment Anything Model Based App (SAMBA) - web demo
-![GIF showing labelling process](https://sambasegment.blob.core.windows.net/resources/labelling_compressed.gif)
+<h1 align="center">
+<img src="https://sambasegment.blob.core.windows.net/resources/samba_logo_wide.png" width="600">
+</h1><br>
+
 <!-- ![Diagram showing (a) different labelling types in SAMBA, (b) impact of scale parameter on smart labelling and (c) output segmentation ](docs/gui.png) --> 
 
-`SAMBA` is a trainable segmentation tool for materials science that uses [deep learning](https://github.com/facebookresearch/segment-anything) for fast, high-quality labels and random forests for robust, generalizable segmentations. It is accessible in the browser ([https://sambasegment.com](https://sambasegment.z33.web.core.windows.net/)), without the need to download any external dependencies. This repo is a local version of the website which contains the frontend for the website (React + TSX) and the backend (Python + Flask). The frontend handles labelling and the backend sends back SAM embeddings (if requested) and segmentations.
+`SAMBA` is a trainable segmentation tool for materials science that uses [deep learning](https://github.com/facebookresearch/segment-anything) for fast, high-quality labels and random forests for robust, generalizable segmentations. It is accessible in the browser ([https://www.sambasegment.com](https://www.sambasegment.com)), without the need to download any external dependencies. This repo is a local version of the website which contains the frontend for the website (React + TSX) and the backend (Python + Flask). The frontend handles labelling and the backend sends back SAM embeddings (if requested) and segmentations.
 
-Check out the [tutorial](TUTORIAL.md) if help is needed!
+Check out the [tutorial/user manual](TUTORIAL.md) if help is needed!
+<p align="center">
+    <img src="https://sambasegment.blob.core.windows.net/resources/labelling_compressed.gif">
+</p>
+<!-- ![GIF showing labelling process](https://sambasegment.blob.core.windows.net/resources/labelling_compressed.gif) -->
 
 
 ## Local Installation Instructions

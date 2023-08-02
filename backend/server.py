@@ -38,9 +38,7 @@ if server:
 credential: str | None
 try:
     credential = os.environ["BLOB_KEY"]
-except (
-    Exception
-):  # do this bc server can't find dotenv even if python-dotenv in requirements
+except Exception:  # do this bc server can't find dotenv even if python-dotenv in requirements
     import dotenv
 
     credential = dotenv.get_key(dotenv.find_dotenv(), "AZURE_STORAGE_KEY")
@@ -291,9 +289,7 @@ def get_blob_service_client():
 
 
 def upload_blob_file(fn, UID, blob_service_client: BlobServiceClient):
-    container_client = blob_service_client.get_container_client(
-        container="gallery-submission"
-    )
+    container_client = blob_service_client.get_container_client(container="gallery-submission")
     with open(file=fn, mode="rb") as data:
         container_client.upload_blob(name=f"{UID}", data=data, overwrite=True)
 
@@ -318,9 +314,7 @@ async def save_to_gallery_fn(request) -> Response:
             fname, extension = fn.split(".")
             zip_name = _map_fname_to_zip_fname(fname)
             if extension in ["png", "jpg", "json", "tiff"]:
-                zipf.write(
-                    f"{CWD}{sep}{UID}{sep}{fn}", arcname=f"{UID}_{zip_name}.{extension}"
-                )
+                zipf.write(f"{CWD}{sep}{UID}{sep}{fn}", arcname=f"{UID}_{zip_name}.{extension}")
     try:
         upload_blob_file(
             f"{CWD}{sep}{UID}{sep}{UID}.zip",

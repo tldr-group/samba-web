@@ -56,9 +56,7 @@ def get_weka_default_from_azure() -> np.ndarray:
     """
     account_url = "https://sambasegment.blob.core.windows.net"
     blob_service_client = BlobServiceClient(account_url)
-    container_client = blob_service_client.get_blob_client(
-        container="resources", blob="weka_default.tif"
-    )
+    container_client = blob_service_client.get_blob_client(container="resources", blob="weka_default.tif")
     with open(f"backend{sep}test_resources{sep}weka_default.tif", "wb") as f:
         download_stream = container_client.download_blob()
         f.write(download_stream.readall())
@@ -210,7 +208,8 @@ class TestFeatures(unittest.TestCase):
 
 
 def weka_dog_per_sigma(sigma: int) -> int:
-    """Get number of DoGs at given length scale when iterating through each filter. Note there are weird offsets to account for looping.
+    """Get number of DoGs at given length scale when iterating through each filter.
+        Note there are weird offsets to account for looping.
 
     :param sigma: scale paramter
     :type sigma: int
@@ -274,9 +273,7 @@ class CompareDefaultFeatures(unittest.TestCase):
         passed = True
 
         img = imread(f"backend{sep}test_resources{sep}super1.tif").astype(np.float32)
-        samba = ft.multiscale_advanced_features(
-            img, ft.DEAFAULT_FEATURES, ft.N_ALLOWED_CPUS
-        ).transpose((2, 0, 1))
+        samba = ft.multiscale_advanced_features(img, ft.DEAFAULT_FEATURES, ft.N_ALLOWED_CPUS).transpose((2, 0, 1))
         singlescale_mse = self.compare_singlescale_default(weka, samba)
         dog_mse = self.compare_dog_default(weka, samba)
         membrane_mse = self.compare_membrane_projections(weka, samba)
@@ -287,9 +284,7 @@ class CompareDefaultFeatures(unittest.TestCase):
                 passed = False
         assert passed
 
-    def compare_singlescale_default(
-        self, weka: np.ndarray, samba: np.ndarray
-    ) -> List[float]:
+    def compare_singlescale_default(self, weka: np.ndarray, samba: np.ndarray) -> List[float]:
         """Compare each singlescale feature, accounting for ordering differences.
 
         :param weka: arr of weka features (NxHxW)
@@ -304,16 +299,15 @@ class CompareDefaultFeatures(unittest.TestCase):
         for i in range(len(length_scales) * SAMBA_PER_LENGTH_SCALE):
             scale = i // SAMBA_PER_LENGTH_SCALE
             n_dog = weka_dog_per_sigma(scale)
-            weka_idx = (
-                scale * WEKA_PER_LENGTH_SCALE_BASE + n_dog + i % SAMBA_PER_LENGTH_SCALE
-            )
+            weka_idx = scale * WEKA_PER_LENGTH_SCALE_BASE + n_dog + i % SAMBA_PER_LENGTH_SCALE
             weka_f, samba_f = weka[weka_idx], samba[i]
             mse = norm_get_mse(weka_f, samba_f)
             mses.append(mse)
         return mses
 
     def compare_dog_default(self, weka: np.ndarray, samba: np.ndarray) -> List[float]:
-        """Compare Difference Of Gaussian (DoG) filters: in Weka these appear per length scale, in SAMBA these appear near the end.
+        """Compare Difference Of Gaussian (DoG) filters:
+            in Weka these appear per length scale, in SAMBA these appear near the end.
 
         :param weka: arr of weka features (NxHxW)
         :type weka: np.ndarray
@@ -337,9 +331,7 @@ class CompareDefaultFeatures(unittest.TestCase):
             prev_total_n_dog += n_dog
         return mses
 
-    def compare_membrane_projections(
-        self, weka: np.ndarray, samba: np.ndarray
-    ) -> List[float]:
+    def compare_membrane_projections(self, weka: np.ndarray, samba: np.ndarray) -> List[float]:
         """Compare membrane projection filters, for both tools these are at the end of the filter stacks.
 
         :param weka: arr of weka features (NxHxW)
@@ -461,14 +453,13 @@ class CompareSegmentations(unittest.TestCase):
 
         assert passed
 
-    def get_weka_samba_segs(
-        self, fname: str
-    ) -> Tuple[np.ndarray, np.ndarray, float, float]:
+    def get_weka_samba_segs(self, fname: str) -> Tuple[np.ndarray, np.ndarray, float, float]:
         """Given a filename, adjust macro config files, call Weka, segment, save, load SAMBA, segment, then compare the two.
 
         :param fname: filename
         :type fname: str
-        :return: tuple of weka segmentation arr, samba segmentation arr, time to compute weka segmentation, time to compute samba segmentation
+        :return: tuple of weka segmentation arr, samba segmentation arr, time to compute weka segmentation,
+            time to compute samba segmentation
         :rtype: Tuple[np.ndarray, np.ndarray, float, float]
         """
         set_macro_path()
@@ -476,9 +467,7 @@ class CompareSegmentations(unittest.TestCase):
         weka_t = run_weka(FIJI_PATH)
         img_arr = imread(f"backend{sep}test_resources{sep}{fname}.tif")
         weka_arr = imread(f"backend{sep}test_resources{sep}output.tif")
-        label = get_label_arr(
-            f"backend{sep}test_resources{sep}{fname}_roi_config.txt", img_arr
-        )
+        label = get_label_arr(f"backend{sep}test_resources{sep}{fname}_roi_config.txt", img_arr)
         start_t = time.time()
         samba_arr = segment_no_features_get_arr(label, img_arr)
         end_t = time.time()
@@ -518,9 +507,7 @@ class CompareSegmentations(unittest.TestCase):
             if row == 0:
                 axs[0].set_title("Weka", fontsize=16)
                 axs[1].set_title("SAMBA", fontsize=16)
-        plt.savefig(
-            f"backend{sep}test_resources{sep}test_outputs{sep}segmentation_comparison.png"
-        )
+        plt.savefig(f"backend{sep}test_resources{sep}test_outputs{sep}segmentation_comparison.png")
 
         plt.figure(num=2, figsize=(16, 16))
         x = np.arange(2, 5)
@@ -529,9 +516,7 @@ class CompareSegmentations(unittest.TestCase):
         plt.legend(fontsize=14)
         plt.ylabel("Time (s)", fontsize=14)
         plt.xlabel("Number of phases", fontsize=14)
-        plt.savefig(
-            f"backend{sep}test_resources{sep}test_outputs{sep}times_comparison.png"
-        )
+        plt.savefig(f"backend{sep}test_resources{sep}test_outputs{sep}times_comparison.png")
 
 
 if __name__ == "__main__":

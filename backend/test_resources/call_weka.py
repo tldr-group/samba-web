@@ -69,7 +69,7 @@ def get_label_arr(config_file_path: str, img_arr: np.ndarray) -> np.ndarray:
             current_roi.append(int(ln))
             roi_counter = 0
             x, y, w, h, c = current_roi
-            labels[y: y + h, x: x + w] = c + 1
+            labels[y : y + h, x : x + w] = c + 1
             current_roi = []
     return labels
 
@@ -86,8 +86,6 @@ def run_weka(fiji_path: str) -> float:
     if os.name == "nt":
         os.system(f"{fiji_path} -macro {run_folder_path}{sep}classify.ijm")
     else:
-        subprocess.run(
-            [f"{fiji_path}", "-macro", f"{run_folder_path}{sep}classify.ijm"]
-        )
+        subprocess.run([f"{fiji_path}", "-macro", f"{run_folder_path}{sep}classify.ijm"])
     end_t = time.time()
     return end_t - start_t

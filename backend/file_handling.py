@@ -66,7 +66,8 @@ def delete_old_folders(UID: str) -> None:
 
 
 def delete_feature_file(folder_name: str, delete_idx: int) -> int:
-    """Delete a given user file(s) then rename all subsequent files to account for this. This involves renaming twice to avoid a confilct.
+    """Delete a given user file(s) then rename all subsequent files to account for this.
+        This involves renaming twice to avoid a confilct.
 
     :param folder_name: user data folder name
     :type folder_name: str

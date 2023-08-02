@@ -135,9 +135,7 @@ async def _save_as_tiff(
     :return: 0 if successful
     :rtype: int
     """
-    out = _create_composite_tiff(
-        arr_list, mode, large_w=large_w, large_h=large_h, rescale=rescale
-    )
+    out = _create_composite_tiff(arr_list, mode, large_w=large_w, large_h=large_h, rescale=rescale)
     sw_name: str = "SAMBA"
     if score is not None:
         sw_name = f"SAMBA, val. score={score:.3f}"
@@ -158,8 +156,8 @@ async def _save_as_tiff(
             Image.fromarray(
                 out[
                     0,
-                    x // 2 - t_size // 2: x // 2 + t_size // 2,
-                    y // 2 - t_size // 2: y // 2 + t_size // 2,
+                    x // 2 - t_size // 2 : x // 2 + t_size // 2,
+                    y // 2 - t_size // 2 : y // 2 + t_size // 2,
                 ]
             ).save(f"{CWD}{sep}{UID}{sep}seg_thumbnail.jpg")
             Image.fromarray(out[0]).save(f"{CWD}{sep}{UID}{sep}seg.png")
@@ -302,9 +300,7 @@ async def segment(
 
     remasked_arrs_list: List[np.ndarray] = []
     remasked_flattened_arrs: np.ndarray
-    probs, model, score = segment_with_features(
-        label_arrs, UID, n_points=n_points, train_all=train_all
-    )
+    probs, model, score = segment_with_features(label_arrs, UID, n_points=n_points, train_all=train_all)
 
     for i in range(len(probs)):
         label_arr = label_arrs[i]
@@ -314,12 +310,8 @@ async def segment(
         if i == 0:
             remasked_flattened_arrs = remasked.flatten()
         else:
-            remasked_flattened_arrs = np.concatenate(
-                (remasked_flattened_arrs, remasked.flatten()), axis=0, dtype=np.uint8
-            )
-    await _save_as_tiff(
-        remasked_arrs_list, save_mode, UID, large_w, large_h, score, rescale=rescale
-    )
+            remasked_flattened_arrs = np.concatenate((remasked_flattened_arrs, remasked.flatten()), axis=0, dtype=np.uint8)
+    await _save_as_tiff(remasked_arrs_list, save_mode, UID, large_w, large_h, score, rescale=rescale)
     await save_labels(img_dims, labels_dicts, UID, save_mode, large_w, large_h, rescale)
     await _save_classifier(model, CWD, UID)
     print(remasked_flattened_arrs.shape, label_arrs[0].shape)
@@ -362,8 +354,6 @@ async def apply(
         if i == 0:
             flattened_arrs = classes.flatten()
         else:
-            flattened_arrs = np.concatenate(
-                (flattened_arrs, classes.flatten()), axis=0, dtype=np.uint8
-            )
+            flattened_arrs = np.concatenate((flattened_arrs, classes.flatten()), axis=0, dtype=np.uint8)
     await _save_as_tiff(arrs_list, save_mode, UID, large_w, large_h, rescale=rescale)
     return flattened_arrs

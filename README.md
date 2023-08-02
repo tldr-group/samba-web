@@ -1,6 +1,7 @@
 <h1 align="center">
 <img src="https://sambasegment.blob.core.windows.net/resources/samba_logo_wide.png" width="600">
 </h1><br>
+
 ![Tests](https://github.com/tldr-group/samba-web/actions/workflows/tests.yml/badge.svg)
 
 <!-- ![Diagram showing (a) different labelling types in SAMBA, (b) impact of scale parameter on smart labelling and (c) output segmentation ](docs/gui.png) --> 

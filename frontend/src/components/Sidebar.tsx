@@ -96,16 +96,17 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
 
     const prefix = "../assets/icons/";
     const sam = { "path": "smart.png", "name": "Smart Labelling" };
+    const phase = { "path": "phase.png", "name": "Phase Labelling" };
     const poly = { "path": "polygon.png", "name": "Polygon" };
     const brush = { "path": "brush.png", "name": "Brush" };
     const erase = { "path": "erase.png", "name": "Erase" };
-    const labels = [sam, poly, brush, erase]; // loop over these to generate icons
+    const labels = [sam, phase, poly, brush, erase]; // loop over these to generate icons
 
     const regionSizes = ["Small", "Medium", "Large"] // text for button group
     const classes: number[] = [1, 2, 3, 4, 5, 6]
     const _setLabel = (e: any, name: string) => {
         setLabelType(name as Label);
-        if (name == "Smart Labelling") { // if switching to SAM labelling, requestEmbedding from app (which returns early if it's already set)
+        if (name == "Smart Labelling" || name == "Phase Labelling") { // if switching to SAM labelling, requestEmbedding from app (which returns early if it's already set)
             console.log('Smart Labelling')
             requestEmbedding();
         }
@@ -113,10 +114,10 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
 
     const _getImg = (l: any) => {
         // Get image of label type. If SAM label icon and encoding, make it a spinny wheel instead.
-        if (l.name == "Smart Labelling" && processing === "Encoding") {
+        if ((l.name == "Smart Labelling" || l.name == "Phase Labelling") && processing === "Encoding") {
             return (
                 <div style={{
-                    marginLeft: '7%', width: '40px', height: '40px', position: 'relative',
+                    marginLeft: '4%', width: '40px', height: '40px', position: 'relative',
                     outline: _getCSSColour(l.name, labelType, "3px solid ", labelClass, theme),
                     backgroundColor: themeBGs[theme][2], borderRadius: '3px', boxShadow: '2px 2px 2px black',
                 }}>
@@ -127,7 +128,7 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
             return (<img src={prefix + l.path} style={
                 {
                     backgroundColor: themeBGs[theme][2], borderRadius: '3px',
-                    marginLeft: '7%', width: '40px', boxShadow: '2px 2px 2px black',
+                    marginLeft: '4%', width: '40px', boxShadow: '2px 2px 2px black',
                     outline: _getCSSColour(l.name, labelType, "3px solid ", labelClass, theme)
                 }
             }
@@ -144,7 +145,7 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
     return (
         <Card className="text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }} bg={themeBGs[theme][0]}>
             <Card.Header as="h5" style={{ marginTop: '-4px', marginBottom: '-4px' }}>Label</Card.Header>
-            <Card.Body className={`flex`} style={{ marginTop: '-5px', marginBottom: '-5px' }}>
+            <Card.Body className={`flex`} style={{ marginTop: '-5px', marginBottom: '-5px', marginLeft: '-6px' }}>
                 <>
                     {labels.map(l =>
                         <OverlayTrigger
@@ -172,7 +173,7 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                 {labelType} Width
                 <Form.Range onChange={(e) => _setWidth(e)} min="1" max="100" value={brushWidth} />
             </Card.Body>}
-            {labelType == "Smart Labelling" && <Card.Body style={{ marginTop: '-5px', marginBottom: '-5px' }}>
+            {(labelType == "Smart Labelling" || labelType == "Phase Labelling") && <Card.Body style={{ marginTop: '-5px', marginBottom: '-5px' }}>
                 Smart Label Region
                 <ButtonGroup style={{ paddingLeft: "4%" }}>
                     {regionSizes.map((size, i) => <Button key={i} variant="light" onClick={(e) => setMaskIdx(3 - i)} style={{

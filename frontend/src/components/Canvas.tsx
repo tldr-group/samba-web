@@ -69,6 +69,7 @@ const MultiCanvas = () => {
     // Track mouse state (for drag drawing)
     const clicking = useRef<boolean>(false);
 
+    const labelClicks = useRef<Array<modelInputProps>>([]);
     const uniqueLabels = useRef<Set<number>>(new Set()); // used to track when we can press segment 
 
     const updateSAM = () => {
@@ -82,6 +83,32 @@ const MultiCanvas = () => {
         const click = getClick(x, y);
         if (click) setClicks([click]);
     };
+
+    const storeClick = (cx: number, cy: number, classVal: number) => {
+        const ctx = getctx(animatedCanvasRef);
+        if (ctx === null || image === null) { return };
+        const [x, y] = getZoomPanXY(cx, cy, ctx, image, cameraOffset.current, zoom.current);
+        const modelClick: modelInputProps = { "x": x, "y": y, "clickType": classVal };
+        const newModelClicks = appendArr(labelClicks.current, modelClick);
+        labelClicks.current = newModelClicks;
+    };
+
+    const storedClicksToPrompts = (x: number, y: number) => {
+        const prompts: Array<modelInputProps> = []
+        for (let c of labelClicks.current) {
+            console.log(c)
+            if (c.clickType == labelClass) {
+                const click: modelInputProps = { "x": c.x, "y": c.y, "clickType": 1 }
+                prompts.push(click)
+            } else {
+                const click: modelInputProps = { "x": c.x, "y": c.y, "clickType": 0 }
+                prompts.push(click)
+            }
+        }
+        const currentClick = getClick(x, y)
+        prompts.push(currentClick)
+        return prompts
+    }
 
     const getClick = (x: number, y: number): modelInputProps => {
         // used for ONNX
@@ -121,6 +148,9 @@ const MultiCanvas = () => {
         const hex = rgbaToHex(c[0], c[1], c[2], 255);
         drawPolygon(ctx, polygon, hex, true);
         const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr);
+        for (let p of polyPoints.current) {
+            storeClick(p.x, p.y, labelClass)
+        }
         if (arr !== undefined) { setLabelArr(arr); }
         polyPoints.current = [];
     }
@@ -151,12 +181,13 @@ const MultiCanvas = () => {
         }
         // Stop clicking status
         if (drawing && leftClick) { clicking.current = false; };
-        if ((labelType == "Brush" || labelType == "Smart Labelling") && leftClick) {
+        if ((labelType == "Brush" || labelType == "Smart Labelling" || labelType == "Phase Labelling") && leftClick) {
             // Draw what was on our animated canvas (brush or SAM) onto the label canvas
             const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr);
             if (arr !== undefined) { setLabelArr(arr); }
+            storeClick(mousePos.current.x, mousePos.current.y, labelClass);
             clearctx(animatedCanvasRef);
-        } else if (labelType == "Smart Labelling" && rightClick) {
+        } else if ((labelType == "Smart Labelling" || labelType == "Phase Labelling") && rightClick) {
             // Update SAM type when right clicking
             const newMaskIdx = (maskIdx % 3) + 1;
             setMaskIdx((newMaskIdx));
@@ -211,6 +242,10 @@ const MultiCanvas = () => {
             const [naturalX, naturalY] = getZoomPanXY(canvX, canvY, ctx, image, cameraOffset.current, zoom.current)
             const click = getClick(naturalX, naturalY);
             if (click) setClicks([click]);
+        } else if (labelType == "Phase Labelling") {
+            const [naturalX, naturalY] = getZoomPanXY(canvX, canvY, ctx, image, cameraOffset.current, zoom.current)
+            const prompts = storedClicksToPrompts(naturalX, naturalY)
+            if (prompts) setClicks(prompts);
         } else if ((clicking.current) && (labelType == "Erase")) {
             erase(labelctx, canvX, canvY, brushWidth);
             const c = colours[0];

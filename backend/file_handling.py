@@ -1,7 +1,6 @@
 """File handling that works for either a local server or on the web app."""
 import os
 from shutil import rmtree
-from time import sleep
 
 try:
     CWD = os.environ["APP_PATH"]

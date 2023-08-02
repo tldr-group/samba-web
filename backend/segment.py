@@ -7,7 +7,6 @@ import os
 from typing import List, Tuple
 from math import floor, ceil
 from pickle import dump
-from io import BytesIO
 from skops.io import dump as skdump
 from skops.io import loads as skloads
 from skops.io import load as skload
@@ -140,7 +139,7 @@ async def _save_as_tiff(
         arr_list, mode, large_w=large_w, large_h=large_h, rescale=rescale
     )
     sw_name: str = "SAMBA"
-    if score != None:
+    if score is not None:
         sw_name = f"SAMBA, val. score={score:.3f}"
 
     imwrite(
@@ -159,8 +158,8 @@ async def _save_as_tiff(
             Image.fromarray(
                 out[
                     0,
-                    x // 2 - t_size // 2 : x // 2 + t_size // 2,
-                    y // 2 - t_size // 2 : y // 2 + t_size // 2,
+                    x // 2 - t_size // 2: x // 2 + t_size // 2,
+                    y // 2 - t_size // 2: y // 2 + t_size // 2,
                 ]
             ).save(f"{CWD}{sep}{UID}{sep}seg_thumbnail.jpg")
             Image.fromarray(out[0]).save(f"{CWD}{sep}{UID}{sep}seg.png")

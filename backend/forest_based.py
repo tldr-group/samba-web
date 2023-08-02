@@ -7,21 +7,18 @@ feature stack to a set of user labels in pixel space. Finally, we apply this tra
 classifier to the whole image to generate a segmentation for each image in the app.
 
 This is written in 2 styles: functional backbone that can be composed to be used on
-say a cloud function or as a smaller part of a threaded classifier object (which can 
-memoise things like feature computation) that is part of a GUI app.  
+say a cloud function or as a smaller part of a threaded classifier object (which can
+memoise things like feature computation) that is part of a GUI app.
 """
 import numpy as np
 from features import multiscale_advanced_features, N_ALLOWED_CPUS, DEAFAULT_FEATURES
 from test_resources.call_weka import sep
-
-print(N_ALLOWED_CPUS)
-
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import HistGradientBoostingClassifier
-
-
 from typing import List, Tuple, TypeAlias, Literal
+
+print(N_ALLOWED_CPUS)
 
 EnsembleMethod: TypeAlias = (
     RandomForestClassifier | GradientBoostingClassifier | HistGradientBoostingClassifier

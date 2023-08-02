@@ -59,17 +59,17 @@ def get_label_arr(config_file_path: str, img_arr: np.ndarray) -> np.ndarray:
     labels = np.zeros_like(img_arr)
     roi_counter = 0
     current_roi: List[int] = []
-    for l in lines:
-        if l[0] == "#" or l[0] == "N":
+    for ln in lines:
+        if ln[0] == "#" or ln[0] == "N":
             pass
-        elif roi_counter < 4 and l.isnumeric():
-            current_roi.append(int(l))
+        elif roi_counter < 4 and ln.isnumeric():
+            current_roi.append(int(ln))
             roi_counter += 1
         elif roi_counter == 4:
-            current_roi.append(int(l))
+            current_roi.append(int(ln))
             roi_counter = 0
             x, y, w, h, c = current_roi
-            labels[y : y + h, x : x + w] = c + 1
+            labels[y: y + h, x: x + w] = c + 1
             current_roi = []
     return labels
 

@@ -31,7 +31,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--output", type=str, required=True, help="The filename to save the ONNX model to."
+    "--output", type=str, required=True, help="The filename to save ∏the ONNX model to."
 )
 
 parser.add_argument(

@@ -3,7 +3,7 @@
 
 Approach inspired by (1) https://scikit-image.org/docs/stable/api/skimage.feature.html#skimage.feature.multiscale_basic_features
 Designed to be a Python equivalent of (most) of the features present at (2) https://imagej.net/plugins/tws/
-Heavy use of skimage filters, filters.rank and feature. 
+Heavy use of skimage filters, filters.rank and feature.
 General approach is:
 • for each $sigma (a scale over which to compute a feature for a pixel):
     • compute each singlescale singlechannel feature
@@ -19,7 +19,7 @@ from skimage.util.dtype import img_as_float32
 from scipy.ndimage import rotate, convolve
 from skimage.draw import disk
 
-from itertools import combinations_with_replacement, combinations, chain
+from itertools import combinations_with_replacement, chain
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import cpu_count
 

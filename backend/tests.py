@@ -1,7 +1,7 @@
 """
 Tests for backend.
 
-Unit tests for featurisation and random forest segmentation. 
+Unit tests for featurisation and random forest segmentation.
 """
 
 import unittest
@@ -9,7 +9,7 @@ import unittest
 import numpy as np
 from math import isclose, pi
 import matplotlib.pyplot as plt
-from tifffile import imread, imwrite
+from tifffile import imread
 from skimage.metrics import mean_squared_error
 import time
 import sys
@@ -19,7 +19,6 @@ from test_resources.call_weka import sep
 
 from typing import List, Tuple
 
-import matplotlib.pyplot as plt
 
 import features as ft
 from test_resources.call_weka import (
@@ -42,7 +41,7 @@ load_weka = False
 try:
     FIJI_PATH = sys.argv[1]
     load_weka = True
-except:
+except Exception:
     FIJI_PATH = ""
     print("No FIJI path supplied so cannot do end-to-end tests.")
 
@@ -523,7 +522,7 @@ class CompareSegmentations(unittest.TestCase):
             f"backend{sep}test_resources{sep}test_outputs{sep}segmentation_comparison.png"
         )
 
-        fig2 = plt.figure(num=2, figsize=(16, 16))
+        plt.figure(num=2, figsize=(16, 16))
         x = np.arange(2, 5)
         plt.plot(x, weka_times, marker=".", ms=15, label="Weka")
         plt.plot(x, samba_times, marker=".", ms=15, label="SAMBA")

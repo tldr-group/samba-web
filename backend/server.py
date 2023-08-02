@@ -18,6 +18,9 @@ import json
 import zipfile
 
 from test_resources.call_weka import sep
+from encode import encode, featurise
+from segment import segment, load_classifier_from_http, apply
+from file_handling import delete_old_folders, delete_all_features, delete_feature_file
 
 # Very important: this environment variable is only present on webapp. If running locally, this fails and we use cwd instead.
 server = False
@@ -35,19 +38,15 @@ if server:
 credential: str | None
 try:
     credential = os.environ["BLOB_KEY"]
-except:  # do this bc server can't find dotenv even if python-dotenv in requirements
+except (
+    Exception
+):  # do this bc server can't find dotenv even if python-dotenv in requirements
     import dotenv
 
     credential = dotenv.get_key(dotenv.find_dotenv(), "AZURE_STORAGE_KEY")
 
 
 print(CWD, os.getcwd())
-
-from encode import encode, featurise
-from segment import segment, save_labels, load_classifier_from_http, apply
-from file_handling import delete_old_folders, delete_all_features, delete_feature_file
-
-
 app = Flask(
     __name__,
 )
@@ -139,7 +138,7 @@ async def featurise_fn(request) -> Response:
     features = request.json["features"]
     images = [_get_image_from_b64(i) for i in request.json["images"]]
     offset = request.json["offset"]
-    success = await featurise(images, UID, selected_features=features, offset=offset)
+    await featurise(images, UID, selected_features=features, offset=offset)
     return jsonify(success=True)
 
 
@@ -155,9 +154,9 @@ async def delete_fn(request) -> Response:
     UID = request.json["id"]
     img_idx = request.json["idx"]
     if img_idx == -1:
-        success = delete_all_features(f"{CWD}{sep}{UID}")
+        delete_all_features(f"{CWD}{sep}{UID}")
     else:
-        success = delete_feature_file(f"{CWD}{sep}{UID}", img_idx)
+        delete_feature_file(f"{CWD}{sep}{UID}", img_idx)
     return jsonify(success=True)
 
 
@@ -296,9 +295,7 @@ def upload_blob_file(fn, UID, blob_service_client: BlobServiceClient):
         container="gallery-submission"
     )
     with open(file=fn, mode="rb") as data:
-        blob_client = container_client.upload_blob(
-            name=f"{UID}", data=data, overwrite=True
-        )
+        container_client.upload_blob(name=f"{UID}", data=data, overwrite=True)
 
 
 def _map_fname_to_zip_fname(fname: str) -> str:

@@ -137,7 +137,7 @@ const Gallery = () => {
         ["Settings", "settings.png", "", ''],
         ["App", "app.png", "/", ''],
         ["Paper", "paper.png", "coming_soon", '_blank'],
-        ["Help", "help.png", "https://github.com/tldr-group/samba-web", '_blank'],
+        ["Help", "help.png", "https://github.com/tldr-group/samba-web/blob/development/MANUAL.md", '_blank'],
         ["TLDR Group", "tldr.png", "https://tldr-group.github.io/#/", '_blank']
     ]
 

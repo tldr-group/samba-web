@@ -168,4 +168,5 @@ export interface Settings {
   trainAll: boolean;
   rescale: boolean;
   format: ".skops" | ".pkl";
+  balance: boolean;
 }

@@ -131,19 +131,22 @@ const SettingsModalContent = () => {
     const change = (e: any) => { setTheme(e.target.value as Theme) }
     const setN = (e: any) => {
         console.log(typeof (e.target.value));
-        setSettings({ nPoints: parseInt(e.target.value), trainAll: settings.trainAll, rescale: settings.rescale, format: settings.format });
+        setSettings({ nPoints: parseInt(e.target.value), trainAll: settings.trainAll, rescale: settings.rescale, format: settings.format, balance: settings.balance });
     }
     const setAll = (e: any) => {
         const state = e.target.value == "on" ? true : false;
-        setSettings({ nPoints: settings.nPoints, trainAll: state, rescale: settings.rescale, format: settings.format });
+        setSettings({ nPoints: settings.nPoints, trainAll: state, rescale: settings.rescale, format: settings.format, balance: settings.balance });
     }
     const setRescale = (e: any) => {
         const state = e.target.value == "on" ? true : false;
-        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: state, format: settings.format });
+        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: state, format: settings.format, balance: settings.balance });
     }
-
+    const setBalance = (e: any) => {
+        const state = e.target.value == "on" ? true : false;
+        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: state, format: settings.format, balance: state });
+    }
     const setFormat = (e: any) => {
-        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: settings.rescale, format: e.target.value });
+        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: settings.rescale, format: e.target.value, balance: settings.balance });
     }
 
     return (
@@ -179,6 +182,9 @@ const SettingsModalContent = () => {
             </Modal.Body>
             <Modal.Body>
                 <Form.Check type="checkbox" label="Rescale segmentations & labels" defaultChecked={settings.rescale} onChange={e => setRescale(e)}></Form.Check>
+            </Modal.Body>
+            <Modal.Body>
+                <Form.Check type="checkbox" label="Balance Classes" defaultChecked={settings.balance} onChange={e => setBalance(e)}></Form.Check>
             </Modal.Body>
             <Modal.Body>
                 {(settings.trainAll == true || settings.nPoints > 100000) && <p style={{ color: "#eb4034" }}><b>Warning:</b> more data points means slower training!</p>}

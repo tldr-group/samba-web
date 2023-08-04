@@ -42,7 +42,7 @@ const AppContextProvider = (props: {
   const [showToast, setShowToast] = useState<boolean>(false);
   const [modalShow, setModalShow] = useState<ModalShow>({ welcome: false, settings: false, features: false })
   const [theme, setTheme] = useState<Theme>("default")
-  const [settings, setSettings] = useState<Settings>({ nPoints: 50000, trainAll: false, rescale: true, format: ".skops" })
+  const [settings, setSettings] = useState<Settings>({ nPoints: 50000, trainAll: false, rescale: true, format: ".skops", balance: true })
 
   // Path to backend
   const [path, setPath] = useState<string>("http://localhost:5000")

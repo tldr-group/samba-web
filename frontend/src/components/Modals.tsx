@@ -4,7 +4,7 @@ The three large modals: Welcome, Settings, Features, the smaller error modal and
 
 import React, { useContext, useEffect, useRef, useState } from "react";
 import AppContext from "./hooks/createContext";
-import { Features, closeModal, LabelFrameProps, FeatureModalProps, themeBGs, Theme, Settings } from "./helpers/Interfaces"
+import { Features, LabelFrameProps, FeatureModalProps, themeBGs, Theme, BigModalProps } from "./helpers/Interfaces"
 
 
 import Accordion from 'react-bootstrap/Accordion';
@@ -18,7 +18,7 @@ import Form from "react-bootstrap/Form"
 import { BlobServiceClient } from "@azure/storage-blob";
 
 
-const BigModal = ({ requestEmbedding }: LabelFrameProps) => {
+const BigModal = ({ requestFeatures }: BigModalProps) => {
     const {
         modalShow: [modalShow, setModalShow],
         theme: [theme,]
@@ -29,7 +29,7 @@ const BigModal = ({ requestEmbedding }: LabelFrameProps) => {
     return (
         <Modal show={modalShow.welcome || modalShow.settings || modalShow.features} onHide={handleClose} size="lg" >
             {(modalShow.welcome && <WelcomeModalContent />)}
-            {(modalShow.features) && <FeatureModalContent closeModal={handleClose} requestEmbedding={requestEmbedding} />}
+            {(modalShow.features) && <FeatureModalContent closeModal={handleClose} requestFeatures={requestFeatures} />}
             {(modalShow.settings) && <SettingsModalContent />}
         </Modal>
     )
@@ -63,14 +63,14 @@ const WelcomeModalContent = () => {
     )
 }
 
-const FeatureModalContent = ({ closeModal, requestEmbedding }: FeatureModalProps) => {
+const FeatureModalContent = ({ closeModal, requestFeatures }: FeatureModalProps) => {
     const {
         features: [features, setFeatures]
     } = useContext(AppContext)!;
 
     const updateClose = () => {
         closeModal();
-        requestEmbedding();
+        requestFeatures();
     }
 
     const updateFeatures = (prev: any, newKey: string, newVal: string) => {

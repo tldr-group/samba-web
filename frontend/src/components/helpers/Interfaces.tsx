@@ -28,6 +28,7 @@ export interface StageProps {
   loadImages: (hrefs: string[]) => void;
   loadDefault: () => void;
   requestEmbedding: () => void;
+  featuresUpdated: () => void;
   trainClassifier: () => void;
   applyClassifier: () => void;
   deleteAll: () => void;
@@ -87,6 +88,10 @@ export const getHTTPRequest = (url: string) => {
   return http
 }
 
+export interface BigModalProps {
+  requestFeatures: () => void;
+}
+
 export interface ErrorMessage {
   msg: string;
   stackTrace: string;
@@ -110,7 +115,7 @@ export interface closeModal {
 
 export interface FeatureModalProps {
   closeModal: () => void;
-  requestEmbedding: () => void;
+  requestFeatures: () => void;
 }
 
 export interface Features {

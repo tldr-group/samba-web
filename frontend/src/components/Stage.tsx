@@ -14,7 +14,7 @@ const UTIF = require("./UTIF.js")
 const MAX_FILE_SIZE_BYTES = 1024 * 1024 * 50 // 50MB
 
 
-const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier,
+const Stage = ({ loadImages, loadDefault, requestEmbedding, featuresUpdated, trainClassifier,
   applyClassifier, changeToImage, deleteAll, deleteCurrent, saveSeg,
   saveLabels, saveClassifier, loadClassifier }: StageProps) => {
   const {
@@ -154,7 +154,7 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, trainClassifier,
       </div>
       <ErrorMessage />
       <PostSegToast />
-      <BigModal requestEmbedding={requestEmbedding} />
+      <BigModal requestFeatures={featuresUpdated} />
     </div >
   );
 };

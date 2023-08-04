@@ -323,6 +323,10 @@ const App = () => {
     }
   }
 
+  const featuresUpdated = async () => {
+    requestFeatures(imgArrs, 0)
+  }
+
   const requestEmbedding = async () => {
     // Ping our encode enpoint, request and await a SAM embedding, then set it.
     if (tensor != null || image === null) { // Early return if we already have one
@@ -596,6 +600,7 @@ const App = () => {
     loadImages={loadImages}
     loadDefault={loadDefault}
     requestEmbedding={requestEmbedding}
+    featuresUpdated={featuresUpdated}
     trainClassifier={trainPressed}
     applyClassifier={applyPressed}
     changeToImage={changeToImage}

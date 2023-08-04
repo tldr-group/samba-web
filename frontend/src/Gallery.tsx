@@ -174,7 +174,7 @@ const Gallery = () => {
             }>
                 <Container>
                     <Navbar.Brand><img src="/assets/icons/favicon.png" width="40" height="40" className="d-inline-block align-top" /></Navbar.Brand>
-                    <Navbar.Brand style={{ marginLeft: "-25px", marginTop: "3px" }}>AMBA</Navbar.Brand>
+                    {(window.innerWidth > 700) ? <Navbar.Brand style={{ marginLeft: "-25px", marginTop: "3px" }}>AMBA</Navbar.Brand> : <></>}
                     <Navbar.Brand>Gallery</Navbar.Brand>
                     <Navbar.Toggle aria-controls="basic-navbar-nav" />
                     <Navbar.Collapse id="basic-navbar-nav">

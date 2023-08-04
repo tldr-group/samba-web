@@ -9,6 +9,7 @@ of the SAM model (with the image encoding part run on the backed.).
 
 import { InferenceSession, Tensor } from "onnxruntime-web";
 import React, { useContext, useEffect, useRef, useState } from "react";
+import { useNavigate } from 'react-router-dom'
 import "./assets/scss/App.scss";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { handleImageScale } from "./components/helpers/scaleHelper";
@@ -36,6 +37,7 @@ const SEGMENT_ENDPOINT = PATH + "/segmenting";
 const SAVE_ENDPOINT = PATH + "/saving";
 const LOAD_CLASSIFIER_ENDPOINT = PATH + "/lclassifier";
 const SAVE_LABEL_ENDPOINT = PATH + "/slabel";
+
 
 const getb64Image = (img: HTMLImageElement): string => {
   // Convert HTML Image to b64 string encoding by drawing onto canvas. Used for sending over HTTP
@@ -109,6 +111,8 @@ const App = () => {
     settings: [settings,],
   } = useContext(AppContext)!;
 
+  const navigate = useNavigate();
+
   const [model, setModel] = useState<InferenceSession | null>(null); // ONNX model
   const [tensor, setTensor] = useState<Tensor | null>(null); // Image embedding tensor
 
@@ -139,6 +143,8 @@ const App = () => {
     initBackend();
     setPath(PATH);
     setUID(UID);
+    const isMobile = (window.innerWidth < 700) ? true : false
+    if (isMobile) { navigate("/gallery"); }
     const showHelp = localStorage.getItem("showHelp");
     if (showHelp === null || showHelp === "true") {
       setModalShow({ welcome: true, settings: false, features: false });
@@ -489,22 +495,6 @@ const App = () => {
   const saveLabels = async () => {
     if (image === null || labelArr === null) { return; }
     saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID, "rescale": settings.rescale, "type": "labels" }), "labels.tiff")
-    /*
-    const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
-    setLabelArrs(newLabelArrs);
-    const b64images: string[] = imgArrs.map((img, i) => getb64Image(img));
-    let [largeW, largeH]: Array<number> = [0, 0];
-    if (imgType === "large" && largeImg !== null) {
-      largeW = largeImg.width;
-      largeH = largeImg.height;
-    }
-    const dict = {
-      "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
-      "large_w": largeW, "large_h": largeH, "rescale": settings.rescale
-    }
-    const msg = JSON.stringify(dict);
-    saveArrAsTIFF(SAVE_LABEL_ENDPOINT, msg, "label.tiff");
-    */
   }
 
   const saveClassifier = async () => {

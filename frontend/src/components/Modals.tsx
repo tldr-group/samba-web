@@ -336,19 +336,19 @@ const PostSegToast = () => {
                     <Toast.Header className="roundedme-2"><strong className="me-auto">Add metadata</strong></Toast.Header>
                     <Toast.Body>
                         <Form style={{ margin: '10px' }}>
-                            <Form.Group className="mb-3" controlId="formBasicEmail">
+                            <Form.Group className="mb-3">
                                 <Form.Label>Material Name</Form.Label>
                                 <Form.Control type="text" placeholder="Enter material name" onChange={(e) => setMaterialName(e.target.value)} />
                             </Form.Group>
-                            <Form.Group className="mb-3" controlId="formBasicPassword">
+                            <Form.Group className="mb-3">
                                 <Form.Label>Resolution (µm/pixel)</Form.Label>
                                 <Form.Control type="text" placeholder="Enter resolution" onChange={(e) => setResolution(e.target.value)} />
                             </Form.Group>
-                            <Form.Group className="mb-3" controlId="formBasicPassword">
+                            <Form.Group className="mb-3">
                                 <Form.Label>Instrument Type</Form.Label>
                                 <Form.Control type="text" placeholder="Enter instrument type" onChange={(e) => setInstrumentType(e.target.value)} />
                             </Form.Group>
-                            <Form.Group className="mb-3" controlId="formBasicPassword">
+                            <Form.Group className="mb-3">
                                 <Form.Label>Additional Notes</Form.Label>
                                 <Form.Control type="text" placeholder="Enter additional notes" onChange={(e) => setAdditionalNotes(e.target.value)} />
                             </Form.Group>

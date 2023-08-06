@@ -174,7 +174,7 @@ async def save_labels(
     large_w: int = 0,
     large_h: int = 0,
     rescale=True,
-) -> int:
+) -> np.ndarray:
     """Create composite tiffs of the label arrs and return the bytes. This has 0 for unlabelled pixels.
 
     :param images: list of images. TODO: make this a lsit of (h, w) tuples
@@ -189,8 +189,8 @@ async def save_labels(
     :type large_h: int, optional
     :param rescale: whether to rescale class values to make results visible, defaults to True
     :type rescale: bool, optional
-    :return: bytes of the tiff file of the (composited) labels
-    :rtype: bytes
+    :return: np array of the (composited) labels
+    :rtype: np.ndarray
     """
     label_arrs: List[np.ndarray] = []
     for i in range(len(img_dims)):
@@ -206,7 +206,7 @@ async def save_labels(
         photometric="minisblack",
         datetime=True,
     )
-    return 0
+    return label_out
 
 
 async def _save_classifier(model: EnsembleMethod, CWD: str, UID: str) -> int:

@@ -273,7 +273,7 @@ class CompareDefaultFeatures(unittest.TestCase):
         passed = True
 
         img = imread(f"backend{sep}test_resources{sep}super1.tif").astype(np.float32)
-        samba = ft.multiscale_advanced_features(img, ft.DEAFAULT_FEATURES, 1).transpose((2, 0, 1))
+        samba = ft.multiscale_advanced_features(img, ft.DEAFAULT_WEKA_FEATURES, 1).transpose((2, 0, 1))
         singlescale_mse = self.compare_singlescale_default(weka, samba)
         dog_mse = self.compare_dog_default(weka, samba)
         membrane_mse = self.compare_membrane_projections(weka, samba)
@@ -469,7 +469,7 @@ class CompareSegmentations(unittest.TestCase):
         weka_arr = imread(f"backend{sep}test_resources{sep}output.tif")
         label = get_label_arr(f"backend{sep}test_resources{sep}{fname}_roi_config.txt", img_arr)
         start_t = time.time()
-        samba_arr = segment_no_features_get_arr(label, img_arr)
+        samba_arr = segment_no_features_get_arr(label, img_arr, ft.DEAFAULT_WEKA_FEATURES)
         end_t = time.time()
         samba_t = end_t - start_t
         return weka_arr, samba_arr, weka_t, samba_t

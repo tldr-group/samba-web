@@ -134,16 +134,13 @@ const SettingsModalContent = () => {
         setSettings({ nPoints: parseInt(e.target.value), trainAll: settings.trainAll, rescale: settings.rescale, format: settings.format, balance: settings.balance });
     }
     const setAll = (e: any) => {
-        const state = e.target.value == "on" ? true : false;
-        setSettings({ nPoints: settings.nPoints, trainAll: state, rescale: settings.rescale, format: settings.format, balance: settings.balance });
+        setSettings({ nPoints: settings.nPoints, trainAll: !(settings.trainAll), rescale: settings.rescale, format: settings.format, balance: settings.balance });
     }
     const setRescale = (e: any) => {
-        const state = e.target.value == "on" ? true : false;
-        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: state, format: settings.format, balance: settings.balance });
+        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: !(settings.rescale), format: settings.format, balance: settings.balance });
     }
     const setBalance = (e: any) => {
-        const state = e.target.value == "on" ? true : false;
-        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: state, format: settings.format, balance: state });
+        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: settings.rescale, format: settings.format, balance: !(settings.balance) });
     }
     const setFormat = (e: any) => {
         setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: settings.rescale, format: e.target.value, balance: settings.balance });

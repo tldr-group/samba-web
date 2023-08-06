@@ -496,9 +496,39 @@ const App = () => {
     setShowToast(true);
   }
 
+  /*
   const saveLabels = async () => {
     if (image === null || labelArr === null) { return; }
     saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID, "rescale": settings.rescale, "type": "labels" }), "labels.tiff")
+  }
+  */
+
+  const saveLabels = async () => {
+    const imgDims: string[] = imgArrs.map((img, i) => getHWstr(img));
+    const headers = new Headers();
+    headers.append('Content-Type', 'application/json;charset=utf-8');
+    console.log("Started Segementing");
+    let [largeW, largeH]: Array<number> = [0, 0];
+    if (imgType === "large" && largeImg !== null) {
+      largeW = largeImg.width;
+      largeH = largeImg.height;
+    }
+    const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
+    setLabelArrs(newLabelArrs);
+    const msg = {
+      "images": imgDims, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
+      "large_w": largeW, "large_h": largeH, "rescale": settings.rescale
+    };
+    console.log(settings.rescale)
+    try {
+      //let resp = await fetch(SAVE_LABEL_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify(msg) })
+      let resp = saveArrAsTIFF(SAVE_LABEL_ENDPOINT, JSON.stringify(msg), "labels.tiff")
+      //const buffer = await resp.arrayBuffer();
+      //loadSegmentationsFromHTTP(buffer);
+    } catch (e) {
+      const error = e as Error;
+      setErrorObject({ msg: "Failed to save labels.", stackTrace: error.toString() });
+    }
   }
 
   const saveClassifier = async () => {

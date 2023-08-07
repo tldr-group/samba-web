@@ -5,6 +5,7 @@ import { ModalShow, themeBGs } from "./components/helpers/Interfaces";
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
+import NavbarToggle from 'react-bootstrap/NavbarToggle'
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Tooltip from "react-bootstrap/Tooltip";
@@ -134,7 +135,6 @@ const Gallery = () => {
 
 
     const icons: string[][] = [
-        ["Settings", "settings.png", "", ''],
         ["App", "app.png", "/", ''],
         ["Paper", "paper.png", "coming_soon", '_blank'],
         ["Help", "help.png", "https://github.com/tldr-group/samba-web/blob/development/MANUAL.md", '_blank'],
@@ -174,9 +174,8 @@ const Gallery = () => {
             }>
                 <Container>
                     <Navbar.Brand><img src="/assets/icons/favicon.png" width="40" height="40" className="d-inline-block align-top" /></Navbar.Brand>
-                    {(window.innerWidth > 700) ? <Navbar.Brand style={{ marginLeft: "-25px", marginTop: "3px" }}>AMBA</Navbar.Brand> : <></>}
-                    <Navbar.Brand>Gallery</Navbar.Brand>
-                    <Navbar.Toggle aria-controls="basic-navbar-nav" />
+                    {/*<Navbar.Brand>Gallery</Navbar.Brand>*/}
+                    {/*<Navbar.Toggle aria-controls="basic-navbar-nav" /> */}
                     <Navbar.Collapse id="basic-navbar-nav">
                         <Nav className="me-auto">
                         </Nav>
@@ -197,7 +196,7 @@ const Gallery = () => {
                                 width="30"
                                 height="30"
                                 className="d-inline-block align-top"
-                                style={{ backgroundColor: themeBGs[theme][2], borderRadius: '20px' }}
+                                style={{ backgroundColor: themeBGs[theme][2], borderRadius: '20px', marginLeft: '15px' }}
                                 onClick={(e) => iconClick(e, i[0])}
                             />
                         </Navbar.Brand>

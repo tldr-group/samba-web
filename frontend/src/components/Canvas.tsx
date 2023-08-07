@@ -5,7 +5,7 @@ import {
     getctx, transferLabels, addImageDataToArray, clearctx, getxy, getZoomPanXY,
     getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage,
     imageDataToImage, erase, drawErase, drawPolygon, computeNewZoomOffset,
-    computeCentreOffset, drawRect
+    computeCentreOffset, drawRect, getCropImg
 } from "./helpers/canvasUtils"
 import * as _ from "underscore";
 import '../assets/scss/styles.css'
@@ -26,8 +26,9 @@ const appendArr = (oldArr: Array<any>, newVal: any) => {
 
 const MultiCanvas = () => {
     const {
-        image: [image],
+        image: [image, setImage],
         imgIdx: [imgIdx,],
+        imgArrs: [, setImgArrs],
         maskImg: [maskImg, setMaskImg],
         clicks: [, setClicks],
         processing: [processing, setProcessing],
@@ -188,6 +189,14 @@ const MultiCanvas = () => {
             const newPoly = appendArr(polyPoints.current, mousePos.current);
             finishPolygon(newPoly, labelClass, labelImg, ctx);
             clearctx(animatedCanvasRef);
+        } else if (labelType === "Crop") {
+            const imgCtx = getctx(imgCanvasRef)
+            if (imgCtx === null) { return }
+            const img = getCropImg(imgCtx, cropStart.current, mousePos.current)
+            setImgArrs([img])
+            zoom.current = 1
+            const newOffset = computeCentreOffset(img, ctx.canvas.width, ctx.canvas.height)
+            cameraOffset.current = newOffset
         }
     };
 

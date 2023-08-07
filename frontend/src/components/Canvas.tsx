@@ -5,7 +5,7 @@ import {
     getctx, transferLabels, addImageDataToArray, clearctx, getxy, getZoomPanXY,
     getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage,
     imageDataToImage, erase, drawErase, drawPolygon, computeNewZoomOffset,
-    computeCentreOffset
+    computeCentreOffset, drawRect
 } from "./helpers/canvasUtils"
 import * as _ from "underscore";
 import '../assets/scss/styles.css'
@@ -55,6 +55,7 @@ const MultiCanvas = () => {
     const zoom = useRef<number>(1);
     const cameraOffset = useRef<Offset>({ x: 0, y: 0 });
     const mousePos = useRef<Offset>({ x: 0, y: 0 });
+    const cropStart = useRef<Offset>({ x: 0, y: 0 });
 
     const containerRef = useRef<HTMLDivElement>(null);
     const [canvSize, setCanvSize] = useState<Offset>({ x: 300, y: 150 });
@@ -91,8 +92,9 @@ const MultiCanvas = () => {
 
     const handleClick = (e: any) => {
         // Start tracking user click
-        const drawing = (labelType == "Brush" || labelType == "Erase");
+        const drawing = (labelType == "Brush" || labelType == "Erase" || labelType == "Crop");
         if (drawing) { clicking.current = true; }
+        if (labelType == "Crop" && clicking.current) { cropStart.current = mousePos.current }
     };
 
     const addCanvasToArr = (canvas: HTMLCanvasElement, img: HTMLImageElement, oldArr: Uint8ClampedArray, erase = false) => {
@@ -141,7 +143,7 @@ const MultiCanvas = () => {
 
     const handleClickEnd = (e: any) => {
         // Once a click finishes, get current labelling state and apply correct action
-        const drawing = (labelType == "Brush" || labelType == "Erase");
+        const drawing = (labelType == "Brush" || labelType == "Erase" || labelType == "Crop");
         const leftClick = (e.button == 0);
         const rightClick = (e.button == 2);
 
@@ -336,6 +338,8 @@ const MultiCanvas = () => {
                     draw(ctx, snap.x, snap.y, 10, hex, false);
                 }
             }
+        } else if (labelType === "Crop" && clicking.current) {
+            drawRect(ctx, cropStart.current, mousePos.current, "#00000064")
         }
         animationRef.current = requestAnimationFrame(animation);
     }

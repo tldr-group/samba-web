@@ -30,6 +30,7 @@ export const ToolTip = (str: string) => {
 const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, saveClassifier, loadClassifier, applyClassifier }: TopbarProps) => {
     const {
         modalShow: [modalShow, setModalShow],
+        labelType: [, setLabelType],
         theme: [theme,],
     } = useContext(AppContext)!;
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -103,6 +104,7 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
                                 style={{ display: 'none' }}
                                 onChange={e => handleFileUpload(e, "image")} />
                             <NavDropdown.Item onClick={deleteCurrent}>Remove</NavDropdown.Item>
+                            <NavDropdown.Item onClick={e => setLabelType("Crop")}>Crop</NavDropdown.Item>
                             <NavDropdown.Divider />
                             <NavDropdown.Item onClick={deleteAll}>Clear All</NavDropdown.Item>
                         </NavDropdown>

@@ -21,7 +21,7 @@ export function arrayToImageData(input: any, width: number, height: number,
   /*The way this worked previously was that the first mask was the 'best' mask by (predicted) IoU, so they looped
   over *every* pixel in *all four* of the masks i.e i=0 => i=length of all 4 masks. They then wrote the value of
   the mask at i to the output array, and once they went passed the first arr the rest of the writes were overrange
-  so didn't do anything. Mad. */
+  so didn't do anything. */
   const offset = mask_idx * width * height;
   for (let i = 0; i < width * height; i++) {
     // Threshold the onnx model mask prediction at 0.0
@@ -129,6 +129,15 @@ export const drawErase = (ctx: CanvasRenderingContext2D, x: number, y: number, w
   } else {
     ctx.stroke();
   }
+}
+
+export const drawRect = (ctx: CanvasRenderingContext2D, p0: Offset, p1: Offset, hex = "#ffffffff") => {
+  ctx.strokeStyle = hex;
+  ctx.fillStyle = hex;
+  ctx.beginPath();
+  ctx.rect(p0.x, p0.y, p1.x - p0.x, p1.y - p0.y);
+  ctx.closePath();
+  ctx.fill();
 }
 
 export const drawPolygon = (ctx: CanvasRenderingContext2D, polygon: Array<Offset>, colour: string, fill: boolean = false) => {

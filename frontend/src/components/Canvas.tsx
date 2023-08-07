@@ -1,11 +1,11 @@
 import React, { RefObject, useRef, useContext, useEffect, useState } from "react";
 import AppContext from "./hooks/createContext";
-import { modelInputProps, Offset } from "./helpers/Interfaces";
+import { modelInputProps, Offset, MultiCanvasProps } from "./helpers/Interfaces";
 import {
     getctx, transferLabels, addImageDataToArray, clearctx, getxy, getZoomPanXY,
     getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage,
     imageDataToImage, erase, drawErase, drawPolygon, computeNewZoomOffset,
-    computeCentreOffset, drawRect, getCropImg
+    computeCentreOffset, drawRect, getCropImg, drawCropCursor
 } from "./helpers/canvasUtils"
 import * as _ from "underscore";
 import '../assets/scss/styles.css'
@@ -24,18 +24,19 @@ const appendArr = (oldArr: Array<any>, newVal: any) => {
     return [...oldArr, newVal];
 };
 
-const MultiCanvas = () => {
+const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
     const {
         image: [image, setImage],
         imgIdx: [imgIdx,],
+        imgType: [imgType],
         imgArrs: [, setImgArrs],
         maskImg: [maskImg, setMaskImg],
         clicks: [, setClicks],
-        processing: [processing, setProcessing],
-        labelType: [labelType],
+        processing: [, setProcessing],
+        labelType: [labelType, setLabelType],
         labelClass: [labelClass, setLabelClass],
         labelArr: [labelArr, setLabelArr],
-        segArr: [segArr,],
+        segArr: [segArr, setSegArr],
         brushWidth: [brushWidth],
         overlayType: [overlayType, setOverlayType],
         labelOpacity: [labelOpacity, setLabelOpacity],
@@ -56,7 +57,7 @@ const MultiCanvas = () => {
     const zoom = useRef<number>(1);
     const cameraOffset = useRef<Offset>({ x: 0, y: 0 });
     const mousePos = useRef<Offset>({ x: 0, y: 0 });
-    const cropStart = useRef<Offset>({ x: 0, y: 0 });
+    const cropStart = useRef<Offset>({ x: -1000, y: -1000 });
 
     const containerRef = useRef<HTMLDivElement>(null);
     const [canvSize, setCanvSize] = useState<Offset>({ x: 300, y: 150 });
@@ -142,6 +143,21 @@ const MultiCanvas = () => {
         };
     };
 
+    const finishCrop = (ctx: CanvasRenderingContext2D) => {
+        if (imgType != "single") { return }
+        const imgCtx = getctx(imgCanvasRef);
+        if (imgCtx === null) { return }
+        const newImg = getCropImg(imgCtx, cropStart.current, mousePos.current);
+        newImg.onload = () => {
+            const tempLabelArr = new Uint8ClampedArray(newImg.width * newImg.height).fill(0);
+            const tempSegArr = new Uint8ClampedArray(newImg.width * newImg.height).fill(0);
+            updateAll([newImg], [tempLabelArr], [tempSegArr], [null]);
+            setLabelArr(tempLabelArr);
+            setSegArr(tempSegArr);
+            setLabelType("Brush");
+        }
+    }
+
     const handleClickEnd = (e: any) => {
         // Once a click finishes, get current labelling state and apply correct action
         const drawing = (labelType == "Brush" || labelType == "Erase" || labelType == "Crop");
@@ -190,13 +206,7 @@ const MultiCanvas = () => {
             finishPolygon(newPoly, labelClass, labelImg, ctx);
             clearctx(animatedCanvasRef);
         } else if (labelType === "Crop") {
-            const imgCtx = getctx(imgCanvasRef)
-            if (imgCtx === null) { return }
-            const img = getCropImg(imgCtx, cropStart.current, mousePos.current)
-            setImgArrs([img])
-            zoom.current = 1
-            const newOffset = computeCentreOffset(img, ctx.canvas.width, ctx.canvas.height)
-            cameraOffset.current = newOffset
+            finishCrop(ctx)
         }
     };
 
@@ -348,7 +358,10 @@ const MultiCanvas = () => {
                 }
             }
         } else if (labelType === "Crop" && clicking.current) {
-            drawRect(ctx, cropStart.current, mousePos.current, "#00000064")
+            drawRect(ctx, cropStart.current, mousePos.current, "#00000064");
+            drawCropCursor(ctx, mousePos.current);
+        } else if (labelType === "Crop") {
+            drawCropCursor(ctx, mousePos.current);
         }
         animationRef.current = requestAnimationFrame(animation);
     }

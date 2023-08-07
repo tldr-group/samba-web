@@ -15,7 +15,7 @@ const MAX_FILE_SIZE_BYTES = 1024 * 1024 * 50 // 50MB
 
 
 const Stage = ({ loadImages, loadDefault, requestEmbedding, featuresUpdated, trainClassifier,
-  applyClassifier, changeToImage, deleteAll, deleteCurrent, saveSeg,
+  applyClassifier, changeToImage, updateAll, deleteAll, deleteCurrent, saveSeg,
   saveLabels, saveClassifier, loadClassifier }: StageProps) => {
   const {
     image: [image,],
@@ -148,7 +148,7 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, featuresUpdated, tra
       <div className={`flex`} style={{ margin: '1.5%', background: themeBGs[theme][1] }} > {/*Canvas div on left, sidebar on right*/}
         <div className={`${flexCenterClasses} relative w-[90%] h-[80%]`}>
           {!image && <DragDrop loadFromFile={loadFromFile} loadDefault={loadDefault} />}
-          {image && <Canvas />}
+          {image && <Canvas updateAll={updateAll} />}
         </div>
         <Sidebar requestEmbedding={requestEmbedding} trainClassifier={trainClassifier} changeToImage={changeToImage} />
       </div>

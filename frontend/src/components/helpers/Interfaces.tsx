@@ -31,6 +31,8 @@ export interface StageProps {
   featuresUpdated: () => void;
   trainClassifier: () => void;
   applyClassifier: () => void;
+  updateAll: (imgs: Array<HTMLImageElement>, labels: Array<Uint8ClampedArray>,
+    segs: Array<Uint8ClampedArray>, tensors: Array<any>) => void;
   deleteAll: () => void;
   deleteCurrent: () => void;
   changeToImage: (oldIdx: number, newIdx: number) => void;
@@ -72,10 +74,8 @@ export interface NavigationProps {
 
 
 export interface MultiCanvasProps {
-  label: Label;
-  class: number;
-  labelOpacity: number;
-  brushWidth: number;
+  updateAll: (imgs: Array<HTMLImageElement>, labels: Array<Uint8ClampedArray>,
+    segs: Array<Uint8ClampedArray>, tensors: Array<any>) => void;
 }
 
 export type Offset = { x: number, y: number }

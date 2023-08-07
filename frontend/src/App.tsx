@@ -228,6 +228,19 @@ const App = () => {
     setTensorArrs(newTensors);
   }
 
+  const setAllArrs = async (imgs: Array<HTMLImageElement>, labels: Array<Uint8ClampedArray>,
+    segs: Array<Uint8ClampedArray>, tensors: Array<any>) => {
+    const headers = new Headers();
+    headers.append('Content-Type', 'application/json;charset=utf-8');
+    await fetch(DELETE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "idx": -1 }) });
+    await requestFeatures(imgs, 0);
+    setLabelArrs(labels);
+    setSegArrs(segs);
+    setTensorArrs(tensors);
+    setTensor(tensors[0]);
+    setImgArrs(imgs);
+  }
+
   const deleteAllFiles = async () => {
     // Delete arrays locally and ping endpoint to delete on server
     try {
@@ -634,6 +647,7 @@ const App = () => {
     trainClassifier={trainPressed}
     applyClassifier={applyPressed}
     changeToImage={changeToImage}
+    updateAll={setAllArrs}
     deleteAll={deleteAllFiles}
     deleteCurrent={deleteCurrentFile}
     saveSeg={onSaveClick}

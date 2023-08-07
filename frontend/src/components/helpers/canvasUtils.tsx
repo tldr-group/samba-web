@@ -164,10 +164,29 @@ export const drawPolygon = (ctx: CanvasRenderingContext2D, polygon: Array<Offset
   }
 }
 
+export const drawCropCursor = (ctx: CanvasRenderingContext2D, p0: Offset, width: number = 16) => {
+  const lowerPoints: Array<Offset> = [{ 'x': p0.x, 'y': p0.y - width / 2 }, { 'x': p0.x, 'y': p0.y + width }, { 'x': p0.x + (3 / 2) * width, 'y': p0.y + width }]
+  const upperPoints: Array<Offset> = [{ 'x': p0.x - width / 2, 'y': p0.y }, { 'x': p0.x + width, 'y': p0.y }, { 'x': p0.x + width, 'y': p0.y + (3 / 2) * width }]
+  ctx.strokeStyle = "#000000";
+  ctx.lineWidth = 3;
+  for (let polygon of [lowerPoints, upperPoints]) {
+    const np0 = polygon[0]
+    ctx.beginPath();
+    ctx.moveTo(np0.x, np0.y);
+
+    for (let i = 1; i < polygon.length; i++) {
+      const p = polygon[i];
+      ctx.lineTo(p.x, p.y);
+    }
+    ctx.stroke();
+    ctx.closePath();
+  }
+}
+
 export const getctx = (ref: RefObject<HTMLCanvasElement>): CanvasRenderingContext2D | null => { return ref.current!.getContext("2d", { willReadFrequently: true }) }
 export const clearctx = (ref: RefObject<HTMLCanvasElement>) => {
-  const ctx = getctx(ref)
-  ctx?.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+  const ctx = getctx(ref);
+  ctx?.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 }
 
 const filled = (p: number[]) => { return (p[0] > 0 && p[1] > 0 && p[2] > 0) }

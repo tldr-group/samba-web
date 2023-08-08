@@ -75,7 +75,11 @@ export function addImageDataToArray(imageData: ImageData, arr: Uint8ClampedArray
 }
 
 export function getCropImg(imgCtx: CanvasRenderingContext2D, canv_p0: Offset, canv_p1: Offset) {
-  const imgData = imgCtx.getImageData(canv_p0.x, canv_p0.y, canv_p1.x - canv_p0.x, canv_p1.y - canv_p0.y)
+  const x0 = (canv_p0.x)
+  const y0 = (canv_p0.y)
+  const x1 = (canv_p1.x)
+  const y1 = (canv_p1.y)
+  const imgData = imgCtx.getImageData(x0, y0, x1 - x0, y1 - y0)
   return imageDataToImage(imgData)
 }
 

@@ -42,6 +42,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         labelOpacity: [labelOpacity, setLabelOpacity],
         segOpacity: [segOpacity, setSegOpacity],
         maskIdx: [maskIdx, setMaskIdx],
+        errorObject: [, setErrorObject],
     } = useContext(AppContext)!;
 
     // We use references here because we don't want to re-render every time these change (they do that already as they're canvases!)
@@ -151,10 +152,15 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         newImg.onload = () => {
             const tempLabelArr = new Uint8ClampedArray(newImg.width * newImg.height).fill(0);
             const tempSegArr = new Uint8ClampedArray(newImg.width * newImg.height).fill(0);
+            const newOffset = computeCentreOffset(newImg, ctx.canvas.width, ctx.canvas.height)
+            console.log(cameraOffset.current, newOffset)
+            cameraOffset.current = newOffset
             updateAll([newImg], [tempLabelArr], [tempSegArr], [null]);
             setLabelArr(tempLabelArr);
             setSegArr(tempSegArr);
             setLabelType("Brush");
+
+            //drawAllCanvases(zoom.current, newOffset)
         }
     }
 
@@ -206,7 +212,14 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
             finishPolygon(newPoly, labelClass, labelImg, ctx);
             clearctx(animatedCanvasRef);
         } else if (labelType === "Crop") {
-            finishCrop(ctx)
+            try {
+                finishCrop(ctx)
+            } catch (e) {
+                const error = e as Error;
+                setErrorObject({ msg: "Failed to crop", stackTrace: error.toString() });
+                console.log(e);
+            }
+
         }
     };
 

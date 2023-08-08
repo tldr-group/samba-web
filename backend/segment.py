@@ -262,6 +262,7 @@ async def segment(
     n_points: int = 50000,
     train_all: bool = True,
     rescale: bool = True,
+    balance: bool = True,
 ) -> np.ndarray:
     """Perform FRF segmentation.
 
@@ -287,6 +288,8 @@ async def segment(
     :type train_all: bool, optional
     :param rescale: whether to rescale class values to make results visible, defaults to True
     :type rescale: bool, optional
+    :param balance: whether to balance training points based on class frequency, defaults to True
+    :type balance: bool, optional
     :return: flattened segementations (class values) where labels overwrite predictions if different.
     :rtype: np.ndarray
     """
@@ -300,7 +303,7 @@ async def segment(
 
     remasked_arrs_list: List[np.ndarray] = []
     remasked_flattened_arrs: np.ndarray
-    probs, model, score = segment_with_features(label_arrs, UID, n_points=n_points, train_all=train_all)
+    probs, model, score = segment_with_features(label_arrs, UID, n_points=n_points, train_all=train_all, balance_classes=balance)
 
     for i in range(len(probs)):
         label_arr = label_arrs[i]

@@ -198,7 +198,7 @@ async def segment_fn(request) -> Response:
     rescale: bool = request.json["rescale"]
     if segment_type == "segment":
         labels_dicts = request.json["labels"]
-        n_points, train_all = request.json["n_points"], request.json["train_all"]
+        n_points, train_all, balance = request.json["n_points"], request.json["train_all"], request.json["balance"]
         segmentation = await segment(
             img_dims,
             labels_dicts,
@@ -208,7 +208,8 @@ async def segment_fn(request) -> Response:
             large_h,
             n_points,
             train_all,
-            rescale
+            rescale,
+            balance
         )
     elif segment_type == "apply":
         segmentation = await apply(img_dims, UID, save_mode, large_w, large_h, rescale=rescale)

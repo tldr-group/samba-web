@@ -424,10 +424,12 @@ const App = () => {
     if (apply == false && labelArr != null) {
       const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
       setLabelArrs(newLabelArrs);
+      console.log(settings.balance)
       msg = {
         "images": imgDims, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
         "large_w": largeW, "large_h": largeH, "n_points": settings.nPoints,
-        "train_all": settings.trainAll, "rescale": settings.rescale, "type": "segment"
+        "train_all": settings.trainAll, "rescale": settings.rescale, "type": "segment",
+        "balance": settings.balance
       };
 
     } else {

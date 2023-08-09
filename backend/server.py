@@ -389,3 +389,28 @@ async def save_image_fn(request) -> Response:
 async def save_image_respond():
     response = await generic_response(request, save_image_fn)
     return response
+
+
+# ================================= LOAD FROM GALLERY =================================
+async def load_image(request) -> Response:
+    UID = request.json["id"]
+    gallery_ID = request.json["gallery_id"]
+    print(gallery_ID)
+    blob_service_client = get_blob_service_client()
+    container_client = blob_service_client.get_blob_client(container="gallery", blob=f"{gallery_ID}.zip")
+    with open(f"{CWD}{sep}{UID}{sep}temp.zip", "wb") as f:
+        download_stream = container_client.download_blob()
+        f.write(download_stream.readall())
+    with zipfile.ZipFile(f"{CWD}{sep}{UID}{sep}temp.zip") as zipf:
+        img_file = zipf.open(name=f"{gallery_ID}_img_full.png")
+    response = send_file(
+        img_file,
+        mimetype="image/png",
+        download_name="img.png",
+    )   
+    return response
+
+@app.route("/lgallery", methods=["POST", "GET", "OPTIONS"])
+async def load_gallery_img_respond():
+    response = await generic_response(request, load_image)
+    return response

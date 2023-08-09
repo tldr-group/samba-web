@@ -37,6 +37,7 @@ const SEGMENT_ENDPOINT = PATH + "/segmenting";
 const SAVE_ENDPOINT = PATH + "/saving";
 const LOAD_CLASSIFIER_ENDPOINT = PATH + "/lclassifier";
 const SAVE_LABEL_ENDPOINT = PATH + "/slabel";
+export const LOAD_GALLERY_IMAGE_ENDPOINT = PATH + "/lgallery";
 
 
 const getb64Image = (img: HTMLImageElement): string => {
@@ -109,6 +110,7 @@ const App = () => {
     path: [, setPath],
     UID: [, setUID],
     settings: [settings,],
+    galleryID: [gallery_id, setGalleryID],
   } = useContext(AppContext)!;
 
   const navigate = useNavigate();
@@ -142,12 +144,28 @@ const App = () => {
       }
     };
     initModel();
+
     initBackend();
     setPath(PATH);
     setUID(UID);
+
     const isMobile = (window.innerWidth < 700) ? true : false
     if (isMobile) { navigate("/gallery"); }
+
     const showHelp = localStorage.getItem("showHelp");
+
+
+    const loadGallery = async () => {
+      await deleteAllFiles()
+      setGalleryID(state.id)
+      setLabelType('Brush')
+      navigate('/') // do this to reset location.state (i.e so it doesn't keep same selected image after reload)
+    }
+    if (state !== "" && state !== null) { // load image from DB if from gallery
+      loadGallery()
+    }
+    console.log("baz")
+
     if (showHelp === null || showHelp === "true") {
       setModalShow({ welcome: true, settings: false, features: false });
     }
@@ -163,7 +181,6 @@ const App = () => {
       const error = e as Error;
       setErrorObject({ msg: "Failed to connect to backend.", stackTrace: error.toString() });
     }
-
   }
 
   const loadImages = async (hrefs: string[]) => {

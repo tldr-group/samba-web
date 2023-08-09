@@ -1,4 +1,5 @@
 import React, { useRef, useContext, useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom'
 import AppContext from "./components/hooks/createContext";
 import { ModalShow, themeBGs } from "./components/helpers/Interfaces";
 
@@ -53,6 +54,8 @@ const Gallery = () => {
     const [activeUID, setActiveUID] = useState<string>("")
     const [showInfoModal, setShowInfoModal] = useState<boolean>(false)
     const [segFlag, setSegFlag] = useState<boolean>(false)
+
+    const navigate = useNavigate();
 
 
     async function getGalleryArray(containerClient: any) {
@@ -161,13 +164,12 @@ const Gallery = () => {
     }
 
     const handleLoad = (e: any) => {
+        const selectedData = galleryMetaArray[activeIndex]
+        navigate('/', { state: { id: selectedData.id } });
     } // use useNavigatre
-    /* 
-    const navigate = useNavigate();
-    navigate('/other-page', { state: { id: 7, color: 'green' } });
-    pass a reference to the file they want to load, then when loading app use that state to 
-    
-    */
+
+
+    //pass a reference to the file they want to load, then when loading app use that state to 
 
 
     useEffect(() => {

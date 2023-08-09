@@ -48,6 +48,8 @@ const AppContextProvider = (props: {
   const [path, setPath] = useState<string>("http://localhost:5000")
   const [UID, setUID] = useState<string>("")
 
+  const [galleryID, setGalleryID] = useState<string>("")
+
   return (
     <AppContext.Provider
       value={{
@@ -84,6 +86,8 @@ const AppContextProvider = (props: {
         settings: [settings, setSettings],
         path: [path, setPath],
         UID: [UID, setUID],
+
+        galleryID: [galleryID, setGalleryID],
       }}
     >
       {props.children}

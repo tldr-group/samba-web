@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import Topbar from "./Topbar";
 import Sidebar from "./Sidebar";
 import Canvas from "./Canvas"
@@ -6,7 +6,7 @@ import { BigModal, PostSegToast, ErrorMessage } from "./Modals"
 import AppContext from "./hooks/createContext";
 import { DragDropProps, StageProps, themeBGs } from "./helpers/Interfaces";
 import { imageDataToImage, getSplitInds } from "./helpers/canvasUtils";
-
+import { LOAD_GALLERY_IMAGE_ENDPOINT } from "../App"
 
 const UTIF = require("./UTIF.js")
 
@@ -23,7 +23,9 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, featuresUpdated, tra
     imgType: [imgType, setImgType],
     largeImg: [, setLargeImg],
     errorObject: [, setErrorObject],
-    theme: [theme,]
+    theme: [theme,],
+    UID: [UID,],
+    galleryID: [galleryID,],
   } = useContext(AppContext)!;
   const flexCenterClasses = "flex items-center justify-center";
 
@@ -138,6 +140,23 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, featuresUpdated, tra
       reader.readAsDataURL(file); //href for png jpeg
     };
   }
+
+  const loadImageFromGallery = async (gallery_id: string) => {
+    const headers = new Headers();
+    headers.append('Content-Type', 'application/json;charset=utf-8');
+    console.log(gallery_id)
+    let resp = await fetch(LOAD_GALLERY_IMAGE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "gallery_id": gallery_id }) });
+    const buffer = await resp.arrayBuffer();
+    const blob = new Blob([buffer], { type: "image/png" });
+    const file = new File([blob], "temp.png")
+    loadFromFile(file)
+  } // make gallery id a part of app context and add listener here. ping endpoint, recieive img file, load.
+
+  useEffect(() => {
+    if (galleryID !== null && galleryID !== "") {
+      loadImageFromGallery(galleryID)
+    }
+  }, [galleryID])
 
 
   return (

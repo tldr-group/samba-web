@@ -9,7 +9,7 @@ of the SAM model (with the image encoding part run on the backed.).
 
 import { InferenceSession, Tensor } from "onnxruntime-web";
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import "./assets/scss/App.scss";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { handleImageScale } from "./components/helpers/scaleHelper";
@@ -124,6 +124,8 @@ const App = () => {
   const [segmentFlag, setSegmentFlag] = useState<boolean>(false);
   const [featureFlag, setFeatureFlag] = useState<boolean>(false);
   const [applyFlag, setApplyFlag] = useState<boolean>(false);
+
+  const { state } = useLocation();
 
   useEffect(() => {
     // Initialize the ONNX model on load

@@ -5,7 +5,6 @@ import { ModalShow, themeBGs } from "./components/helpers/Interfaces";
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
-import NavbarToggle from 'react-bootstrap/NavbarToggle'
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Tooltip from "react-bootstrap/Tooltip";
@@ -57,6 +56,7 @@ const Gallery = () => {
 
 
     async function getGalleryArray(containerClient: any) {
+        // need to add a unique reference to the data resource here
 
         let iterator = containerClient.listBlobsFlat()
         const segArr = [];
@@ -161,7 +161,13 @@ const Gallery = () => {
     }
 
     const handleLoad = (e: any) => {
-    }
+    } // use useNavigatre
+    /* 
+    const navigate = useNavigate();
+    navigate('/other-page', { state: { id: 7, color: 'green' } });
+    pass a reference to the file they want to load, then when loading app use that state to 
+    
+    */
 
 
     useEffect(() => {
@@ -259,7 +265,7 @@ const Gallery = () => {
                         </Form.Group>
                         <div style={{ display: 'flex', justifyContent: 'center' }}>
                             <Button variant="dark m-1" onClick={handleDownload} >Download data</Button>
-                            <Button variant="dark m-1" onClick={handleLoad} >Load into SAMBA</Button>
+                            {(window.innerWidth > 1000) ? <Button variant="dark m-1" onClick={handleLoad} >Load into SAMBA</Button> : <></>}
                         </div>
                     </Form>
                 </Modal.Body >

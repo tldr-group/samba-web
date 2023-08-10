@@ -57,6 +57,32 @@ const Gallery = () => {
 
     const navigate = useNavigate();
 
+    const sortAlphanumericArray = (inputArray: Array<string>) => {
+        const sortedArray = [...inputArray].sort((a, b) => {
+          return a.localeCompare(b, 'en', { numeric: true });
+        });
+        return(sortedArray);
+      };
+
+    interface Metadata {
+        id: string,
+        segQual: number,
+        materialName: string,
+        resolution: string,
+        instrumentType: string,
+        imgHeight: string,
+        imgWidth: string,
+        additionalNotes: string
+
+    }
+    
+    const sortAlphanumericMeta = (inputArray: Array<Metadata>) => {
+        const sortedArray = inputArray.sort((a, b) => {
+            return a['id'].localeCompare(b['id'], 'en', { numeric: true })
+        });
+        return(sortedArray);
+    }
+
 
     async function getGalleryArray(containerClient: any) {
         // need to add a unique reference to the data resource here
@@ -64,7 +90,7 @@ const Gallery = () => {
         let iterator = containerClient.listBlobsFlat()
         const segArr = [];
         const imgArr = [];
-        const metaArr = [] as any[];
+        const metaArr:Array<Metadata> = [];
 
         for await (const i of iterator) {
             if (i.name.includes('seg.jpg')) { segArr.push(i.name) }
@@ -75,9 +101,10 @@ const Gallery = () => {
                     .then((json) => metaArr.push(json));
             }
         }
-        setImgGalleryArray(imgArr)
-        setSegGalleryArray(segArr)
-        setGalleryMetaArray(metaArr)
+        
+        setImgGalleryArray(sortAlphanumericArray(imgArr))
+        setSegGalleryArray(sortAlphanumericArray(segArr))
+        setGalleryMetaArray(sortAlphanumericMeta(metaArr))
 
     }
 
@@ -88,8 +115,8 @@ const Gallery = () => {
 
 
     const handleImageClick = (props: any) => {
+        setGalleryMetaArray(sortAlphanumericMeta(galleryMetaArray))
         const metadata = galleryMetaArray[props.index]
-        console.log(metadata)
         setActiveMaterialName(metadata.materialName)
         setActiveResolution(metadata.resolution)
         setActiveInstrumentType(metadata.instrumentType)

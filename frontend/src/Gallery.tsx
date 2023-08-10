@@ -1,4 +1,5 @@
 import React, { useRef, useContext, useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom'
 import AppContext from "./components/hooks/createContext";
 import { ModalShow, themeBGs } from "./components/helpers/Interfaces";
 
@@ -10,10 +11,14 @@ import Col from 'react-bootstrap/Col';
 import Tooltip from "react-bootstrap/Tooltip";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Card from 'react-bootstrap/Card';
-import { BlobServiceClient } from '@azure/storage-blob';
-import { Form } from "react-bootstrap";
+import Form from 'react-bootstrap/Form'
+import InputGroup from "react-bootstrap/InputGroup";
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
+
+
+import { BlobServiceClient } from '@azure/storage-blob';
+
 
 const url = `https://sambasegment.blob.core.windows.net`
 const blobServiceClient = new BlobServiceClient(
@@ -54,13 +59,42 @@ const Gallery = () => {
     const [showInfoModal, setShowInfoModal] = useState<boolean>(false)
     const [segFlag, setSegFlag] = useState<boolean>(false)
 
+    const navigate = useNavigate();
+
+    const sortAlphanumericArray = (inputArray: Array<string>) => {
+        const sortedArray = [...inputArray].sort((a, b) => {
+          return a.localeCompare(b, 'en', { numeric: true });
+        });
+        return(sortedArray);
+      };
+
+    interface Metadata {
+        id: string,
+        segQual: number,
+        materialName: string,
+        resolution: string,
+        instrumentType: string,
+        imgHeight: string,
+        imgWidth: string,
+        additionalNotes: string
+
+    }
+    
+    const sortAlphanumericMeta = (inputArray: Array<Metadata>) => {
+        const sortedArray = inputArray.sort((a, b) => {
+            return a['id'].localeCompare(b['id'], 'en', { numeric: true })
+        });
+        return(sortedArray);
+    }
+
 
     async function getGalleryArray(containerClient: any) {
+        // need to add a unique reference to the data resource here
 
         let iterator = containerClient.listBlobsFlat()
         const segArr = [];
         const imgArr = [];
-        const metaArr = [] as any[];
+        const metaArr:Array<Metadata> = [];
 
         for await (const i of iterator) {
             if (i.name.includes('seg.jpg')) { segArr.push(i.name) }
@@ -71,9 +105,10 @@ const Gallery = () => {
                     .then((json) => metaArr.push(json));
             }
         }
-        setImgGalleryArray(imgArr)
-        setSegGalleryArray(segArr)
-        setGalleryMetaArray(metaArr)
+        
+        setImgGalleryArray(sortAlphanumericArray(imgArr))
+        setSegGalleryArray(sortAlphanumericArray(segArr))
+        setGalleryMetaArray(sortAlphanumericMeta(metaArr))
 
     }
 
@@ -84,8 +119,8 @@ const Gallery = () => {
 
 
     const handleImageClick = (props: any) => {
+        setGalleryMetaArray(sortAlphanumericMeta(galleryMetaArray))
         const metadata = galleryMetaArray[props.index]
-        console.log(metadata)
         setActiveMaterialName(metadata.materialName)
         setActiveResolution(metadata.resolution)
         setActiveInstrumentType(metadata.instrumentType)
@@ -134,10 +169,9 @@ const Gallery = () => {
 
 
     const icons: string[][] = [
-        ["Settings", "settings.png", "", ''],
         ["App", "app.png", "/", ''],
         ["Paper", "paper.png", "coming_soon", '_blank'],
-        ["Help", "help.png", "https://github.com/tldr-group/samba-web", '_blank'],
+        ["Help", "help.png", "https://github.com/tldr-group/samba-web/blob/development/MANUAL.md", '_blank'],
         ["TLDR Group", "tldr.png", "https://tldr-group.github.io/#/", '_blank']
     ]
 
@@ -161,8 +195,9 @@ const Gallery = () => {
     }
 
     const handleLoad = (e: any) => {
+        const selectedData = galleryMetaArray[activeIndex]
+        navigate('/', { state: { id: selectedData.id } });
     }
-
 
     useEffect(() => {
         getGalleryArray(containerClient)
@@ -174,9 +209,8 @@ const Gallery = () => {
             }>
                 <Container>
                     <Navbar.Brand><img src="/assets/icons/favicon.png" width="40" height="40" className="d-inline-block align-top" /></Navbar.Brand>
-                    <Navbar.Brand style={{ marginLeft: "-25px", marginTop: "3px" }}>AMBA</Navbar.Brand>
-                    <Navbar.Brand>Gallery</Navbar.Brand>
-                    <Navbar.Toggle aria-controls="basic-navbar-nav" />
+                    {/*<Navbar.Brand>Gallery</Navbar.Brand>*/}
+                    {/*<Navbar.Toggle aria-controls="basic-navbar-nav" /> */}
                     <Navbar.Collapse id="basic-navbar-nav">
                         <Nav className="me-auto">
                         </Nav>
@@ -197,7 +231,7 @@ const Gallery = () => {
                                 width="30"
                                 height="30"
                                 className="d-inline-block align-top"
-                                style={{ backgroundColor: themeBGs[theme][2], borderRadius: '20px' }}
+                                style={{ backgroundColor: themeBGs[theme][2], borderRadius: '20px', marginLeft: '15px' }}
                                 onClick={(e) => iconClick(e, i[0])}
                             />
                         </Navbar.Brand>
@@ -207,26 +241,28 @@ const Gallery = () => {
             </Navbar >
 
             <Container fluid style={{ height: "100vh", marginTop: "1rem" }}>
-                <Row>
+                <Row style={{ position: 'sticky', top: '0px', zIndex: '100' }}>
                     <Col className="d-flex justify-content-end">
-                        <Form >
-                            <Form.Check type="switch" id="seg-switch" >
-                                <Form.Check.Input type="checkbox" onChange={(e) => setSegFlag(e.target.checked)} style={{ marginLeft: 'auto' }} />
-                            </Form.Check>
-                        </Form>
+                        <div style={{ backgroundColor: '#ffffff', padding: '10px', borderRadius: '5px', display: 'flex', justifyContent: 'flex-end' }}>
+                            <p style={{ marginRight: '-30px' }}>Toggle Segmentations:</p>
+                            <Form>
+                                <Form.Check type="switch" id="seg-switch" label="Fo" >
+                                    <Form.Check.Input id="inp" type="checkbox" onChange={(e) => setSegFlag(e.target.checked)} style={{ marginLeft: 'auto' }} />
+                                </Form.Check>
+                            </Form>
+                        </div>
                     </Col>
                 </Row>
 
                 <Row >
-
                     {galleryImgArray.map((img, i) =>
-                        <Col style={{ marginTop: "1rem" }} xl={3} lg={4} md={6} sm={12}>
+                        <Col key={i} style={{ marginTop: "1rem" }} xl={3} lg={4} md={6} sm={12}>
                             <ImageCard key={i} index={i} src_img={url + '/gallery/' + img} src_seg={url + '/gallery/' + gallerySegArray[i]} title={"Image " + i} segFlag={segFlag} />
                         </Col>
                     )}
 
                 </Row>
-            </Container>
+            </Container >
 
             <Modal show={showInfoModal} onHide={toggleInfoModal} centered>
                 <Modal.Header closeButton>
@@ -260,7 +296,7 @@ const Gallery = () => {
                         </Form.Group>
                         <div style={{ display: 'flex', justifyContent: 'center' }}>
                             <Button variant="dark m-1" onClick={handleDownload} >Download data</Button>
-                            <Button variant="dark m-1" onClick={handleLoad} >Load into SAMBA</Button>
+                            {(window.innerWidth > 1000) ? <Button variant="dark m-1" onClick={handleLoad} >Load into SAMBA</Button> : <></>}
                         </div>
                     </Form>
                 </Modal.Body >

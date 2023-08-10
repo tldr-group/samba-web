@@ -4,7 +4,7 @@ The three large modals: Welcome, Settings, Features, the smaller error modal and
 
 import React, { useContext, useEffect, useRef, useState } from "react";
 import AppContext from "./hooks/createContext";
-import { Features, closeModal, LabelFrameProps, FeatureModalProps, themeBGs, Theme, Settings } from "./helpers/Interfaces"
+import { Features, LabelFrameProps, FeatureModalProps, themeBGs, Theme, BigModalProps } from "./helpers/Interfaces"
 
 
 import Accordion from 'react-bootstrap/Accordion';
@@ -18,7 +18,7 @@ import Form from "react-bootstrap/Form"
 import { BlobServiceClient } from "@azure/storage-blob";
 
 
-const BigModal = ({ requestEmbedding }: LabelFrameProps) => {
+const BigModal = ({ requestFeatures }: BigModalProps) => {
     const {
         modalShow: [modalShow, setModalShow],
         theme: [theme,]
@@ -29,7 +29,7 @@ const BigModal = ({ requestEmbedding }: LabelFrameProps) => {
     return (
         <Modal show={modalShow.welcome || modalShow.settings || modalShow.features} onHide={handleClose} size="lg" >
             {(modalShow.welcome && <WelcomeModalContent />)}
-            {(modalShow.features) && <FeatureModalContent closeModal={handleClose} requestEmbedding={requestEmbedding} />}
+            {(modalShow.features) && <FeatureModalContent closeModal={handleClose} requestFeatures={requestFeatures} />}
             {(modalShow.settings) && <SettingsModalContent />}
         </Modal>
     )
@@ -63,14 +63,14 @@ const WelcomeModalContent = () => {
     )
 }
 
-const FeatureModalContent = ({ closeModal, requestEmbedding }: FeatureModalProps) => {
+const FeatureModalContent = ({ closeModal, requestFeatures }: FeatureModalProps) => {
     const {
         features: [features, setFeatures]
     } = useContext(AppContext)!;
 
     const updateClose = () => {
         closeModal();
-        requestEmbedding();
+        requestFeatures();
     }
 
     const updateFeatures = (prev: any, newKey: string, newVal: string) => {
@@ -131,19 +131,19 @@ const SettingsModalContent = () => {
     const change = (e: any) => { setTheme(e.target.value as Theme) }
     const setN = (e: any) => {
         console.log(typeof (e.target.value));
-        setSettings({ nPoints: parseInt(e.target.value), trainAll: settings.trainAll, rescale: settings.rescale, format: settings.format });
+        setSettings({ nPoints: parseInt(e.target.value), trainAll: settings.trainAll, rescale: settings.rescale, format: settings.format, balance: settings.balance });
     }
     const setAll = (e: any) => {
-        const state = e.target.value == "on" ? true : false;
-        setSettings({ nPoints: settings.nPoints, trainAll: state, rescale: settings.rescale, format: settings.format });
+        setSettings({ nPoints: settings.nPoints, trainAll: !(settings.trainAll), rescale: settings.rescale, format: settings.format, balance: settings.balance });
     }
     const setRescale = (e: any) => {
-        const state = e.target.value == "on" ? true : false;
-        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: state, format: settings.format });
+        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: !(settings.rescale), format: settings.format, balance: settings.balance });
     }
-
+    const setBalance = (e: any) => {
+        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: settings.rescale, format: settings.format, balance: !(settings.balance) });
+    }
     const setFormat = (e: any) => {
-        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: settings.rescale, format: e.target.value });
+        setSettings({ nPoints: settings.nPoints, trainAll: settings.trainAll, rescale: settings.rescale, format: e.target.value, balance: settings.balance });
     }
 
     return (
@@ -179,6 +179,9 @@ const SettingsModalContent = () => {
             </Modal.Body>
             <Modal.Body>
                 <Form.Check type="checkbox" label="Rescale segmentations & labels" defaultChecked={settings.rescale} onChange={e => setRescale(e)}></Form.Check>
+            </Modal.Body>
+            <Modal.Body>
+                <Form.Check type="checkbox" label="Balance Classes" defaultChecked={settings.balance} onChange={e => setBalance(e)}></Form.Check>
             </Modal.Body>
             <Modal.Body>
                 {(settings.trainAll == true || settings.nPoints > 100000) && <p style={{ color: "#eb4034" }}><b>Warning:</b> more data points means slower training!</p>}
@@ -336,19 +339,19 @@ const PostSegToast = () => {
                     <Toast.Header className="roundedme-2"><strong className="me-auto">Add metadata</strong></Toast.Header>
                     <Toast.Body>
                         <Form style={{ margin: '10px' }}>
-                            <Form.Group className="mb-3" controlId="formBasicEmail">
+                            <Form.Group className="mb-3">
                                 <Form.Label>Material Name</Form.Label>
                                 <Form.Control type="text" placeholder="Enter material name" onChange={(e) => setMaterialName(e.target.value)} />
                             </Form.Group>
-                            <Form.Group className="mb-3" controlId="formBasicPassword">
+                            <Form.Group className="mb-3">
                                 <Form.Label>Resolution (µm/pixel)</Form.Label>
                                 <Form.Control type="text" placeholder="Enter resolution" onChange={(e) => setResolution(e.target.value)} />
                             </Form.Group>
-                            <Form.Group className="mb-3" controlId="formBasicPassword">
+                            <Form.Group className="mb-3">
                                 <Form.Label>Instrument Type</Form.Label>
                                 <Form.Control type="text" placeholder="Enter instrument type" onChange={(e) => setInstrumentType(e.target.value)} />
                             </Form.Group>
-                            <Form.Group className="mb-3" controlId="formBasicPassword">
+                            <Form.Group className="mb-3">
                                 <Form.Label>Additional Notes</Form.Label>
                                 <Form.Control type="text" placeholder="Enter additional notes" onChange={(e) => setAdditionalNotes(e.target.value)} />
                             </Form.Group>

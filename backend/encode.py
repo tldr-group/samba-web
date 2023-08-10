@@ -6,6 +6,7 @@ from typing import List
 import os
 from io import BytesIO
 import torch.cuda as cuda
+from torch import device
 
 from tifffile import imwrite
 
@@ -26,7 +27,7 @@ except KeyError:
 sam = sam_model_registry["vit_b"](checkpoint="sam_vit_b_01ec64.pth")
 sam_predictor = SamPredictor(sam)
 if GPU:
-    DEVICE = cuda.torch.device("cuda:0")
+    DEVICE = device("cuda:0")
     sam_predictor.to(DEVICE)
 
 

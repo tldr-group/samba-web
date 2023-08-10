@@ -316,6 +316,7 @@ def segment_with_features(
 def segment_no_features_get_arr(
     label_arr: np.ndarray,
     img_arr: np.ndarray,
+    feature_dict: dict = DEAFAULT_FEATURES
 ) -> np.ndarray:
     """For a *single img*, featurise, get training data (with no sampling), fit classifier then segment.
 
@@ -326,7 +327,7 @@ def segment_no_features_get_arr(
     :return: segmentation arr as class probabilities.
     :rtype: np.ndarray
     """
-    feature_stack = multiscale_advanced_features(img_arr, DEAFAULT_FEATURES, N_ALLOWED_CPUS)
+    feature_stack = multiscale_advanced_features(img_arr, feature_dict, N_ALLOWED_CPUS)
     fit_data, target_data = get_training_data(feature_stack, label_arr)
     model = get_model("FRF")
     model = fit(model, fit_data, target_data, None)

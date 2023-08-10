@@ -174,7 +174,7 @@ async def save_labels(
     large_w: int = 0,
     large_h: int = 0,
     rescale=True,
-) -> int:
+) -> np.ndarray:
     """Create composite tiffs of the label arrs and return the bytes. This has 0 for unlabelled pixels.
 
     :param images: list of images. TODO: make this a lsit of (h, w) tuples
@@ -189,8 +189,8 @@ async def save_labels(
     :type large_h: int, optional
     :param rescale: whether to rescale class values to make results visible, defaults to True
     :type rescale: bool, optional
-    :return: bytes of the tiff file of the (composited) labels
-    :rtype: bytes
+    :return: np array of the (composited) labels
+    :rtype: np.ndarray
     """
     label_arrs: List[np.ndarray] = []
     for i in range(len(img_dims)):
@@ -206,7 +206,7 @@ async def save_labels(
         photometric="minisblack",
         datetime=True,
     )
-    return 0
+    return label_out
 
 
 async def _save_classifier(model: EnsembleMethod, CWD: str, UID: str) -> int:
@@ -262,6 +262,7 @@ async def segment(
     n_points: int = 50000,
     train_all: bool = True,
     rescale: bool = True,
+    balance: bool = True,
 ) -> np.ndarray:
     """Perform FRF segmentation.
 
@@ -287,6 +288,8 @@ async def segment(
     :type train_all: bool, optional
     :param rescale: whether to rescale class values to make results visible, defaults to True
     :type rescale: bool, optional
+    :param balance: whether to balance training points based on class frequency, defaults to True
+    :type balance: bool, optional
     :return: flattened segementations (class values) where labels overwrite predictions if different.
     :rtype: np.ndarray
     """
@@ -300,7 +303,7 @@ async def segment(
 
     remasked_arrs_list: List[np.ndarray] = []
     remasked_flattened_arrs: np.ndarray
-    probs, model, score = segment_with_features(label_arrs, UID, n_points=n_points, train_all=train_all)
+    probs, model, score = segment_with_features(label_arrs, UID, n_points=n_points, train_all=train_all, balance_classes=balance)
 
     for i in range(len(probs)):
         label_arr = label_arrs[i]

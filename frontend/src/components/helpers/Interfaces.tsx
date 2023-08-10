@@ -1,6 +1,6 @@
 import { Tensor } from "onnxruntime-web";
 
-export type Label = "Smart Labelling" | "Polygon" | "Brush" | "Erase"
+export type Label = "Smart Labelling" | "Polygon" | "Brush" | "Erase" | "Crop"
 
 export interface modelScaleProps {
   samScale: number;
@@ -28,8 +28,11 @@ export interface StageProps {
   loadImages: (hrefs: string[]) => void;
   loadDefault: () => void;
   requestEmbedding: () => void;
+  featuresUpdated: () => void;
   trainClassifier: () => void;
   applyClassifier: () => void;
+  updateAll: (imgs: Array<HTMLImageElement>, labels: Array<Uint8ClampedArray>,
+    segs: Array<Uint8ClampedArray>, tensors: Array<any>) => void;
   deleteAll: () => void;
   deleteCurrent: () => void;
   changeToImage: (oldIdx: number, newIdx: number) => void;
@@ -71,10 +74,8 @@ export interface NavigationProps {
 
 
 export interface MultiCanvasProps {
-  label: Label;
-  class: number;
-  labelOpacity: number;
-  brushWidth: number;
+  updateAll: (imgs: Array<HTMLImageElement>, labels: Array<Uint8ClampedArray>,
+    segs: Array<Uint8ClampedArray>, tensors: Array<any>) => void;
 }
 
 export type Offset = { x: number, y: number }
@@ -85,6 +86,10 @@ export const getHTTPRequest = (url: string) => {
   http.open("POST", url, true)
   http.setRequestHeader("Content-type", "application/json;charset=utf-8")
   return http
+}
+
+export interface BigModalProps {
+  requestFeatures: () => void;
 }
 
 export interface ErrorMessage {
@@ -110,7 +115,7 @@ export interface closeModal {
 
 export interface FeatureModalProps {
   closeModal: () => void;
-  requestEmbedding: () => void;
+  requestFeatures: () => void;
 }
 
 export interface Features {
@@ -138,8 +143,8 @@ export const defaultFeatures = {
   "Gaussian Blur": 1,
   "Sobel Filter": 1,
   "Hessian": 1,
-  "Difference of Gaussians": 1,
-  "Membrane Projections": 1,
+  "Difference of Gaussians": 0,
+  "Membrane Projections": 0,
   "Mean": 0,
   "Minimum": 0,
   "Maximum": 0,
@@ -168,4 +173,5 @@ export interface Settings {
   trainAll: boolean;
   rescale: boolean;
   format: ".skops" | ".pkl";
+  balance: boolean;
 }

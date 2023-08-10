@@ -30,6 +30,7 @@ export const ToolTip = (str: string) => {
 const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, saveClassifier, loadClassifier, applyClassifier }: TopbarProps) => {
     const {
         modalShow: [modalShow, setModalShow],
+        labelType: [, setLabelType],
         theme: [theme,],
     } = useContext(AppContext)!;
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,7 +67,7 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
         ["Settings", "settings.png", "", ''],
         ["Gallery", "gallery.png", "", ''],
         ["Paper", "paper.png", "coming_soon", '_blank'],
-        ["Help", "help.png", "https://github.com/tldr-group/samba-web", '_blank'],
+        ["Help", "help.png", "https://github.com/tldr-group/samba-web/blob/development/MANUAL.md", '_blank'],
         ["TLDR Group", "tldr.png", "https://tldr-group.github.io/#/", '_blank']
     ]
 
@@ -90,8 +91,8 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
         }>
             <Container>
                 <Navbar.Brand><img src="/assets/icons/favicon.png" width="40" height="40" className="d-inline-block align-top" /></Navbar.Brand>
-                <Navbar.Brand style={{ marginLeft: "-25px", marginTop: "3px" }}>AMBA</Navbar.Brand>
-                <Navbar.Toggle aria-controls="basic-navbar-nav" />
+                {(window.innerWidth > 1000) ? <Navbar.Brand style={{ marginLeft: "-25px", marginTop: "3px" }}>AMBA</Navbar.Brand> : <></>}
+                {/*<Navbar.Toggle aria-controls="basic-navbar-nav" /> */}
                 <Navbar.Collapse id="basic-navbar-nav">
                     <Nav className="me-auto">
                         <NavDropdown title="Data" id="data-dropdown">
@@ -103,6 +104,7 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
                                 style={{ display: 'none' }}
                                 onChange={e => handleFileUpload(e, "image")} />
                             <NavDropdown.Item onClick={deleteCurrent}>Remove</NavDropdown.Item>
+                            <NavDropdown.Item onClick={e => setLabelType("Crop")}>Crop</NavDropdown.Item>
                             <NavDropdown.Divider />
                             <NavDropdown.Item onClick={deleteAll}>Clear All</NavDropdown.Item>
                         </NavDropdown>

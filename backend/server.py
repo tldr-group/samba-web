@@ -18,8 +18,8 @@ import json
 import zipfile
 
 from test_resources.call_weka import sep
-from encode import encode, featurise
-from segment import segment, load_classifier_from_http, apply
+from encode import encode, featurise, imwrite
+from segment import segment, load_classifier_from_http, apply, save_labels
 from file_handling import delete_old_folders, delete_all_features, delete_feature_file
 
 # Very important: this environment variable is only present on webapp. If running locally, this fails and we use cwd instead.
@@ -191,13 +191,14 @@ async def segment_fn(request) -> Response:
     """
     img_dims = [_get_shape_tuple(i) for i in request.json["images"]]
     print(img_dims)
-    UID = request.json["id"]
-    save_mode = request.json["save_mode"]
+    UID: str = request.json["id"]
+    save_mode: str = request.json["save_mode"]
     large_w, large_h = request.json["large_w"], request.json["large_h"]
-    segment_type = request.json["type"]
+    segment_type: str = request.json["type"]
+    rescale: bool = request.json["rescale"]
     if segment_type == "segment":
         labels_dicts = request.json["labels"]
-        n_points, train_all = request.json["n_points"], request.json["train_all"]
+        n_points, train_all, balance = request.json["n_points"], request.json["train_all"], request.json["balance"]
         segmentation = await segment(
             img_dims,
             labels_dicts,
@@ -207,9 +208,11 @@ async def segment_fn(request) -> Response:
             large_h,
             n_points,
             train_all,
+            rescale,
+            balance
         )
     elif segment_type == "apply":
-        segmentation = await apply(img_dims, UID, save_mode, large_w, large_h)
+        segmentation = await apply(img_dims, UID, save_mode, large_w, large_h, rescale=rescale)
     response = Response(segmentation.tobytes())
     response.headers.add("Content-Type", "application/octet-stream")
     return response
@@ -255,6 +258,28 @@ async def save_respond():
     response = await generic_response(request, save_fn)
     return response
 
+
+async def save_labels_fn(request) -> Response:
+    img_dims = [_get_shape_tuple(i) for i in request.json["images"]]
+    print(img_dims)
+    UID = request.json["id"]
+    save_mode = request.json["save_mode"]
+    large_w, large_h = request.json["large_w"], request.json["large_h"]
+    labels_dicts = request.json["labels"]
+    rescale: bool = request.json["rescale"]
+    arr = await save_labels(img_dims, labels_dicts, UID, save_mode, large_w, large_h, rescale)
+    response = send_file(
+            f"{CWD}{sep}{UID}{sep}labels.tiff",
+            mimetype="image/tiff",
+            download_name="labels.tiff",
+        )
+    return response
+
+@app.route("/slabel", methods=["POST", "GET", "OPTIONS"])
+async def save_labels_respond():
+    """Save route."""
+    response = await generic_response(request, save_labels_fn)
+    return response
 
 # ================================= LOADING =================================
 async def load_classifier_fn(request):
@@ -363,4 +388,29 @@ async def save_image_fn(request) -> Response:
 @app.route("/saveImage", methods=["POST", "GET", "OPTIONS"])
 async def save_image_respond():
     response = await generic_response(request, save_image_fn)
+    return response
+
+
+# ================================= LOAD FROM GALLERY =================================
+async def load_image(request) -> Response:
+    UID = request.json["id"]
+    gallery_ID = request.json["gallery_id"]
+    print(gallery_ID)
+    blob_service_client = get_blob_service_client()
+    container_client = blob_service_client.get_blob_client(container="gallery", blob=f"{gallery_ID}.zip")
+    with open(f"{CWD}{sep}{UID}{sep}temp.zip", "wb") as f:
+        download_stream = container_client.download_blob()
+        f.write(download_stream.readall())
+    with zipfile.ZipFile(f"{CWD}{sep}{UID}{sep}temp.zip") as zipf:
+        img_file = zipf.open(name=f"{gallery_ID}_img_full.png")
+    response = send_file(
+        img_file,
+        mimetype="image/png",
+        download_name="img.png",
+    )   
+    return response
+
+@app.route("/lgallery", methods=["POST", "GET", "OPTIONS"])
+async def load_gallery_img_respond():
+    response = await generic_response(request, load_image)
     return response

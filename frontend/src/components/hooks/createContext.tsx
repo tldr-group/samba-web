@@ -122,6 +122,10 @@ interface contextProps {
     UID: string,
     setUID: (e: string) => void
   ];
+  galleryID: [
+    galleryID: string,
+    setGalleryID: (e: string) => void
+  ];
 }
 
 const AppContext = createContext<contextProps | null>(null);

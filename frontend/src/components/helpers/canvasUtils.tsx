@@ -21,7 +21,7 @@ export function arrayToImageData(input: any, width: number, height: number,
   /*The way this worked previously was that the first mask was the 'best' mask by (predicted) IoU, so they looped
   over *every* pixel in *all four* of the masks i.e i=0 => i=length of all 4 masks. They then wrote the value of
   the mask at i to the output array, and once they went passed the first arr the rest of the writes were overrange
-  so didn't do anything. Mad. */
+  so didn't do anything. */
   const offset = mask_idx * width * height;
   for (let i = 0; i < width * height; i++) {
     // Threshold the onnx model mask prediction at 0.0
@@ -74,6 +74,14 @@ export function addImageDataToArray(imageData: ImageData, arr: Uint8ClampedArray
   return newArr;
 }
 
+export function getCropImg(imgCtx: CanvasRenderingContext2D, canv_p0: Offset, canv_p1: Offset) {
+  const x0 = (canv_p0.x)
+  const y0 = (canv_p0.y)
+  const x1 = (canv_p1.x)
+  const y1 = (canv_p1.y)
+  const imgData = imgCtx.getImageData(x0, y0, x1 - x0, y1 - y0)
+  return imageDataToImage(imgData)
+}
 
 // Use a Canvas element to produce an image from ImageData
 export function imageDataToImage(imageData: ImageData) {
@@ -131,6 +139,15 @@ export const drawErase = (ctx: CanvasRenderingContext2D, x: number, y: number, w
   }
 }
 
+export const drawRect = (ctx: CanvasRenderingContext2D, p0: Offset, p1: Offset, hex = "#ffffffff") => {
+  ctx.strokeStyle = hex;
+  ctx.fillStyle = hex;
+  ctx.beginPath();
+  ctx.rect(p0.x, p0.y, p1.x - p0.x, p1.y - p0.y);
+  ctx.closePath();
+  ctx.fill();
+}
+
 export const drawPolygon = (ctx: CanvasRenderingContext2D, polygon: Array<Offset>, colour: string, fill: boolean = false) => {
   // Loop through each point in polygon and draw it.
   const p0 = polygon[0];
@@ -151,10 +168,29 @@ export const drawPolygon = (ctx: CanvasRenderingContext2D, polygon: Array<Offset
   }
 }
 
+export const drawCropCursor = (ctx: CanvasRenderingContext2D, p0: Offset, width: number = 16) => {
+  const lowerPoints: Array<Offset> = [{ 'x': p0.x, 'y': p0.y - width / 2 }, { 'x': p0.x, 'y': p0.y + width }, { 'x': p0.x + (3 / 2) * width, 'y': p0.y + width }]
+  const upperPoints: Array<Offset> = [{ 'x': p0.x - width / 2, 'y': p0.y }, { 'x': p0.x + width, 'y': p0.y }, { 'x': p0.x + width, 'y': p0.y + (3 / 2) * width }]
+  ctx.strokeStyle = "#000000";
+  ctx.lineWidth = 3;
+  for (let polygon of [lowerPoints, upperPoints]) {
+    const np0 = polygon[0]
+    ctx.beginPath();
+    ctx.moveTo(np0.x, np0.y);
+
+    for (let i = 1; i < polygon.length; i++) {
+      const p = polygon[i];
+      ctx.lineTo(p.x, p.y);
+    }
+    ctx.stroke();
+    ctx.closePath();
+  }
+}
+
 export const getctx = (ref: RefObject<HTMLCanvasElement>): CanvasRenderingContext2D | null => { return ref.current!.getContext("2d", { willReadFrequently: true }) }
 export const clearctx = (ref: RefObject<HTMLCanvasElement>) => {
-  const ctx = getctx(ref)
-  ctx?.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+  const ctx = getctx(ref);
+  ctx?.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 }
 
 const filled = (p: number[]) => { return (p[0] > 0 && p[1] > 0 && p[2] > 0) }

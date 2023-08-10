@@ -9,6 +9,7 @@ of the SAM model (with the image encoding part run on the backed.).
 
 import { InferenceSession, Tensor } from "onnxruntime-web";
 import React, { useContext, useEffect, useRef, useState } from "react";
+import { useNavigate, useLocation } from 'react-router-dom'
 import "./assets/scss/App.scss";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { handleImageScale } from "./components/helpers/scaleHelper";
@@ -36,6 +37,8 @@ const SEGMENT_ENDPOINT = PATH + "/segmenting";
 const SAVE_ENDPOINT = PATH + "/saving";
 const LOAD_CLASSIFIER_ENDPOINT = PATH + "/lclassifier";
 const SAVE_LABEL_ENDPOINT = PATH + "/slabel";
+export const LOAD_GALLERY_IMAGE_ENDPOINT = PATH + "/lgallery";
+
 
 const getb64Image = (img: HTMLImageElement): string => {
   // Convert HTML Image to b64 string encoding by drawing onto canvas. Used for sending over HTTP
@@ -107,7 +110,10 @@ const App = () => {
     path: [, setPath],
     UID: [, setUID],
     settings: [settings,],
+    galleryID: [gallery_id, setGalleryID],
   } = useContext(AppContext)!;
+
+  const navigate = useNavigate();
 
   const [model, setModel] = useState<InferenceSession | null>(null); // ONNX model
   const [tensor, setTensor] = useState<Tensor | null>(null); // Image embedding tensor
@@ -120,6 +126,8 @@ const App = () => {
   const [segmentFlag, setSegmentFlag] = useState<boolean>(false);
   const [featureFlag, setFeatureFlag] = useState<boolean>(false);
   const [applyFlag, setApplyFlag] = useState<boolean>(false);
+
+  const { state } = useLocation();
 
   useEffect(() => {
     // Initialize the ONNX model on load
@@ -136,10 +144,28 @@ const App = () => {
       }
     };
     initModel();
+
     initBackend();
     setPath(PATH);
     setUID(UID);
+
+    const isMobile = (window.innerWidth < 700) ? true : false
+    if (isMobile) { navigate("/gallery"); }
+
     const showHelp = localStorage.getItem("showHelp");
+
+
+    const loadGallery = async () => {
+      await deleteAllFiles()
+      setGalleryID(state.id)
+      setLabelType('Brush')
+      navigate('/') // do this to reset location.state (i.e so it doesn't keep same selected image after reload)
+    }
+    if (state !== "" && state !== null) { // load image from DB if from gallery
+      loadGallery()
+    }
+    console.log("baz")
+
     if (showHelp === null || showHelp === "true") {
       setModalShow({ welcome: true, settings: false, features: false });
     }
@@ -155,7 +181,6 @@ const App = () => {
       const error = e as Error;
       setErrorObject({ msg: "Failed to connect to backend.", stackTrace: error.toString() });
     }
-
   }
 
   const loadImages = async (hrefs: string[]) => {
@@ -220,6 +245,19 @@ const App = () => {
     setSegArrs(newSegArrs);
     const newTensors = appendToArr(tensorArrs, tensors);
     setTensorArrs(newTensors);
+  }
+
+  const setAllArrs = async (imgs: Array<HTMLImageElement>, labels: Array<Uint8ClampedArray>,
+    segs: Array<Uint8ClampedArray>, tensors: Array<any>) => {
+    const headers = new Headers();
+    headers.append('Content-Type', 'application/json;charset=utf-8');
+    await fetch(DELETE_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ "id": UID, "idx": -1 }) });
+    await requestFeatures(imgs, 0);
+    setLabelArrs(labels);
+    setSegArrs(segs);
+    setTensorArrs(tensors);
+    setTensor(tensors[0]);
+    setImgArrs(imgs);
   }
 
   const deleteAllFiles = async () => {
@@ -317,6 +355,10 @@ const App = () => {
     }
   }
 
+  const featuresUpdated = async () => {
+    requestFeatures(imgArrs, 0)
+  }
+
   const requestEmbedding = async () => {
     // Ping our encode enpoint, request and await a SAM embedding, then set it.
     if (tensor != null || image === null) { // Early return if we already have one
@@ -401,10 +443,12 @@ const App = () => {
     if (apply == false && labelArr != null) {
       const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
       setLabelArrs(newLabelArrs);
+      console.log(settings.balance)
       msg = {
         "images": imgDims, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
         "large_w": largeW, "large_h": largeH, "n_points": settings.nPoints,
-        "train_all": settings.trainAll, "rescale": settings.rescale, "type": "segment"
+        "train_all": settings.trainAll, "rescale": settings.rescale, "type": "segment",
+        "balance": settings.balance
       };
 
     } else {
@@ -486,25 +530,39 @@ const App = () => {
     setShowToast(true);
   }
 
+  /*
   const saveLabels = async () => {
     if (image === null || labelArr === null) { return; }
     saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID, "rescale": settings.rescale, "type": "labels" }), "labels.tiff")
-    /*
-    const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
-    setLabelArrs(newLabelArrs);
-    const b64images: string[] = imgArrs.map((img, i) => getb64Image(img));
+  }
+  */
+
+  const saveLabels = async () => {
+    const imgDims: string[] = imgArrs.map((img, i) => getHWstr(img));
+    const headers = new Headers();
+    headers.append('Content-Type', 'application/json;charset=utf-8');
+    console.log("Started Segementing");
     let [largeW, largeH]: Array<number> = [0, 0];
     if (imgType === "large" && largeImg !== null) {
       largeW = largeImg.width;
       largeH = largeImg.height;
     }
-    const dict = {
-      "images": b64images, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
+    const newLabelArrs = updateArr(labelArrs, imgIdx, labelArr);
+    setLabelArrs(newLabelArrs);
+    const msg = {
+      "images": imgDims, "labels": newLabelArrs, "id": UID, "save_mode": imgType,
       "large_w": largeW, "large_h": largeH, "rescale": settings.rescale
+    };
+    console.log(settings.rescale)
+    try {
+      //let resp = await fetch(SAVE_LABEL_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify(msg) })
+      let resp = saveArrAsTIFF(SAVE_LABEL_ENDPOINT, JSON.stringify(msg), "labels.tiff")
+      //const buffer = await resp.arrayBuffer();
+      //loadSegmentationsFromHTTP(buffer);
+    } catch (e) {
+      const error = e as Error;
+      setErrorObject({ msg: "Failed to save labels.", stackTrace: error.toString() });
     }
-    const msg = JSON.stringify(dict);
-    saveArrAsTIFF(SAVE_LABEL_ENDPOINT, msg, "label.tiff");
-    */
   }
 
   const saveClassifier = async () => {
@@ -606,9 +664,11 @@ const App = () => {
     loadImages={loadImages}
     loadDefault={loadDefault}
     requestEmbedding={requestEmbedding}
+    featuresUpdated={featuresUpdated}
     trainClassifier={trainPressed}
     applyClassifier={applyPressed}
     changeToImage={changeToImage}
+    updateAll={setAllArrs}
     deleteAll={deleteAllFiles}
     deleteCurrent={deleteCurrentFile}
     saveSeg={onSaveClick}

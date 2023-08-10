@@ -273,7 +273,7 @@ class CompareDefaultFeatures(unittest.TestCase):
         passed = True
 
         img = imread(f"backend{sep}test_resources{sep}super1.tif").astype(np.float32)
-        samba = ft.multiscale_advanced_features(img, ft.DEAFAULT_FEATURES, 1).transpose((2, 0, 1))
+        samba = ft.multiscale_advanced_features(img, ft.DEAFAULT_WEKA_FEATURES, 1).transpose((2, 0, 1))
         singlescale_mse = self.compare_singlescale_default(weka, samba)
         dog_mse = self.compare_dog_default(weka, samba)
         membrane_mse = self.compare_membrane_projections(weka, samba)
@@ -391,7 +391,7 @@ class CompareDefaultFeatures(unittest.TestCase):
 
 
 def get_scores(gt: np.ndarray, seg: np.ndarray) -> Tuple[float, float]:
-    """Compute iou and dice scores for 2 arrays of same shape.
+    """Compute (class average) iou and dice scores for 2 arrays of same shape. 
 
     :param gt: reference arr - the weka segmentation
     :type gt: np.ndarray
@@ -404,9 +404,24 @@ def get_scores(gt: np.ndarray, seg: np.ndarray) -> Tuple[float, float]:
     flat_seg = seg.flatten()
     boolean_out = np.where(flat_gt == flat_seg, 1, 0)
     A, B, A_U_B = len(flat_gt), len(flat_seg), np.sum(boolean_out)
-    iou_score = A_U_B / (A + B - A_U_B)
-    dice_similarity = A_U_B * 2 / (A + B)
-    return iou_score, dice_similarity
+    global_iou_score = A_U_B / (A + B - A_U_B)
+    global_dice_similarity = A_U_B * 2 / (A + B)
+
+    class_dice_scores, class_iou_scores = [], []
+    for c in np.unique(flat_gt):
+        true_positives = np.where(flat_gt == flat_seg, 1, 0) * np.where(flat_seg == c, 1, 0)
+        false_positives = np.where(flat_gt != flat_seg, 1, 0) * np.where(flat_seg == c, 1, 0)
+        false_negatives = np.where(flat_gt != flat_seg, 1, 0) * np.where(flat_seg != c, 1, 0)
+        N_TP = np.sum(true_positives)
+        N_FP = np.sum(false_positives)
+        N_FN = np.sum(false_negatives)
+        class_dice_score = 2 * N_TP / (2 * N_TP + N_FP + N_FN)
+        class_dice_scores.append(class_dice_score)
+        class_iou = N_TP / (N_TP + N_FP + N_FN)
+        class_iou_scores.append(class_iou)
+    class_avg_dice_score = np.mean(class_dice_scores, axis=0)
+    print(global_dice_similarity, class_avg_dice_score)
+    return global_iou_score, class_avg_dice_score
 
 
 class CompareSegmentations(unittest.TestCase):
@@ -469,7 +484,7 @@ class CompareSegmentations(unittest.TestCase):
         weka_arr = imread(f"backend{sep}test_resources{sep}output.tif")
         label = get_label_arr(f"backend{sep}test_resources{sep}{fname}_roi_config.txt", img_arr)
         start_t = time.time()
-        samba_arr = segment_no_features_get_arr(label, img_arr)
+        samba_arr = segment_no_features_get_arr(label, img_arr, ft.DEAFAULT_WEKA_FEATURES)
         end_t = time.time()
         samba_t = end_t - start_t
         return weka_arr, samba_arr, weka_t, samba_t
@@ -498,7 +513,7 @@ class CompareSegmentations(unittest.TestCase):
         fig = plt.figure(num=1, constrained_layout=True, figsize=(16, 16))
         subfigs = fig.subfigures(nrows=3, ncols=1)
         for row, sfig in enumerate(subfigs):
-            sfig.suptitle(f"{2+row} phase, Dice Score={scores[row]:.4f}", fontsize=20)
+            sfig.suptitle(f"{2+row} phase, Mean Dice Score={scores[row]:.4f}", fontsize=20)
             axs = sfig.subplots(nrows=1, ncols=2)
             axs[0].imshow(weka_segs[row], cmap="gist_gray")
             axs[0].set_axis_off()

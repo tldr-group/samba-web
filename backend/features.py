@@ -20,6 +20,7 @@ from skimage.util.dtype import img_as_float32
 from scipy.ndimage import rotate, convolve
 from skimage.draw import disk
 
+import os
 from itertools import combinations_with_replacement, chain
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import cpu_count
@@ -31,6 +32,27 @@ from typing import Tuple, List, Iterable
 # - 2 to allow for main & gui threads
 N_ALLOWED_CPUS = cpu_count() - 2
 DEAFAULT_FEATURES = {
+    "Gaussian Blur": 1,
+    "Sobel Filter": 1,
+    "Hessian": 1,
+    "Difference of Gaussians": 0,
+    "Membrane Projections": 0,
+    "Mean": 0,
+    "Minimum": 0,
+    "Maximum": 0,
+    "Median": 0,
+    "Bilateral": 0,
+    "Derivatives": 0,
+    "Structure": 0,
+    "Entropy": 0,
+    "Neighbours": 0,
+    "Membrane Thickness": 1,
+    "Membrane Patch Size": 19,
+    "Minimum Sigma": 1,
+    "Maximum Sigma": 16,
+}
+
+DEAFAULT_WEKA_FEATURES = {
     "Gaussian Blur": 1,
     "Sobel Filter": 1,
     "Hessian": 1,
@@ -47,7 +69,7 @@ DEAFAULT_FEATURES = {
     "Neighbours": 0,
     "Membrane Thickness": 1,
     "Membrane Patch Size": 19,
-    "Minimum Sigma": 1,  # check this - is 1 in weka docs but 0.5 in sklearn example
+    "Minimum Sigma": 0,  # note 0 scale is not true 0 scale
     "Maximum Sigma": 16,
 }
 
@@ -479,9 +501,17 @@ def multiscale_advanced_features(
     :return: np array of outputs of all enabled filters applied to $img
     :rtype: np.ndarray
     """
-    features: Iterable[np.ndarray] = zero_scale_filters(img, edges=feature_dict["Sobel Filter"], hess=feature_dict["Hessian"])
+    features: Iterable[np.ndarray] = []
+    sigma_min: float = 1.0
+    if feature_dict["Minimum Sigma"] == -1:
+        sigma_min = 0.5
+    elif feature_dict["Minimum Sigma"] == 0:
+        # if 0 scale included, compute 0 scale features a la weka then switch to 1 scale
+        features = zero_scale_filters(img, edges=feature_dict["Sobel Filter"], hess=feature_dict["Hessian"])
+        sigma_min = 1.0
+    else:
+        sigma_min = float(feature_dict["Minimum Sigma"])
 
-    sigma_min = float(feature_dict["Minimum Sigma"]) if feature_dict["Minimum Sigma"] != -1 else 0.5
     sigma_max = float(feature_dict["Maximum Sigma"])
     num_sigma = int(np.log2(sigma_max) - np.log2(sigma_min) + 1)
     sigmas = np.logspace(

@@ -13,6 +13,8 @@ If the image is larger than 1024 pixels in height and/or width it will be split 
 If the image is a `.tiff` stack of many images with the same dimensions, this wil also be split into sub-images. These can be navigated between using the slider on the 'Navigation' pane. If the image is a stack where the images are larger than (1024, 1024) `SAMBA` will not work. As with large `.tiff` files, the sub-images will be stacked into their original shape when saving. 
 #### Removing
 Pressing 'Remove' on the 'Data' tab will remove the current (sub-) image. If the image is large, this will remove all the associated images but will only remove a single sub-image in a stack. 
+#### Cropping
+Pressing 'Crop' on the 'Data' tab will begin cropping mode. Click and drag a rectangle over the region you want to keep, the rest will be discarded. Note this will require the features and SAM embeddings to be recomputed, and the current labels and segmentations lost. It only works for single images.
 #### Clear All
 'Clear all' will remove all images currently loaded. **It is recommended** you use this if you want to process a different dataset.
 

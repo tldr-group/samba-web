@@ -11,10 +11,14 @@ import Col from 'react-bootstrap/Col';
 import Tooltip from "react-bootstrap/Tooltip";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Card from 'react-bootstrap/Card';
-import { BlobServiceClient } from '@azure/storage-blob';
-import { Form } from "react-bootstrap";
+import Form from 'react-bootstrap/Form'
+import InputGroup from "react-bootstrap/InputGroup";
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
+
+
+import { BlobServiceClient } from '@azure/storage-blob';
+
 
 const url = `https://sambasegment.blob.core.windows.net`
 const blobServiceClient = new BlobServiceClient(
@@ -166,11 +170,7 @@ const Gallery = () => {
     const handleLoad = (e: any) => {
         const selectedData = galleryMetaArray[activeIndex]
         navigate('/', { state: { id: selectedData.id } });
-    } // use useNavigatre
-
-
-    //pass a reference to the file they want to load, then when loading app use that state to 
-
+    }
 
     useEffect(() => {
         getGalleryArray(containerClient)
@@ -214,26 +214,28 @@ const Gallery = () => {
             </Navbar >
 
             <Container fluid style={{ height: "100vh", marginTop: "1rem" }}>
-                <Row>
+                <Row style={{ position: 'sticky', top: '0px', zIndex: '100' }}>
                     <Col className="d-flex justify-content-end">
-                        <Form >
-                            <Form.Check type="switch" id="seg-switch" >
-                                <Form.Check.Input type="checkbox" onChange={(e) => setSegFlag(e.target.checked)} style={{ marginLeft: 'auto' }} />
-                            </Form.Check>
-                        </Form>
+                        <div style={{ backgroundColor: '#ffffff', padding: '10px', borderRadius: '5px', display: 'flex', justifyContent: 'flex-end' }}>
+                            <p style={{ marginRight: '-30px' }}>Toggle Segmentations:</p>
+                            <Form>
+                                <Form.Check type="switch" id="seg-switch" label="Fo" >
+                                    <Form.Check.Input id="inp" type="checkbox" onChange={(e) => setSegFlag(e.target.checked)} style={{ marginLeft: 'auto' }} />
+                                </Form.Check>
+                            </Form>
+                        </div>
                     </Col>
                 </Row>
 
                 <Row >
-
                     {galleryImgArray.map((img, i) =>
-                        <Col style={{ marginTop: "1rem" }} xl={3} lg={4} md={6} sm={12}>
+                        <Col key={i} style={{ marginTop: "1rem" }} xl={3} lg={4} md={6} sm={12}>
                             <ImageCard key={i} index={i} src_img={url + '/gallery/' + img} src_seg={url + '/gallery/' + gallerySegArray[i]} title={"Image " + i} segFlag={segFlag} />
                         </Col>
                     )}
 
                 </Row>
-            </Container>
+            </Container >
 
             <Modal show={showInfoModal} onHide={toggleInfoModal} centered>
                 <Modal.Header closeButton>

@@ -17,5 +17,6 @@ yarn.lock
 *.venv*
 *backend/test_resources/weka_default*
 *backend/test_resources/output*
+*backend/test_resources/test_outputs/*.png
 *.env*
 samba_logo/*

@@ -63,10 +63,10 @@ const Gallery = () => {
 
     const sortAlphanumericArray = (inputArray: Array<string>) => {
         const sortedArray = [...inputArray].sort((a, b) => {
-          return a.localeCompare(b, 'en', { numeric: true });
+            return a.localeCompare(b, 'en', { numeric: true });
         });
-        return(sortedArray);
-      };
+        return (sortedArray);
+    };
 
     interface Metadata {
         id: string,
@@ -79,12 +79,12 @@ const Gallery = () => {
         additionalNotes: string
 
     }
-    
+
     const sortAlphanumericMeta = (inputArray: Array<Metadata>) => {
         const sortedArray = inputArray.sort((a, b) => {
             return a['id'].localeCompare(b['id'], 'en', { numeric: true })
         });
-        return(sortedArray);
+        return (sortedArray);
     }
 
 
@@ -94,7 +94,7 @@ const Gallery = () => {
         let iterator = containerClient.listBlobsFlat()
         const segArr = [];
         const imgArr = [];
-        const metaArr:Array<Metadata> = [];
+        const metaArr: Array<Metadata> = [];
 
         for await (const i of iterator) {
             if (i.name.includes('seg.jpg')) { segArr.push(i.name) }
@@ -105,7 +105,7 @@ const Gallery = () => {
                     .then((json) => metaArr.push(json));
             }
         }
-        
+
         setImgGalleryArray(sortAlphanumericArray(imgArr))
         setSegGalleryArray(sortAlphanumericArray(segArr))
         setGalleryMetaArray(sortAlphanumericMeta(metaArr))
@@ -240,8 +240,8 @@ const Gallery = () => {
                 }
             </Navbar >
 
-            <Container fluid style={{ height: "100vh", marginTop: "1rem" }}>
-                <Row style={{ position: 'sticky', top: '0px', zIndex: '100' }}>
+            <Container fluid style={{ height: "auto", marginTop: "1rem" }}>
+                <Row style={{ position: 'sticky', top: '0', zIndex: '100' }}>
                     <Col className="d-flex justify-content-end">
                         <div style={{ backgroundColor: '#ffffff', padding: '10px', borderRadius: '5px', display: 'flex', justifyContent: 'flex-end' }}>
                             <p style={{ marginRight: '-30px' }}>Toggle Segmentations:</p>

@@ -23,7 +23,7 @@ These instructions are for installing and running the model locally. They assume
 
 ### Preliminaries
 
-Download one of the ViT checkpoints for the SAM model - I chose the smallest, `vit_b`: [ViT-B SAM model.](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth). Copy this into the [`backend/`](backend) directory.
+Download one of the ViT checkpoints for the SAM model - I chose the smallest, `vit_b`: [ViT-B SAM model](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth). Copy this into the [`backend/`](backend) directory.
 
 ### Install & run the backend
 

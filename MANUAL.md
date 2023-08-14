@@ -33,7 +33,7 @@ Once this is pressed, the app will request a SAM embedding from the server (this
 #### Polygon
 **Left click** to add points to a polygon. Once complete (either with a **right click** or a **left click at the start point**), the filled polygon will be added as a label.
 #### Erase
-**Left click and hold** to erase added labels. Like when using the brush, an 'Erase Width' slider will appear in the 'Label' tab.
+**Left click and hold** to erase added labels. Like when using the brush, an 'Erase Width' slider will appear in the 'Label' tab. By default **it will only erase labels of the current class**, this can be changed by changing the class to '0' with the 0 key or by pressing the 'Erase All Classes' checkbox in the 'Label tab. This is to make erasing data around class interfaces easier.
 
 ## Viewing
 <p align="center">

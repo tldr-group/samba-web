@@ -62,10 +62,13 @@ export function addImageDataToArray(imageData: ImageData, arr: Uint8ClampedArray
   const newArr = new Uint8ClampedArray(arr.length);
   const data = imageData.data;
   for (let i = 0; i < arr.length; i++) {
+    const isSet = isPixelSet([data[4 * i], data[4 * i + 1], data[4 * i + 2]])
     // check if this pixel is set in the image and not set in the arr
-    if (isPixelSet([data[4 * i], data[4 * i + 1], data[4 * i + 2]]) && arr[i] == 0) {
+    if (!erase && isSet && arr[i] == 0) {
       newArr[i] = classVal;
-    } else if (erase && isPixelSet([data[4 * i], data[4 * i + 1], data[4 * i + 2]])) {
+    } else if (erase && isSet && classVal == arr[i]) {
+      newArr[i] = 0;
+    } else if (erase && isSet && classVal == 0) {
       newArr[i] = 0;
     } else {
       newArr[i] = arr[i];

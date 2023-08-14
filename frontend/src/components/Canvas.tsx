@@ -110,7 +110,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         if (transferCtx === undefined || image === null) { return; };
         // (relatively) slow operation as needs to draw onto full image size
         const imageData = transferCtx.getImageData(0, 0, image?.width, image?.height);
-        const currentClass = (erase === true) ? 0 : labelClass;
+        const currentClass = labelClass//(erase === true) ? 0 : labelClass;
         if (labelClass > 0) {
             const set = uniqueLabels.current;
             const n_labels = (set.has(labelClass)) ? set.size : set.size + 1;
@@ -188,7 +188,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
             setMaskIdx((newMaskIdx));
             updateSAM();
         } else if (labelType == "Erase") {
-            // Erase directly on labels (so get real time preview). Not currently working
+            // Erase directly on labels (so get real time preview).
             const labelctx = getctx(labelCanvasRef);
             if (labelctx === null) { return }
             const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr, true);

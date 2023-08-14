@@ -164,7 +164,6 @@ const App = () => {
     if (state !== "" && state !== null) { // load image from DB if from gallery
       loadGallery()
     }
-    console.log("baz")
 
     if (showHelp === null || showHelp === "true") {
       setModalShow({ welcome: true, settings: false, features: false });

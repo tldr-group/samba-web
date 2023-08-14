@@ -31,9 +31,12 @@ const _getCSSColour = (currentStateVal: any, targetStateVal: any, successPrefix:
     const erase: boolean = (targetStateVal === "Erase" && matches);
 
     let outlineStr: string;
+    /*
     if (erase) {
         outlineStr = successPrefix + "#ffffff";
-    } else if (matches) {
+    } else */
+
+    if (matches) {
         outlineStr = successPrefix + hex;
     } else {
         outlineStr = themeBGs[theme][2];
@@ -101,15 +104,27 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
     const erase = { "path": "erase.png", "name": "Erase" };
     const labels = [sam, poly, brush, erase]; // loop over these to generate icons
 
+    const eraseAllTicked = (labelClass == 0) ? 1 : 0;
+
     const regionSizes = ["Small", "Medium", "Large"] // text for button group
     const classes: number[] = [1, 2, 3, 4, 5, 6]
     const _setLabel = (e: any, name: string) => {
+        if (labelClass == 0 && name != 'Erase') { setLabelClass(1) } // if switching away from erase don't want to draw w/ 0
         setLabelType(name as Label);
         if (name == "Smart Labelling") { // if switching to SAM labelling, requestEmbedding from app (which returns early if it's already set)
             console.log('Smart Labelling')
             requestEmbedding();
         }
     };
+
+    const _eraseAllChecked = (e: any) => {
+        const checked = e.target.checked;
+        if (checked) {
+            setLabelClass(0); //erase all
+        } else {
+            setLabelClass(1);
+        }
+    }
 
     const _getImg = (l: any) => {
         // Get image of label type. If SAM label icon and encoding, make it a spinny wheel instead.
@@ -180,6 +195,9 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                         borderColor: _getCSSColour(3 - i, maskIdx, "", labelClass, theme)
                     }}>{size}</Button>)}
                 </ButtonGroup>
+            </Card.Body>}
+            {labelType == "Erase" && <Card.Body>
+                <Form.Check label="Erase all classes" value={eraseAllTicked} onChange={(e) => _eraseAllChecked(e)}></Form.Check>
             </Card.Body>}
         </Card >
     );

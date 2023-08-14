@@ -56,6 +56,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
     const animationRef = useRef<number>(0);
 
     const zoom = useRef<number>(1);
+    const minZoom = useRef<number>(0.4);
     const cameraOffset = useRef<Offset>({ x: 0, y: 0 });
     const mousePos = useRef<Offset>({ x: 0, y: 0 });
     const cropStart = useRef<Offset>({ x: -1000, y: -1000 });
@@ -260,7 +261,8 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         const speed = (zoom.current < 1) ? SCROLL_SPEED * zoom.current : SCROLL_SPEED;
         let newZoom = zoom.current + delta * speed;
         newZoom = Math.min(newZoom, MAX_ZOOM);
-        newZoom = Math.max(newZoom, MIN_ZOOM);
+        console.log(minZoom.current)
+        newZoom = Math.max(newZoom, minZoom.current);
         if (image === null) { return }
         const newOffset = computeNewZoomOffset(zoom.current, newZoom, mousePos.current, cameraOffset.current);
         drawAllCanvases(newZoom, newOffset); //cameraOffset.current
@@ -435,6 +437,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         const newSegImg = new Image(image.width, image.height);
         setLabelImg(newLabelImg);
         setSegImg(newSegImg);
+        minZoom.current = image.width / ctx.canvas.width
 
         if (ctx !== null) { drawImage(ctx, image, cameraOffset.current, zoom.current); }
         animation(); //start the animation loop
@@ -477,7 +480,9 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         const centreOffset = computeCentreOffset(image, canvSize.x, canvSize.y);
         console.log(centreOffset);
         cameraOffset.current = centreOffset;
+        minZoom.current = image.width / canvSize.x
         drawAllCanvases(zoom.current, centreOffset);
+
     }, [canvSize])
 
     useEffect(() => {

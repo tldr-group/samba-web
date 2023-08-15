@@ -354,6 +354,9 @@ async def apply(
     """
     model = skload(f"{CWD}{sep}{UID}{sep}classifier.skops")
     probs = apply_features_done(model, UID, len(img_dims))
+    N_imgs = len(probs)
+    # array to store coords of least certain region
+    least_certain_regions = np.zeros((N_imgs * 4), dtype=np.int32) - 1
 
     arrs_list: List[np.ndarray] = []
     flattened_arrs: np.ndarray
@@ -365,4 +368,4 @@ async def apply(
         else:
             flattened_arrs = np.concatenate((flattened_arrs, classes.flatten()), axis=0, dtype=np.uint8)
     await _save_as_tiff(arrs_list, save_mode, UID, large_w, large_h, rescale=rescale)
-    return flattened_arrs
+    return flattened_arrs, least_certain_regions

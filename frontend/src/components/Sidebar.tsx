@@ -186,6 +186,8 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
             {(labelType == "Brush" || labelType == "Erase") && <Card.Body>
                 {labelType} Width
                 <Form.Range onChange={(e) => _setWidth(e)} min="1" max="100" value={brushWidth} />
+                {labelType == "Erase" &&
+                    <Form.Check label="Erase all classes" value={eraseAllTicked} onChange={(e) => _eraseAllChecked(e)}></Form.Check>}
             </Card.Body>}
             {labelType == "Smart Labelling" && <Card.Body style={{ marginTop: '-5px', marginBottom: '-5px' }}>
                 Smart Label Region
@@ -195,9 +197,6 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                         borderColor: _getCSSColour(3 - i, maskIdx, "", labelClass, theme)
                     }}>{size}</Button>)}
                 </ButtonGroup>
-            </Card.Body>}
-            {labelType == "Erase" && <Card.Body>
-                <Form.Check label="Erase all classes" value={eraseAllTicked} onChange={(e) => _eraseAllChecked(e)}></Form.Check>
             </Card.Body>}
         </Card >
     );

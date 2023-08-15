@@ -199,7 +199,7 @@ async def segment_fn(request) -> Response:
     if segment_type == "segment":
         labels_dicts = request.json["labels"]
         n_points, train_all, balance = request.json["n_points"], request.json["train_all"], request.json["balance"]
-        segmentation = await segment(
+        segmentation, least_certain_regions = await segment(
             img_dims,
             labels_dicts,
             UID,
@@ -212,9 +212,10 @@ async def segment_fn(request) -> Response:
             balance
         )
     elif segment_type == "apply":
-        segmentation = await apply(img_dims, UID, save_mode, large_w, large_h, rescale=rescale)
-    response = Response(segmentation.tobytes())
+        segmentation, least_certain_regions = await apply(img_dims, UID, save_mode, large_w, large_h, rescale=rescale)
+    response = Response(least_certain_regions.tobytes() + segmentation.tobytes())
     response.headers.add("Content-Type", "application/octet-stream")
+    response.headers.add("X-Custom-Header", "abc")
     return response
 
 

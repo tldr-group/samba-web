@@ -13,6 +13,7 @@ from skops.io import load as skload
 
 from test_resources.call_weka import sep
 from forest_based import segment_with_features, apply_features_done, EnsembleMethod
+from HITL import find_least_certain_region
 
 try:
     CWD = os.environ["APP_PATH"]
@@ -304,9 +305,14 @@ async def segment(
     remasked_arrs_list: List[np.ndarray] = []
     remasked_flattened_arrs: np.ndarray
     probs, model, score = segment_with_features(label_arrs, UID, n_points=n_points, train_all=train_all, balance_classes=balance)
+    N_imgs = len(probs)
+    # array to store coords of least certain region
+    least_certain_regions = np.zeros((N_imgs * 4), dtype=np.int32) - 1
 
-    for i in range(len(probs)):
+    for i in range(N_imgs):
         label_arr = label_arrs[i]
+        least_certain_region = find_least_certain_region(probs[i])
+        least_certain_regions[4 * i: 4 * (i + 1)] = least_certain_region
         classes = np.argmax(probs[i], axis=0).astype(np.uint8) + 1
         remasked = np.where(label_arr == 0, classes, label_arr).astype(np.uint8)
         remasked_arrs_list.append(remasked)
@@ -318,7 +324,7 @@ async def segment(
     await save_labels(img_dims, labels_dicts, UID, save_mode, large_w, large_h, rescale)
     await _save_classifier(model, CWD, UID)
     print(remasked_flattened_arrs.shape, label_arrs[0].shape)
-    return remasked_flattened_arrs
+    return remasked_flattened_arrs, least_certain_regions
 
 
 async def apply(

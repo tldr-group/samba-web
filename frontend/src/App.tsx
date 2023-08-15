@@ -94,6 +94,7 @@ const App = () => {
     segArrs: [segArrs, setSegArrs],
     labelArrs: [labelArrs, setLabelArrs],
     tensorArrs: [tensorArrs, setTensorArrs],
+    uncertainArrs: [uncertainArrs, setUncertainArrs],
     image: [image, setImage],
     labelArr: [labelArr, setLabelArr],
     segArr: [segArr, setSegArr],
@@ -481,12 +482,29 @@ const App = () => {
     inside of the current image.*/
     const dataView = new DataView(buffer);
     const arrayLength = buffer.byteLength;
+    const nImages = imgArrs.length
+    const initialByteOffset = nImages * 4 * 4 //to account for least certain region coords
 
     let newSegArrs: Array<Uint8ClampedArray> = [];
     let [idx, j, limit]: number[] = [1, 0, imgArrs[0].width * imgArrs[0].height];
     let tempArr = new Uint8ClampedArray(limit).fill(0);
 
-    for (let i = 0; i < arrayLength; i++) {
+    let uncertainCoords: Array<Array<number>> = [];
+    let currentCoords: Array<number> = [];
+    let k = 0;
+    for (let i = 0; i < initialByteOffset; i = i + 4) {
+      const val = dataView.getInt32(i, true);
+      currentCoords.push(val);
+      k += 1;
+      if (k == 4) {
+        k = 0;
+        uncertainCoords.push(currentCoords);
+        currentCoords = [];
+      }
+    }
+    setUncertainArrs(uncertainCoords);
+
+    for (let i = initialByteOffset; i < arrayLength; i++) {
       if (j == limit) {
         j = 0;
         newSegArrs.push(tempArr);

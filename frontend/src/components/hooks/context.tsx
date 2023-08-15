@@ -13,6 +13,7 @@ const AppContextProvider = (props: {
   const [labelArrs, setLabelArrs] = useState<Array<Uint8ClampedArray>>([]);
   const [segArrs, setSegArrs] = useState<Array<Uint8ClampedArray>>([]);
   const [tensorArrs, setTensorArrs] = useState<Array<any | null>>([]);
+  const [uncertainArrs, setUncertainArrs] = useState<Array<Array<number>>>([[]]);
 
   // Current canvas states (i.e things corresponding to currently selected image)
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -60,6 +61,7 @@ const AppContextProvider = (props: {
         labelArrs: [labelArrs, setLabelArrs],
         segArrs: [segArrs, setSegArrs],
         tensorArrs: [tensorArrs, setTensorArrs],
+        uncertainArrs: [uncertainArrs, setUncertainArrs],
 
         image: [image, setImage],
         labelArr: [labelArr, setLabelArr],

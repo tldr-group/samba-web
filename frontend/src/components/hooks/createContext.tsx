@@ -30,6 +30,10 @@ interface contextProps {
     labelArrs: Array<Uint8ClampedArray>,
     setLabelArrs: (e: Array<Uint8ClampedArray>) => void
   ];
+  uncertainArrs: [
+    uncertainArrs: Array<Array<number>>,
+    setUncertainArrs: (e: Array<Array<number>>) => void
+  ]
 
 
   image: [

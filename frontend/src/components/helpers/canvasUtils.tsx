@@ -151,6 +151,21 @@ export const drawRect = (ctx: CanvasRenderingContext2D, p0: Offset, p1: Offset, 
   ctx.fill();
 }
 
+export const drawDashedRect = (ctx: CanvasRenderingContext2D, x0: number, y0: number, dx: number, dy: number, offset: Offset, zoom: number, hex: string) => {
+  const p0 = { x: x0 * dx, y: y0 * dy };
+  const p1 = { x: (x0 + 1) * dx, y: (y0 + 1) * dy };
+  const c0 = getZoomPanCoord(offset, zoom, p0);
+  const c1 = getZoomPanCoord(offset, zoom, p1);
+
+  ctx.strokeStyle = hex;
+  ctx.beginPath();
+  ctx.lineWidth = 5;
+  ctx.setLineDash([5, 8]);
+  ctx.rect(c0.x, c0.y, c1.x - c0.x, c1.y - c0.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
 export const drawPolygon = (ctx: CanvasRenderingContext2D, polygon: Array<Offset>, colour: string, fill: boolean = false) => {
   // Loop through each point in polygon and draw it.
   const p0 = polygon[0];
@@ -253,6 +268,10 @@ export const computeCentreOffset = (image: HTMLImageElement, cx: number, cy: num
   // Get the offset with which to centre our image
   const [iw, ih] = [image.width, image.height];
   return { x: (cx - iw) / 2, y: (cy - ih) / 2 }
+}
+
+const getZoomPanCoord = (offset: Offset, zoom: number, p: Offset) => {
+  return { x: (p.x * zoom) + offset.x, y: (p.y * zoom) + offset.y }
 }
 
 export const computeNewZoomOffset = (currentZoom: number, newZoom: number, mousePos: Offset, currentOffset: Offset) => {

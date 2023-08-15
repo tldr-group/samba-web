@@ -5,7 +5,7 @@ import {
     getctx, transferLabels, addImageDataToArray, clearctx, getxy, getZoomPanXY,
     getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage,
     imageDataToImage, erase, drawErase, drawPolygon, computeNewZoomOffset,
-    computeCentreOffset, drawRect, getCropImg, drawCropCursor
+    computeCentreOffset, drawRect, getCropImg, drawCropCursor, drawDashedRect
 } from "./helpers/canvasUtils"
 import * as _ from "underscore";
 import '../assets/scss/styles.css'
@@ -30,6 +30,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         imgIdx: [imgIdx,],
         imgType: [imgType],
         imgArrs: [, setImgArrs],
+        uncertainArrs: [uncertainArrs,],
         maskImg: [maskImg, setMaskImg],
         clicks: [, setClicks],
         processing: [, setProcessing],
@@ -75,6 +76,8 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
     const clicking = useRef<boolean>(false);
 
     const uniqueLabels = useRef<Set<number>>(new Set()); // used to track when we can press segment 
+
+    const frame = useRef<number>(0);
 
     const updateSAM = () => {
         /* Called when user clicks using SAM labelling: gets natural (image) coordinates of click and 
@@ -378,6 +381,18 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         } else if (labelType === "Crop") {
             drawCropCursor(ctx, mousePos.current);
         }
+
+        // box animation for least certain region post segmentation
+        if (uncertainArrs[imgIdx] != null) {
+            const coords = uncertainArrs[imgIdx]
+            if (coords.length > 1 && coords[0] > -1) {
+                frame.current = (frame.current + 1) % 510; //need to make this loop
+                const alpha = (frame.current > 255) ? 255 - (frame.current % 255) : frame.current
+                const newHex = rgbaToHex(0, 0, 0, alpha);
+                drawDashedRect(ctx, coords[0], coords[1], coords[2], coords[3], cameraOffset.current, zoom.current, newHex);
+            }
+        }
+
         animationRef.current = requestAnimationFrame(animation);
     }
 
@@ -467,6 +482,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         resetLabels();
     }, [labelType]) // clear animated canvas when switching
 
+
     useEffect(() => {
         // Window resize listener
         for (let ref of refs) {
@@ -498,7 +514,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         window.addEventListener('resize', resizeCanvs);
     }, [])
 
-    useEffect(() => { resetAnimation() }, [labelType, brushWidth, labelClass]);
+    useEffect(() => { resetAnimation() }, [labelType, brushWidth, labelClass, uncertainArrs]);
 
     return (
         <div onMouseDown={handleClick}

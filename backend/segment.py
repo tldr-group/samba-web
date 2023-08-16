@@ -13,7 +13,7 @@ from skops.io import load as skload
 
 from test_resources.call_weka import sep
 from forest_based import segment_with_features, apply_features_done, EnsembleMethod
-from HITL import find_least_certain_region
+import matplotlib.cm as cm
 
 try:
     CWD = os.environ["APP_PATH"]
@@ -304,27 +304,29 @@ async def segment(
 
     remasked_arrs_list: List[np.ndarray] = []
     remasked_flattened_arrs: np.ndarray
+    uncertainty_flattened_arrs: np.ndarray
     probs, model, score = segment_with_features(label_arrs, UID, n_points=n_points, train_all=train_all, balance_classes=balance)
     N_imgs = len(probs)
-    # array to store coords of least certain region
-    least_certain_regions = np.zeros((N_imgs * 4), dtype=np.int32) - 1
 
     for i in range(N_imgs):
         label_arr = label_arrs[i]
-        least_certain_region = find_least_certain_region(probs[i])
-        least_certain_regions[4 * i: 4 * (i + 1)] = least_certain_region
+        max_certainty: np.ndarray = np.amax(probs[i], axis=0)
+        uncertainties = 1 - max_certainty
         classes = np.argmax(probs[i], axis=0).astype(np.uint8) + 1
         remasked = np.where(label_arr == 0, classes, label_arr).astype(np.uint8)
         remasked_arrs_list.append(remasked)
         if i == 0:
             remasked_flattened_arrs = remasked.flatten()
+            uncertainty_flattened_arrs = uncertainties.flatten()
         else:
             remasked_flattened_arrs = np.concatenate((remasked_flattened_arrs, remasked.flatten()), axis=0, dtype=np.uint8)
+            uncertainty_flattened_arrs = np.concatenate((uncertainty_flattened_arrs, uncertainties.flatten()))
     await _save_as_tiff(remasked_arrs_list, save_mode, UID, large_w, large_h, score, rescale=rescale)
     await save_labels(img_dims, labels_dicts, UID, save_mode, large_w, large_h, rescale)
     await _save_classifier(model, CWD, UID)
     print(remasked_flattened_arrs.shape, label_arrs[0].shape)
-    return remasked_flattened_arrs, least_certain_regions
+    cmapped_flat = _cmap_uncertainties_return_flat_arr(uncertainty_flattened_arrs)
+    return remasked_flattened_arrs, cmapped_flat #, least_certain_regions
 
 
 async def apply(
@@ -356,16 +358,32 @@ async def apply(
     probs = apply_features_done(model, UID, len(img_dims))
     N_imgs = len(probs)
     # array to store coords of least certain region
-    least_certain_regions = np.zeros((N_imgs * 4), dtype=np.int32) - 1
+    #least_certain_regions = np.zeros((N_imgs * 4), dtype=np.int32) - 1
 
     arrs_list: List[np.ndarray] = []
     flattened_arrs: np.ndarray
+    uncertainty_flattened_arrs: np.ndarray
     for i in range(len(img_dims)):
+        max_certainty: np.ndarray = np.amax(probs[i], axis=0)
+        uncertainties = 1 - max_certainty
         classes = np.argmax(probs[i], axis=0).astype(np.uint8) + 1
         arrs_list.append(classes)
         if i == 0:
             flattened_arrs = classes.flatten()
+            uncertainty_flattened_arrs = uncertainties.flatten()
         else:
             flattened_arrs = np.concatenate((flattened_arrs, classes.flatten()), axis=0, dtype=np.uint8)
+            uncertainty_flattened_arrs = np.concatenate((uncertainty_flattened_arrs, uncertainties.flatten()))
     await _save_as_tiff(arrs_list, save_mode, UID, large_w, large_h, rescale=rescale)
-    return flattened_arrs, least_certain_regions
+    cmapped_flat = _cmap_uncertainties_return_flat_arr(uncertainty_flattened_arrs)
+    return flattened_arrs, cmapped_flat #, least_certain_regions
+
+
+def _cmap_uncertainties_return_flat_arr(uncertainties: np.ndarray) -> np.ndarray:
+    cmap = cm.get_cmap('plasma')
+    cmapped: np.ndarray = cmap(uncertainties)
+    
+    sliced = cmapped[:, :3] # ignore alpha channel
+    scaled = (sliced * 255).astype(np.uint8)
+    print(cmapped.shape, np.amax(scaled), sliced.shape)
+    return scaled.flatten()

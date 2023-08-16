@@ -52,6 +52,25 @@ export function arrayToImageData(input: any, width: number, height: number,
   return new ImageData(arr, height, width);
 }
 
+export function RGBtoImageData(input: Uint8ClampedArray, width: number, height: number, opacity = 0): ImageData {
+  const arr = new Uint8ClampedArray(4 * width * height).fill(0);
+  for (let i = 0; i < width * height; i++) {
+    let [r, g, b, a] = [0, 0, 0, 0]
+    if (!isPixelSet([input[3 * i], input[3 * i + 1], input[3 * i + 2]])) {
+      [r, g, b, a] = [255, 255, 255, 0]
+    }
+    else {
+      [r, g, b, a] = [input[3 * i], input[3 * i + 1], input[3 * i + 2], opacity]
+    }
+    arr[4 * i] = r;
+    arr[4 * i + 1] = g;
+    arr[4 * i + 2] = b;
+    arr[4 * i + 3] = a;
+  }
+  // check this later: is it right way around
+  return new ImageData(arr, height, width)
+}
+
 function isPixelSet(p: number[]) { return (p[0] > 0 || p[1] > 0 || p[2] > 0) }
 
 export function addImageDataToArray(imageData: ImageData, arr: Uint8ClampedArray, classVal: number, erase: boolean = false): Uint8ClampedArray {
@@ -163,7 +182,9 @@ export const drawDashedRect = (ctx: CanvasRenderingContext2D, x0: number, y0: nu
   ctx.setLineDash([5, 8]);
   ctx.rect(c0.x, c0.y, c1.x - c0.x, c1.y - c0.y);
   ctx.stroke();
+  // reset line parameters s.t overlays look the same
   ctx.setLineDash([]);
+  ctx.lineWidth = 1;
 }
 
 export const drawPolygon = (ctx: CanvasRenderingContext2D, polygon: Array<Offset>, colour: string, fill: boolean = false) => {

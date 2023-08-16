@@ -207,6 +207,7 @@ const OverlaysFrame = () => {
         overlayType: [overlayType, setOverlayType],
         segOpacity: [, setSegOpacity],
         labelOpacity: [, setLabelOpacity],
+        uncertaintyOpacity: [, setUncertaintyOpacity],
         theme: [theme,],
     } = useContext(AppContext)!;
     // Throttled to avoid over rendering and slowing down too much
@@ -215,6 +216,8 @@ const OverlaysFrame = () => {
             setLabelOpacity(e.target.value);
         } else if (overlayType == "Segmentation") {
             setSegOpacity(e.target.value);
+        } else if (overlayType == "Uncertainty") {
+            setUncertaintyOpacity(e.target.value);
         }
     }, 13);
     const _setOverlayType = (val: string) => {
@@ -222,6 +225,8 @@ const OverlaysFrame = () => {
             setOverlayType("Segmentation");
         } else if (val == "Label") {
             setOverlayType("Label");
+        } else if (val == "Uncertainty") {
+            setOverlayType("Uncertainty");
         };
     };
 
@@ -233,6 +238,7 @@ const OverlaysFrame = () => {
                     <option value="None" >Overlay type</option>
                     <option value="Segmentation">Segmentation</option>
                     <option value="Label">Labels</option>
+                    <option value="Uncertainty">Uncertainty</option>
                 </Form.Select>
             </Card.Body>
             <Card.Body style={{ marginTop: '-5px', marginBottom: '-5px' }}>

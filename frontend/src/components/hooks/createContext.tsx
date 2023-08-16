@@ -31,9 +31,9 @@ interface contextProps {
     setLabelArrs: (e: Array<Uint8ClampedArray>) => void
   ];
   uncertainArrs: [
-    uncertainArrs: Array<Array<number>>,
-    setUncertainArrs: (e: Array<Array<number>>) => void
-  ]
+    uncertainArrs: Array<Uint8ClampedArray>,
+    setUncertainArrs: (e: Array<Uint8ClampedArray>) => void
+  ];
 
 
   image: [
@@ -47,6 +47,10 @@ interface contextProps {
   segArr: [
     segArr: Uint8ClampedArray,
     setSegArr: (e: Uint8ClampedArray) => void
+  ];
+  uncertainArr: [
+    uncertainArr: Uint8ClampedArray,
+    setUncertainArr: (e: Uint8ClampedArray) => void
   ];
 
 
@@ -73,14 +77,18 @@ interface contextProps {
 
 
   overlayType: [
-    overlayType: "Segmentation" | "Label" | "None",
-    setOverlayType: (e: "Segmentation" | "Label" | "None") => void
+    overlayType: "Segmentation" | "Label" | "Uncertainty" | "None",
+    setOverlayType: (e: "Segmentation" | "Label" | "Uncertainty" | "None") => void
   ];
   labelOpacity: [
     labelOpacity: number,
     setLabelOpacity: (e: number) => void
   ];
   segOpacity: [
+    segOpacity: number,
+    setSegOpacity: (e: number) => void
+  ];
+  uncertaintyOpacity: [
     segOpacity: number,
     setSegOpacity: (e: number) => void
   ];

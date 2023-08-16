@@ -5,7 +5,8 @@ import {
     getctx, transferLabels, addImageDataToArray, clearctx, getxy, getZoomPanXY,
     getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage,
     imageDataToImage, erase, drawErase, drawPolygon, computeNewZoomOffset,
-    computeCentreOffset, drawRect, getCropImg, drawCropCursor, drawDashedRect
+    computeCentreOffset, drawRect, getCropImg, drawCropCursor, drawDashedRect,
+    RGBtoImageData
 } from "./helpers/canvasUtils"
 import * as _ from "underscore";
 import '../assets/scss/styles.css'
@@ -38,9 +39,11 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         labelClass: [labelClass, setLabelClass],
         labelArr: [labelArr, setLabelArr],
         segArr: [segArr, setSegArr],
+        uncertainArr: [uncertainArr, setUncertainArr],
         brushWidth: [brushWidth],
         overlayType: [overlayType, setOverlayType],
         labelOpacity: [labelOpacity, setLabelOpacity],
+        uncertaintyOpacity: [uncertaintyOpacity,],
         segOpacity: [segOpacity, setSegOpacity],
         maskIdx: [maskIdx, setMaskIdx],
         errorObject: [, setErrorObject],
@@ -49,6 +52,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
     // We use references here because we don't want to re-render every time these change (they do that already as they're canvases!)
     const imgCanvasRef = useRef<HTMLCanvasElement>(null);
     const segCanvasRef = useRef<HTMLCanvasElement>(null);
+    const uncertainCanvasRef = useRef<HTMLCanvasElement>(null);
     const labelCanvasRef = useRef<HTMLCanvasElement>(null);
     const animatedOverlayRef = useRef<HTMLCanvasElement>(null);
     const animatedCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -67,11 +71,12 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
 
     const [labelImg, setLabelImg] = useState<HTMLImageElement | null>(null);
     const [segImg, setSegImg] = useState<HTMLImageElement | null>(null);
+    const [uncertainImg, setUncertainImg] = useState<HTMLImageElement | null>(null);
 
     // Our images - when we update them their corresponding canvas changes. 
-    const groundTruths = [image, segImg, labelImg, maskImg];
+    const groundTruths = [image, segImg, labelImg, uncertainImg, maskImg];
     // Our canvases - updated when our images update but also can update them (i.e when drawing labels.)
-    const refs = [imgCanvasRef, segCanvasRef, labelCanvasRef, animatedCanvasRef, animatedOverlayRef];
+    const refs = [imgCanvasRef, segCanvasRef, labelCanvasRef, uncertainCanvasRef, animatedCanvasRef, animatedOverlayRef];
     // Track mouse state (for drag drawing)
     const clicking = useRef<boolean>(false);
 
@@ -433,11 +438,11 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
 
     const drawImgOnUpdate = (firefox) ? asyncImgDraw : instantImgDraw
 
-    const updateImgOnArr = (arr: Uint8ClampedArray, img: HTMLImageElement | null, opacity: number, setterFn: any) => {
+    const updateImgOnArr = (arr: Uint8ClampedArray, img: HTMLImageElement | null, opacity: number, setterFn: any, uncertain: boolean = false) => {
         /* 'Polymorphic' function used in listeners to set the image on the canvas when the corresponding array 
         is changed (i.e when a label is added) */
         if (img === null) { return; }
-        const newImageData = arrayToImageData(arr, img.height, img.width, 0, null, opacity);
+        const newImageData = (uncertain) ? RGBtoImageData(arr, img.height, img.width, opacity) : arrayToImageData(arr, img.height, img.width, 0, null, opacity);
         const newImage = imageDataToImage(newImageData);
         setterFn(newImage);
     }
@@ -471,12 +476,20 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
     }, [segArr, segOpacity])
 
     useEffect(() => {
+        updateImgOnArr(uncertainArr, image, uncertaintyOpacity, setUncertainImg, true);
+    }, [uncertainArr, uncertaintyOpacity])
+
+    useEffect(() => {
         drawImgOnUpdate(labelCanvasRef, labelImg);
     }, [labelImg])
 
     useEffect(() => {
         drawImgOnUpdate(segCanvasRef, segImg);
     }, [segImg])
+
+    useEffect(() => {
+        drawImgOnUpdate(uncertainCanvasRef, uncertainImg);
+    }, [uncertainImg])
 
     useEffect(() => {
         resetLabels();

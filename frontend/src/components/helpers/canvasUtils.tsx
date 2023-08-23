@@ -57,7 +57,7 @@ export function GreyscaleToImageData(input: Uint8ClampedArray, width: number, he
 
   let total = 0
   for (let i = 0; i < width * height; i++) {
-    let [r, g, b, a] = [0, 0, 0, 1]
+    let [r, g, b, a] = [255, 255, 255, 1]
     a = Math.abs(255 - input[i])
     arr[4 * i] = r;
     arr[4 * i + 1] = g;

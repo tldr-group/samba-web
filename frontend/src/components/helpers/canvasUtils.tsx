@@ -52,21 +52,20 @@ export function arrayToImageData(input: any, width: number, height: number,
   return new ImageData(arr, height, width);
 }
 
-export function RGBtoImageData(input: Uint8ClampedArray, width: number, height: number, opacity = 0): ImageData {
+export function GreyscaleToImageData(input: Uint8ClampedArray, width: number, height: number, opacity = 0): ImageData {
   const arr = new Uint8ClampedArray(4 * width * height).fill(0);
+
+  let total = 0
   for (let i = 0; i < width * height; i++) {
-    let [r, g, b, a] = [0, 0, 0, 0]
-    if (!isPixelSet([input[3 * i], input[3 * i + 1], input[3 * i + 2]])) {
-      [r, g, b, a] = [255, 255, 255, 0]
-    }
-    else {
-      [r, g, b, a] = [input[3 * i], input[3 * i + 1], input[3 * i + 2], opacity]
-    }
-    arr[4 * i] = r;
-    arr[4 * i + 1] = g;
-    arr[4 * i + 2] = b;
+    let [r, g, b, a] = [0, 0, 0, 255]
+    a = Math.abs(255 - input[i])
+    arr[4 * i] = a;
+    arr[4 * i + 1] = a;
+    arr[4 * i + 2] = a;
     arr[4 * i + 3] = a;
+    total += input[i]
   }
+  console.log(input.length, total / input.length)
   // check this later: is it right way around
   return new ImageData(arr, height, width)
 }
@@ -288,7 +287,9 @@ export const getZoomPanXY = (canvX: number, canvY: number, ctx: CanvasRenderingC
 export const computeCentreOffset = (image: HTMLImageElement, cx: number, cy: number): Offset => {
   // Get the offset with which to centre our image
   const [iw, ih] = [image.width, image.height];
-  return { x: (cx - iw) / 2, y: (cy - ih) / 2 }
+  const set_x = Math.min((cx - iw) / 2, 0)
+  const set_y = Math.min((cy - ih) / 2, 0)
+  return { x: set_x, y: set_y }
 }
 
 const getZoomPanCoord = (offset: Offset, zoom: number, p: Offset) => {

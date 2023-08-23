@@ -206,7 +206,7 @@ const App = () => {
           img.height = height;
           const tempLabelArr = new Uint8ClampedArray(width * height).fill(0);
           const tempSegArr = new Uint8ClampedArray(width * height).fill(0);
-          const tempUncertainArr = new Uint8ClampedArray(3 * width * height).fill(0);
+          const tempUncertainArr = new Uint8ClampedArray(width * height).fill(255);
           imgs.push(img);
           nullLabels.push(tempLabelArr);
           nullSegs.push(tempSegArr);
@@ -493,29 +493,31 @@ const App = () => {
     const nImages = imgArrs.length
 
     let newUncertainArrs: Array<Uint8ClampedArray> = [];
-    let [idx, j, limit]: number[] = [0, 0, 3 * imgArrs[0].width * imgArrs[0].height];
-    let tempArr = new Uint8ClampedArray(limit).fill(0);
+    let [idx, j, limit]: number[] = [1, 0, imgArrs[0].width * imgArrs[0].height];
+    let tempArr = new Uint8ClampedArray(limit).fill(254);
 
-    let b = 0
-    while (idx < imgArrs.length) {
+    /*
+    console.log(arrayLength / 2)
+    for (let i = 0; i < arrayLength / 2; i++) {
       if (j == limit) {
         j = 0;
         newUncertainArrs.push(tempArr);
         if (idx < imgArrs.length) {
-          limit = 3 * imgArrs[idx].width * imgArrs[idx].height;
-          tempArr = new Uint8ClampedArray(limit).fill(0);
+          limit = imgArrs[idx].width * imgArrs[idx].height;
+          tempArr = new Uint8ClampedArray(limit).fill(254);
           idx += 1;
         }
       }
-      tempArr[j] = dataView.getUint8(b);
+      tempArr[j] = dataView.getUint8(i);
       j += 1;
-      b += 1
     }
     newUncertainArrs.push(tempArr);
+    */
+
 
     let newSegArrs: Array<Uint8ClampedArray> = [];
     [idx, j, limit] = [1, 0, imgArrs[0].width * imgArrs[0].height];
-    for (let i = b; i < arrayLength; i++) {
+    for (let i = arrayLength / 2; i < arrayLength; i++) {
       if (j == limit) {
         j = 0;
         newSegArrs.push(tempArr);
@@ -689,7 +691,7 @@ const App = () => {
 
   useEffect(() => {
     if (uncertainArrs.length === 0) { return; }
-    console.log('un set')
+    console.log('uncertainty set')
     setUncertainArr(uncertainArrs[imgIdx]);
   }, [uncertainArrs])
 

@@ -6,7 +6,7 @@ import {
     getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage,
     imageDataToImage, erase, drawErase, drawPolygon, computeNewZoomOffset,
     computeCentreOffset, drawRect, getCropImg, drawCropCursor, drawDashedRect,
-    RGBtoImageData
+    GreyscaleToImageData
 } from "./helpers/canvasUtils"
 import * as _ from "underscore";
 import '../assets/scss/styles.css'
@@ -275,9 +275,31 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         const newOffset = computeNewZoomOffset(zoom.current, newZoom, mousePos.current, cameraOffset.current);
         drawAllCanvases(newZoom, newOffset); //cameraOffset.current
         resetLabels();
+        console.log(newZoom);
         zoom.current = newZoom;
-        cameraOffset.current = newOffset;
+        setOffset(newOffset, newZoom)
+        //cameraOffset.current = newOffset;
     };
+
+    const setOffset = (setOffset: Offset, newZoom: number) => {
+        if (image === null) { return }
+        const iw = image.width
+        const ih = image.height
+        const max_x = 0;
+        const max_y = 0;
+        const min_x = iw - newZoom * iw;
+        const min_y = ih - newZoom * ih;
+
+        const ub_x = Math.min(setOffset.x, max_x)
+        const ub_lb_x = Math.max(ub_x, min_x)
+        const ub_y = Math.min(setOffset.y, max_y)
+        const ub_lb_y = Math.max(ub_y, min_y)
+        const newOffset = { x: ub_lb_x, y: ub_lb_y }
+
+        resetLabels();
+        drawAllCanvases(newZoom, newOffset);
+        cameraOffset.current = newOffset;
+    }
 
     const handleKeyPress = (e: any) => {
         // Keypresses are either: setting class, cancelling, changing visibility or panning
@@ -316,32 +338,22 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
 
     const handlePanKey = (e: any) => {
         // Move image around with arrow keys
-        let redraw = false;
         let newOffset: Offset;
         const c = cameraOffset.current;
         const delta = PAN_OFFSET / zoom.current;
         if (e.key == "w" || e.key == "ArrowUp") {
             newOffset = { x: c.x, y: c.y - delta };
-            redraw = true;
         }
         else if (e.key == "s" || e.key == "ArrowDown") {
             newOffset = { x: c.x, y: c.y + delta };
-            redraw = true;
         } else if (e.key == "a" || e.key == "ArrowLeft") {
             newOffset = { x: c.x - delta, y: c.y };
-            redraw = true;
         } else if (e.key == "d" || e.key == "ArrowRight") {
             newOffset = { x: c.x + delta, y: c.y };
-            redraw = true;
         } else {
             newOffset = c;
         }
-
-        if (redraw) {
-            resetLabels();
-            drawAllCanvases(zoom.current, newOffset);
-            cameraOffset.current = newOffset;
-        }
+        setOffset(newOffset, zoom.current)
     }
 
     const resetLabels = () => {
@@ -387,6 +399,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
             drawCropCursor(ctx, mousePos.current);
         }
 
+        /*
         // box animation for least certain region post segmentation
         if (uncertainArrs[imgIdx] != null) {
             const coords = uncertainArrs[imgIdx]
@@ -397,6 +410,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
                 drawDashedRect(ctx, coords[0], coords[1], coords[2], coords[3], cameraOffset.current, zoom.current, newHex);
             }
         }
+        */
 
         animationRef.current = requestAnimationFrame(animation);
     }
@@ -442,7 +456,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         /* 'Polymorphic' function used in listeners to set the image on the canvas when the corresponding array 
         is changed (i.e when a label is added) */
         if (img === null) { return; }
-        const newImageData = (uncertain) ? RGBtoImageData(arr, img.height, img.width, opacity) : arrayToImageData(arr, img.height, img.width, 0, null, opacity);
+        const newImageData = (uncertain) ? GreyscaleToImageData(arr, img.height, img.width, opacity) : arrayToImageData(arr, img.height, img.width, 0, null, opacity);
         const newImage = imageDataToImage(newImageData);
         setterFn(newImage);
     }

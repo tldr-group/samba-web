@@ -162,7 +162,6 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
             const tempLabelArr = new Uint8ClampedArray(newImg.width * newImg.height).fill(0);
             const tempSegArr = new Uint8ClampedArray(newImg.width * newImg.height).fill(0);
             const newOffset = computeCentreOffset(newImg, ctx.canvas.width, ctx.canvas.height)
-            console.log(cameraOffset.current, newOffset)
             cameraOffset.current = newOffset
             updateAll([newImg], [tempLabelArr], [tempSegArr], [null]);
             setLabelArr(tempLabelArr);
@@ -226,7 +225,6 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
             } catch (e) {
                 const error = e as Error;
                 setErrorObject({ msg: "Failed to crop", stackTrace: error.toString() });
-                console.log(e);
             }
 
         }
@@ -269,32 +267,35 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         const speed = (zoom.current < 1) ? SCROLL_SPEED * zoom.current : SCROLL_SPEED;
         let newZoom = zoom.current + delta * speed;
         newZoom = Math.min(newZoom, MAX_ZOOM);
-        console.log(minZoom.current)
         newZoom = Math.max(newZoom, minZoom.current);
         if (image === null) { return }
         const newOffset = computeNewZoomOffset(zoom.current, newZoom, mousePos.current, cameraOffset.current);
         drawAllCanvases(newZoom, newOffset); //cameraOffset.current
         resetLabels();
-        console.log(newZoom);
         zoom.current = newZoom;
-        setOffset(newOffset, newZoom)
+        setOffset(newOffset, newZoom);
         //cameraOffset.current = newOffset;
     };
 
     const setOffset = (setOffset: Offset, newZoom: number) => {
-        if (image === null) { return }
+        const ctx = getctx(imgCanvasRef);
+        if (image === null || ctx === null) { return }
+        const cw = ctx.canvas.width
+        const ch = ctx.canvas.height
         const iw = image.width
         const ih = image.height
         const max_x = 0;
         const max_y = 0;
-        const min_x = iw - newZoom * iw;
-        const min_y = ih - newZoom * ih;
+        const min_x = cw - newZoom * iw;
+        const min_y = ch - newZoom * ih;
+        //console.log(max_x, max_y, min_x, min_y)
 
         const ub_x = Math.min(setOffset.x, max_x)
         const ub_lb_x = Math.max(ub_x, min_x)
         const ub_y = Math.min(setOffset.y, max_y)
         const ub_lb_y = Math.max(ub_y, min_y)
         const newOffset = { x: ub_lb_x, y: ub_lb_y }
+        //console.log(newOffset)
 
         resetLabels();
         drawAllCanvases(newZoom, newOffset);
@@ -305,7 +306,6 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         // Keypresses are either: setting class, cancelling, changing visibility or panning
         if (e.key >= '0' && e.key <= '6') {
             // Perform desired actions for number key press
-            console.log('Number key pressed:', e.key);
             setLabelClass(parseInt(e.key));
             if (labelType === "Smart Labelling") {
                 updateSAM();
@@ -521,7 +521,6 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         }
         if (image === null) { return }
         const centreOffset = computeCentreOffset(image, canvSize.x, canvSize.y);
-        console.log(centreOffset);
         cameraOffset.current = centreOffset;
         minZoom.current = image.width / canvSize.x
         drawAllCanvases(zoom.current, centreOffset);

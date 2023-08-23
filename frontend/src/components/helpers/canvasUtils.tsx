@@ -57,15 +57,14 @@ export function GreyscaleToImageData(input: Uint8ClampedArray, width: number, he
 
   let total = 0
   for (let i = 0; i < width * height; i++) {
-    let [r, g, b, a] = [0, 0, 0, 255]
+    let [r, g, b, a] = [0, 0, 0, 1]
     a = Math.abs(255 - input[i])
-    arr[4 * i] = a;
-    arr[4 * i + 1] = a;
-    arr[4 * i + 2] = a;
-    arr[4 * i + 3] = a;
+    arr[4 * i] = r;
+    arr[4 * i + 1] = g;
+    arr[4 * i + 2] = b;
+    arr[4 * i + 3] = a * (opacity / 255);
     total += input[i]
   }
-  console.log(input.length, total / input.length)
   // check this later: is it right way around
   return new ImageData(arr, height, width)
 }

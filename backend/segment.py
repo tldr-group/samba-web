@@ -312,7 +312,7 @@ async def segment(
         label_arr = label_arrs[i]
         max_certainty: np.ndarray = np.amax(probs[i], axis=0)
         uncertainties = 1 - max_certainty
-        uncertainties = (_norm(uncertainties)* 255).astype(np.uint8)
+        uncertainties = (np.rint(_norm(uncertainties)* 255)).astype(np.uint8)
         classes = np.argmax(probs[i], axis=0).astype(np.uint8) + 1
         remasked = np.where(label_arr == 0, classes, label_arr).astype(np.uint8)
         remasked_arrs_list.append(remasked)
@@ -327,7 +327,7 @@ async def segment(
     await _save_classifier(model, CWD, UID)
     #print(remasked_flattened_arrs.shape, label_arrs[0].shape)
     #cmapped_flat = _cmap_uncertainties_return_flat_arr(uncertainty_flattened_arrs)
-    print(np.amax(uncertainty_flattened_arrs), np.mean(uncertainty_flattened_arrs), np.median(uncertainty_flattened_arrs))
+    print(np.amax(uncertainty_flattened_arrs), np.mean(uncertainty_flattened_arrs), np.median(uncertainty_flattened_arrs), np.mean(remasked_flattened_arrs))
     print(remasked_flattened_arrs.shape, uncertainty_flattened_arrs.shape)
     return remasked_flattened_arrs, uncertainty_flattened_arrs #, least_certain_regions
 

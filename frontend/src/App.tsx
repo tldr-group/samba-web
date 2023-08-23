@@ -494,27 +494,26 @@ const App = () => {
 
     let newUncertainArrs: Array<Uint8ClampedArray> = [];
     let [idx, j, limit]: number[] = [1, 0, imgArrs[0].width * imgArrs[0].height];
-    let tempArr = new Uint8ClampedArray(limit).fill(254);
+    let tempUncertainArr = new Uint8ClampedArray(limit).fill(0);
 
-    /*
+
     console.log(arrayLength / 2)
     for (let i = 0; i < arrayLength / 2; i++) {
       if (j == limit) {
         j = 0;
-        newUncertainArrs.push(tempArr);
+        newUncertainArrs.push(tempUncertainArr);
         if (idx < imgArrs.length) {
           limit = imgArrs[idx].width * imgArrs[idx].height;
-          tempArr = new Uint8ClampedArray(limit).fill(254);
+          tempUncertainArr = new Uint8ClampedArray(limit).fill(254);
           idx += 1;
         }
       }
-      tempArr[j] = dataView.getUint8(i);
+      tempUncertainArr[j] = dataView.getUint8(i);
       j += 1;
     }
-    newUncertainArrs.push(tempArr);
-    */
+    newUncertainArrs.push(tempUncertainArr);
 
-
+    let tempArr = new Uint8ClampedArray(limit).fill(0);
     let newSegArrs: Array<Uint8ClampedArray> = [];
     [idx, j, limit] = [1, 0, imgArrs[0].width * imgArrs[0].height];
     for (let i = arrayLength / 2; i < arrayLength; i++) {

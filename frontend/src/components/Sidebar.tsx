@@ -204,6 +204,7 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
 
 const OverlaysFrame = () => {
     const {
+        segArr: [segArr,],
         overlayType: [overlayType, setOverlayType],
         segOpacity: [, setSegOpacity],
         labelOpacity: [, setLabelOpacity],
@@ -229,6 +230,9 @@ const OverlaysFrame = () => {
             setOverlayType("Uncertainty");
         };
     };
+    const maxUncertainty = () => {
+        setUncertaintyOpacity(255)
+    }
 
     return (
         <Card className="text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }} bg={themeBGs[theme][0]}>
@@ -244,8 +248,13 @@ const OverlaysFrame = () => {
             <Card.Body style={{ marginTop: '-5px', marginBottom: '-5px' }}>
                 Opacity
                 <Form.Range onChange={e => changeOpacity(e)} min="0" max="255" />
+                {
+                    (segArr[0] > 0) &&
+                    <Button variant="light" style={{ marginLeft: '8%' }} onClick={maxUncertainty}> Show Uncertain Regions!</Button>
+                }
             </Card.Body>
-        </Card>
+
+        </Card >
     );
 }
 

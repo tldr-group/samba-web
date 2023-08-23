@@ -43,7 +43,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         brushWidth: [brushWidth],
         overlayType: [overlayType, setOverlayType],
         labelOpacity: [labelOpacity, setLabelOpacity],
-        uncertaintyOpacity: [uncertaintyOpacity,],
+        uncertaintyOpacity: [uncertaintyOpacity, setUncertaintyOpacity],
         segOpacity: [segOpacity, setSegOpacity],
         maskIdx: [maskIdx, setMaskIdx],
         errorObject: [, setErrorObject],
@@ -399,6 +399,10 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
             drawCropCursor(ctx, mousePos.current);
         }
 
+        if (uncertaintyOpacity > 0.05 * 255) {
+            const newOpacity = uncertaintyOpacity - 6
+            setUncertaintyOpacity(newOpacity)
+        }
         /*
         // box animation for least certain region post segmentation
         if (uncertainArrs[imgIdx] != null) {
@@ -540,7 +544,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         window.addEventListener('resize', resizeCanvs);
     }, [])
 
-    useEffect(() => { resetAnimation() }, [labelType, brushWidth, labelClass, uncertainArrs]);
+    useEffect(() => { resetAnimation() }, [labelType, brushWidth, labelClass, uncertaintyOpacity]);
 
     return (
         <div onMouseDown={handleClick}

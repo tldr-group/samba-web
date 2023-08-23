@@ -19,7 +19,7 @@ const AppContextProvider = (props: {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   // this why not work - should be null
   const [labelArr, setLabelArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(1));
-  const [segArr, setSegArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(1));
+  const [segArr, setSegArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(0));
   const [uncertainArr, setUncertainArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(1));
 
   // Labelling stuff

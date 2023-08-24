@@ -400,7 +400,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         }
 
         if (uncertaintyOpacity > 0.05 * 255) {
-            const newOpacity = uncertaintyOpacity - 6
+            const newOpacity = uncertaintyOpacity - 4
             setUncertaintyOpacity(newOpacity)
         }
         /*

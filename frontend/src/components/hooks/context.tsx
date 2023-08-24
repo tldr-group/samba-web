@@ -13,12 +13,14 @@ const AppContextProvider = (props: {
   const [labelArrs, setLabelArrs] = useState<Array<Uint8ClampedArray>>([]);
   const [segArrs, setSegArrs] = useState<Array<Uint8ClampedArray>>([]);
   const [tensorArrs, setTensorArrs] = useState<Array<any | null>>([]);
+  const [uncertainArrs, setUncertainArrs] = useState<Array<Uint8ClampedArray>>([]);
 
   // Current canvas states (i.e things corresponding to currently selected image)
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   // this why not work - should be null
   const [labelArr, setLabelArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(1));
-  const [segArr, setSegArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(1));
+  const [segArr, setSegArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(0));
+  const [uncertainArr, setUncertainArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(1));
 
   // Labelling stuff
   const [clicks, setClicks] = useState<Array<modelInputProps> | null>(null);
@@ -29,9 +31,10 @@ const AppContextProvider = (props: {
   const [brushWidth, setBrushWidth] = useState<number>(20);
 
   // Canvas display stuff
-  const [overlayType, setOverlayType] = useState<"Segmentation" | "Label" | "None">("None");
+  const [overlayType, setOverlayType] = useState<"Segmentation" | "Label" | "Uncertainty" | "None">("None");
   const [labelOpacity, setLabelOpacity] = useState<number>(0.6 * 255);
   const [segOpacity, setSegOpacity] = useState<number>(0.9 * 255);
+  const [uncertaintyOpacity, setUncertaintyOpacity] = useState<number>(0);
   const [processing, setProcessing] = useState<"None" | "Encoding" | "Segmenting" | "Applying" | "Inactive">("Inactive");
 
   // Segment Feature stuff
@@ -60,10 +63,12 @@ const AppContextProvider = (props: {
         labelArrs: [labelArrs, setLabelArrs],
         segArrs: [segArrs, setSegArrs],
         tensorArrs: [tensorArrs, setTensorArrs],
+        uncertainArrs: [uncertainArrs, setUncertainArrs],
 
         image: [image, setImage],
         labelArr: [labelArr, setLabelArr],
         segArr: [segArr, setSegArr],
+        uncertainArr: [uncertainArr, setUncertainArr],
 
         clicks: [clicks, setClicks],
         maskImg: [maskImg, setMaskImg],
@@ -75,6 +80,7 @@ const AppContextProvider = (props: {
         overlayType: [overlayType, setOverlayType],
         labelOpacity: [labelOpacity, setLabelOpacity],
         segOpacity: [segOpacity, setSegOpacity],
+        uncertaintyOpacity: [uncertaintyOpacity, setUncertaintyOpacity],
         processing: [processing, setProcessing],
 
         features: [features, setFeatures],

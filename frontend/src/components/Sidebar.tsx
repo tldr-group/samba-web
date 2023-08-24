@@ -186,6 +186,8 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
             {(labelType == "Brush" || labelType == "Erase") && <Card.Body>
                 {labelType} Width
                 <Form.Range onChange={(e) => _setWidth(e)} min="1" max="100" value={brushWidth} />
+                {labelType == "Erase" &&
+                    <Form.Check label="Erase all classes" value={eraseAllTicked} onChange={(e) => _eraseAllChecked(e)}></Form.Check>}
             </Card.Body>}
             {labelType == "Smart Labelling" && <Card.Body style={{ marginTop: '-5px', marginBottom: '-5px' }}>
                 Smart Label Region
@@ -196,18 +198,17 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                     }}>{size}</Button>)}
                 </ButtonGroup>
             </Card.Body>}
-            {labelType == "Erase" && <Card.Body>
-                <Form.Check label="Erase all classes" value={eraseAllTicked} onChange={(e) => _eraseAllChecked(e)}></Form.Check>
-            </Card.Body>}
         </Card >
     );
 }
 
 const OverlaysFrame = () => {
     const {
+        segArr: [segArr,],
         overlayType: [overlayType, setOverlayType],
         segOpacity: [, setSegOpacity],
         labelOpacity: [, setLabelOpacity],
+        uncertaintyOpacity: [, setUncertaintyOpacity],
         theme: [theme,],
     } = useContext(AppContext)!;
     // Throttled to avoid over rendering and slowing down too much
@@ -216,6 +217,8 @@ const OverlaysFrame = () => {
             setLabelOpacity(e.target.value);
         } else if (overlayType == "Segmentation") {
             setSegOpacity(e.target.value);
+        } else if (overlayType == "Uncertainty") {
+            setUncertaintyOpacity(e.target.value);
         }
     }, 13);
     const _setOverlayType = (val: string) => {
@@ -223,8 +226,13 @@ const OverlaysFrame = () => {
             setOverlayType("Segmentation");
         } else if (val == "Label") {
             setOverlayType("Label");
+        } else if (val == "Uncertainty") {
+            setOverlayType("Uncertainty");
         };
     };
+    const maxUncertainty = () => {
+        setUncertaintyOpacity(255)
+    }
 
     return (
         <Card className="text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }} bg={themeBGs[theme][0]}>
@@ -234,13 +242,19 @@ const OverlaysFrame = () => {
                     <option value="None" >Overlay type</option>
                     <option value="Segmentation">Segmentation</option>
                     <option value="Label">Labels</option>
+                    <option value="Uncertainty">Uncertainty</option>
                 </Form.Select>
             </Card.Body>
             <Card.Body style={{ marginTop: '-5px', marginBottom: '-5px' }}>
                 Opacity
                 <Form.Range onChange={e => changeOpacity(e)} min="0" max="255" />
+                {
+                    (segArr[0] > 0) &&
+                    <Button variant="light" style={{ marginLeft: '8%' }} onClick={maxUncertainty}> Show Uncertain Regions!</Button>
+                }
             </Card.Body>
-        </Card>
+
+        </Card >
     );
 }
 

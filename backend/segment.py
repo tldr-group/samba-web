@@ -13,6 +13,7 @@ from skops.io import load as skload
 
 from test_resources.call_weka import sep
 from forest_based import segment_with_features, apply_features_done, EnsembleMethod
+import matplotlib.cm as cm
 
 try:
     CWD = os.environ["APP_PATH"]
@@ -263,7 +264,7 @@ async def segment(
     train_all: bool = True,
     rescale: bool = True,
     balance: bool = True,
-) -> np.ndarray:
+) -> Tuple[np.ndarray, np.ndarray]:
     """Perform FRF segmentation.
 
     Given list of label dicts, convert to arr, reshape to be same as corresponding image. Once
@@ -302,23 +303,33 @@ async def segment(
         label_arrs.append(label_arr)
 
     remasked_arrs_list: List[np.ndarray] = []
-    remasked_flattened_arrs: np.ndarray
+    remasked_flattened_arrs: np.ndarray = np.array([])
+    uncertainty_flattened_arrs: np.ndarray = np.array([])
     probs, model, score = segment_with_features(label_arrs, UID, n_points=n_points, train_all=train_all, balance_classes=balance)
+    N_imgs = len(probs)
 
-    for i in range(len(probs)):
+    for i in range(N_imgs):
         label_arr = label_arrs[i]
+        max_certainty: np.ndarray = np.amax(probs[i], axis=0)
+        uncertainties = 1 - max_certainty
+        uncertainties = (np.rint(_norm(uncertainties)* 255)).astype(np.uint8)
         classes = np.argmax(probs[i], axis=0).astype(np.uint8) + 1
         remasked = np.where(label_arr == 0, classes, label_arr).astype(np.uint8)
         remasked_arrs_list.append(remasked)
         if i == 0:
             remasked_flattened_arrs = remasked.flatten()
+            uncertainty_flattened_arrs = uncertainties.flatten()
         else:
             remasked_flattened_arrs = np.concatenate((remasked_flattened_arrs, remasked.flatten()), axis=0, dtype=np.uint8)
+            uncertainty_flattened_arrs = np.concatenate((uncertainty_flattened_arrs, uncertainties.flatten()), axis=0, dtype=np.uint8)
     await _save_as_tiff(remasked_arrs_list, save_mode, UID, large_w, large_h, score, rescale=rescale)
     await save_labels(img_dims, labels_dicts, UID, save_mode, large_w, large_h, rescale)
     await _save_classifier(model, CWD, UID)
-    print(remasked_flattened_arrs.shape, label_arrs[0].shape)
-    return remasked_flattened_arrs
+    #print(remasked_flattened_arrs.shape, label_arrs[0].shape)
+    #cmapped_flat = _cmap_uncertainties_return_flat_arr(uncertainty_flattened_arrs)
+    print(np.amax(uncertainty_flattened_arrs), np.mean(uncertainty_flattened_arrs), np.median(uncertainty_flattened_arrs), np.mean(remasked_flattened_arrs))
+    print(remasked_flattened_arrs.shape, uncertainty_flattened_arrs.shape)
+    return remasked_flattened_arrs, uncertainty_flattened_arrs #, least_certain_regions
 
 
 async def apply(
@@ -328,7 +339,7 @@ async def apply(
     large_w: int = 0,
     large_h: int = 0,
     rescale: bool = True,
-) -> np.ndarray:
+) -> Tuple[np.ndarray, np.ndarray]:
     """Apply a trained classifier to a collection of images, save the tiff(s) & return the flattened byte arrays.
 
     :param img_dims: list of image dimensions
@@ -348,15 +359,42 @@ async def apply(
     """
     model = skload(f"{CWD}{sep}{UID}{sep}classifier.skops")
     probs = apply_features_done(model, UID, len(img_dims))
+    N_imgs = len(probs)
+    # array to store coords of least certain region
+    #least_certain_regions = np.zeros((N_imgs * 4), dtype=np.int32) - 1
 
     arrs_list: List[np.ndarray] = []
-    flattened_arrs: np.ndarray
+    flattened_arrs: np.ndarray = np.ndarray([])
+    uncertainty_flattened_arrs: np.ndarray = np.ndarray([])
     for i in range(len(img_dims)):
+        print(probs[i].shape)
+        max_certainty: np.ndarray = np.amax(probs[i], axis=0)
+        uncertainties = 1 - max_certainty
         classes = np.argmax(probs[i], axis=0).astype(np.uint8) + 1
         arrs_list.append(classes)
         if i == 0:
             flattened_arrs = classes.flatten()
+            uncertainty_flattened_arrs = uncertainties.flatten()
         else:
             flattened_arrs = np.concatenate((flattened_arrs, classes.flatten()), axis=0, dtype=np.uint8)
+            uncertainty_flattened_arrs = np.concatenate((uncertainty_flattened_arrs, uncertainties.flatten()))
     await _save_as_tiff(arrs_list, save_mode, UID, large_w, large_h, rescale=rescale)
-    return flattened_arrs
+    #cmapped_flat = _cmap_uncertainties_return_flat_arr(uncertainty_flattened_arrs)
+    uncertainties_out = (uncertainty_flattened_arrs * 255).astype(np.uint8)
+    return flattened_arrs, uncertainties_out #, least_certain_regions
+
+
+def _cmap_uncertainties_return_flat_arr(uncertainties: np.ndarray) -> np.ndarray:
+    cmap = cm.get_cmap('plasma')
+    cmapped: np.ndarray = cmap(uncertainties)
+    
+    sliced = cmapped[:, :3] # ignore alpha channel
+    scaled = (sliced * 255).astype(np.uint8)
+    print(cmapped.shape, np.amax(scaled), sliced.shape)
+    return scaled.flatten()
+
+
+def _norm(arr: np.ndarray) -> np.ndarray:
+    scaled = arr - np.amin(arr)
+    normed = scaled / np.amax(scaled)
+    return normed

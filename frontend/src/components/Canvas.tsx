@@ -5,7 +5,8 @@ import {
     getctx, transferLabels, addImageDataToArray, clearctx, getxy, getZoomPanXY,
     getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage,
     imageDataToImage, erase, drawErase, drawPolygon, computeNewZoomOffset,
-    computeCentreOffset, drawRect, getCropImg, drawCropCursor
+    computeCentreOffset, drawRect, getCropImg, drawCropCursor, drawDashedRect,
+    GreyscaleToImageData
 } from "./helpers/canvasUtils"
 import * as _ from "underscore";
 import '../assets/scss/styles.css'
@@ -30,6 +31,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         imgIdx: [imgIdx,],
         imgType: [imgType],
         imgArrs: [, setImgArrs],
+        uncertainArrs: [uncertainArrs,],
         maskImg: [maskImg, setMaskImg],
         clicks: [, setClicks],
         processing: [, setProcessing],
@@ -37,9 +39,11 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         labelClass: [labelClass, setLabelClass],
         labelArr: [labelArr, setLabelArr],
         segArr: [segArr, setSegArr],
+        uncertainArr: [uncertainArr, setUncertainArr],
         brushWidth: [brushWidth],
         overlayType: [overlayType, setOverlayType],
         labelOpacity: [labelOpacity, setLabelOpacity],
+        uncertaintyOpacity: [uncertaintyOpacity, setUncertaintyOpacity],
         segOpacity: [segOpacity, setSegOpacity],
         maskIdx: [maskIdx, setMaskIdx],
         errorObject: [, setErrorObject],
@@ -48,6 +52,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
     // We use references here because we don't want to re-render every time these change (they do that already as they're canvases!)
     const imgCanvasRef = useRef<HTMLCanvasElement>(null);
     const segCanvasRef = useRef<HTMLCanvasElement>(null);
+    const uncertainCanvasRef = useRef<HTMLCanvasElement>(null);
     const labelCanvasRef = useRef<HTMLCanvasElement>(null);
     const animatedOverlayRef = useRef<HTMLCanvasElement>(null);
     const animatedCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -66,15 +71,18 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
 
     const [labelImg, setLabelImg] = useState<HTMLImageElement | null>(null);
     const [segImg, setSegImg] = useState<HTMLImageElement | null>(null);
+    const [uncertainImg, setUncertainImg] = useState<HTMLImageElement | null>(null);
 
     // Our images - when we update them their corresponding canvas changes. 
-    const groundTruths = [image, segImg, labelImg, maskImg];
+    const groundTruths = [image, segImg, labelImg, uncertainImg, maskImg];
     // Our canvases - updated when our images update but also can update them (i.e when drawing labels.)
-    const refs = [imgCanvasRef, segCanvasRef, labelCanvasRef, animatedCanvasRef, animatedOverlayRef];
+    const refs = [imgCanvasRef, segCanvasRef, labelCanvasRef, uncertainCanvasRef, animatedCanvasRef, animatedOverlayRef];
     // Track mouse state (for drag drawing)
     const clicking = useRef<boolean>(false);
 
     const uniqueLabels = useRef<Set<number>>(new Set()); // used to track when we can press segment 
+
+    const frame = useRef<number>(0);
 
     const updateSAM = () => {
         /* Called when user clicks using SAM labelling: gets natural (image) coordinates of click and 
@@ -154,7 +162,6 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
             const tempLabelArr = new Uint8ClampedArray(newImg.width * newImg.height).fill(0);
             const tempSegArr = new Uint8ClampedArray(newImg.width * newImg.height).fill(0);
             const newOffset = computeCentreOffset(newImg, ctx.canvas.width, ctx.canvas.height)
-            console.log(cameraOffset.current, newOffset)
             cameraOffset.current = newOffset
             updateAll([newImg], [tempLabelArr], [tempSegArr], [null]);
             setLabelArr(tempLabelArr);
@@ -218,7 +225,6 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
             } catch (e) {
                 const error = e as Error;
                 setErrorObject({ msg: "Failed to crop", stackTrace: error.toString() });
-                console.log(e);
             }
 
         }
@@ -261,21 +267,45 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         const speed = (zoom.current < 1) ? SCROLL_SPEED * zoom.current : SCROLL_SPEED;
         let newZoom = zoom.current + delta * speed;
         newZoom = Math.min(newZoom, MAX_ZOOM);
-        console.log(minZoom.current)
         newZoom = Math.max(newZoom, minZoom.current);
         if (image === null) { return }
         const newOffset = computeNewZoomOffset(zoom.current, newZoom, mousePos.current, cameraOffset.current);
         drawAllCanvases(newZoom, newOffset); //cameraOffset.current
         resetLabels();
         zoom.current = newZoom;
-        cameraOffset.current = newOffset;
+        setOffset(newOffset, newZoom);
+        //cameraOffset.current = newOffset;
     };
+
+    const setOffset = (setOffset: Offset, newZoom: number) => {
+        const ctx = getctx(imgCanvasRef);
+        if (image === null || ctx === null) { return }
+        const cw = ctx.canvas.width
+        const ch = ctx.canvas.height
+        const iw = image.width
+        const ih = image.height
+        const max_x = 0;
+        const max_y = 0;
+        const min_x = cw - newZoom * iw;
+        const min_y = ch - newZoom * ih;
+        //console.log(max_x, max_y, min_x, min_y)
+
+        const ub_x = Math.min(setOffset.x, max_x)
+        const ub_lb_x = Math.max(ub_x, min_x)
+        const ub_y = Math.min(setOffset.y, max_y)
+        const ub_lb_y = Math.max(ub_y, min_y)
+        const newOffset = { x: ub_lb_x, y: ub_lb_y }
+        //console.log(newOffset)
+
+        resetLabels();
+        drawAllCanvases(newZoom, newOffset);
+        cameraOffset.current = newOffset;
+    }
 
     const handleKeyPress = (e: any) => {
         // Keypresses are either: setting class, cancelling, changing visibility or panning
         if (e.key >= '0' && e.key <= '6') {
             // Perform desired actions for number key press
-            console.log('Number key pressed:', e.key);
             setLabelClass(parseInt(e.key));
             if (labelType === "Smart Labelling") {
                 updateSAM();
@@ -308,32 +338,22 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
 
     const handlePanKey = (e: any) => {
         // Move image around with arrow keys
-        let redraw = false;
         let newOffset: Offset;
         const c = cameraOffset.current;
         const delta = PAN_OFFSET / zoom.current;
         if (e.key == "w" || e.key == "ArrowUp") {
             newOffset = { x: c.x, y: c.y - delta };
-            redraw = true;
         }
         else if (e.key == "s" || e.key == "ArrowDown") {
             newOffset = { x: c.x, y: c.y + delta };
-            redraw = true;
         } else if (e.key == "a" || e.key == "ArrowLeft") {
             newOffset = { x: c.x - delta, y: c.y };
-            redraw = true;
         } else if (e.key == "d" || e.key == "ArrowRight") {
             newOffset = { x: c.x + delta, y: c.y };
-            redraw = true;
         } else {
             newOffset = c;
         }
-
-        if (redraw) {
-            resetLabels();
-            drawAllCanvases(zoom.current, newOffset);
-            cameraOffset.current = newOffset;
-        }
+        setOffset(newOffset, zoom.current)
     }
 
     const resetLabels = () => {
@@ -378,6 +398,24 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         } else if (labelType === "Crop") {
             drawCropCursor(ctx, mousePos.current);
         }
+
+        if (uncertaintyOpacity > 0.05 * 255) {
+            const newOpacity = uncertaintyOpacity - 4
+            setUncertaintyOpacity(newOpacity)
+        }
+        /*
+        // box animation for least certain region post segmentation
+        if (uncertainArrs[imgIdx] != null) {
+            const coords = uncertainArrs[imgIdx]
+            if (coords.length > 1 && coords[0] > -1) {
+                frame.current = (frame.current + 1) % 510; //need to make this loop
+                const alpha = (frame.current > 255) ? 255 - (frame.current % 255) : frame.current
+                const newHex = rgbaToHex(0, 0, 0, alpha);
+                drawDashedRect(ctx, coords[0], coords[1], coords[2], coords[3], cameraOffset.current, zoom.current, newHex);
+            }
+        }
+        */
+
         animationRef.current = requestAnimationFrame(animation);
     }
 
@@ -418,11 +456,11 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
 
     const drawImgOnUpdate = (firefox) ? asyncImgDraw : instantImgDraw
 
-    const updateImgOnArr = (arr: Uint8ClampedArray, img: HTMLImageElement | null, opacity: number, setterFn: any) => {
+    const updateImgOnArr = (arr: Uint8ClampedArray, img: HTMLImageElement | null, opacity: number, setterFn: any, uncertain: boolean = false) => {
         /* 'Polymorphic' function used in listeners to set the image on the canvas when the corresponding array 
         is changed (i.e when a label is added) */
         if (img === null) { return; }
-        const newImageData = arrayToImageData(arr, img.height, img.width, 0, null, opacity);
+        const newImageData = (uncertain) ? GreyscaleToImageData(arr, img.height, img.width, opacity) : arrayToImageData(arr, img.height, img.width, 0, null, opacity);
         const newImage = imageDataToImage(newImageData);
         setterFn(newImage);
     }
@@ -456,6 +494,10 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
     }, [segArr, segOpacity])
 
     useEffect(() => {
+        updateImgOnArr(uncertainArr, image, uncertaintyOpacity, setUncertainImg, true);
+    }, [uncertainArr, uncertaintyOpacity])
+
+    useEffect(() => {
         drawImgOnUpdate(labelCanvasRef, labelImg);
     }, [labelImg])
 
@@ -464,8 +506,13 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
     }, [segImg])
 
     useEffect(() => {
+        drawImgOnUpdate(uncertainCanvasRef, uncertainImg);
+    }, [uncertainImg])
+
+    useEffect(() => {
         resetLabels();
     }, [labelType]) // clear animated canvas when switching
+
 
     useEffect(() => {
         // Window resize listener
@@ -478,7 +525,6 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         }
         if (image === null) { return }
         const centreOffset = computeCentreOffset(image, canvSize.x, canvSize.y);
-        console.log(centreOffset);
         cameraOffset.current = centreOffset;
         minZoom.current = image.width / canvSize.x
         drawAllCanvases(zoom.current, centreOffset);
@@ -498,7 +544,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         window.addEventListener('resize', resizeCanvs);
     }, [])
 
-    useEffect(() => { resetAnimation() }, [labelType, brushWidth, labelClass]);
+    useEffect(() => { resetAnimation() }, [labelType, brushWidth, labelClass, uncertaintyOpacity]);
 
     return (
         <div onMouseDown={handleClick}

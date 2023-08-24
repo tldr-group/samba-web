@@ -94,9 +94,11 @@ const App = () => {
     segArrs: [segArrs, setSegArrs],
     labelArrs: [labelArrs, setLabelArrs],
     tensorArrs: [tensorArrs, setTensorArrs],
+    uncertainArrs: [uncertainArrs, setUncertainArrs],
     image: [image, setImage],
     labelArr: [labelArr, setLabelArr],
     segArr: [segArr, setSegArr],
+    uncertainArr: [uncertainArr, setUncertainArr],
     maskImg: [, setMaskImg],
     maskIdx: [maskIdx],
     labelType: [, setLabelType],
@@ -193,6 +195,7 @@ const App = () => {
       const nullLabels: Array<Uint8ClampedArray> = [];
       const nullSegs: Array<Uint8ClampedArray> = [];
       const nullTensors: Array<any | null> = [];
+      const nullUncertains: Array<Uint8ClampedArray> = [];
       for (let i = 0; i < hrefs.length; i++) {
         const href = hrefs[i];
         const img = new Image();
@@ -203,17 +206,20 @@ const App = () => {
           img.height = height;
           const tempLabelArr = new Uint8ClampedArray(width * height).fill(0);
           const tempSegArr = new Uint8ClampedArray(width * height).fill(0);
+          const tempUncertainArr = new Uint8ClampedArray(width * height).fill(255);
           imgs.push(img);
           nullLabels.push(tempLabelArr);
           nullSegs.push(tempSegArr);
           nullTensors.push(null);
+          nullUncertains.push(tempUncertainArr)
           if (i === 0 && imgArrs.length == 0) { // for very first arr, init these to be empty but the right shape
             setSegArr(tempSegArr);
             setLabelArr(tempLabelArr);
+            setUncertainArr(tempUncertainArr)
           }
           // Set the arrays once only when very last image is loaded
           if (i === hrefs.length - 1) {
-            updateAllArrs(imgs, nullLabels, nullSegs, nullTensors);
+            updateAllArrs(imgs, nullLabels, nullSegs, nullTensors, nullUncertains);
           }
         };
       }
@@ -225,7 +231,7 @@ const App = () => {
   };
 
   const updateAllArrs = (imgs: Array<HTMLImageElement>, labels: Array<Uint8ClampedArray>,
-    segs: Array<Uint8ClampedArray>, tensors: Array<any>) => {
+    segs: Array<Uint8ClampedArray>, tensors: Array<any>, uncertains: Array<Uint8ClampedArray>) => {
     // Used to set all arrays once image loaded
     if (imgArrs.length > 0) {
       const isStack = (imgType === "stack");
@@ -244,6 +250,8 @@ const App = () => {
     setSegArrs(newSegArrs);
     const newTensors = appendToArr(tensorArrs, tensors);
     setTensorArrs(newTensors);
+    const newUncertainArrs = appendToArr(uncertainArrs, uncertains);
+    setUncertainArrs(newUncertainArrs);
   }
 
   const setAllArrs = async (imgs: Array<HTMLImageElement>, labels: Array<Uint8ClampedArray>,
@@ -325,6 +333,7 @@ const App = () => {
     setLabelArr(newLabelArrs[newIdx]);
     setSegArr(newSegArrs[newIdx]);
     setTensor(newTensorArrs[newIdx]);
+    setUncertainArr(uncertainArrs[newIdx])
   }
 
   const loadDefault = async () => {
@@ -481,12 +490,33 @@ const App = () => {
     inside of the current image.*/
     const dataView = new DataView(buffer);
     const arrayLength = buffer.byteLength;
+    const nImages = imgArrs.length
 
-    let newSegArrs: Array<Uint8ClampedArray> = [];
+    let newUncertainArrs: Array<Uint8ClampedArray> = [];
     let [idx, j, limit]: number[] = [1, 0, imgArrs[0].width * imgArrs[0].height];
-    let tempArr = new Uint8ClampedArray(limit).fill(0);
+    let tempUncertainArr = new Uint8ClampedArray(limit).fill(0);
 
-    for (let i = 0; i < arrayLength; i++) {
+
+    console.log(arrayLength / 2)
+    for (let i = 0; i < arrayLength / 2; i++) {
+      if (j == limit) {
+        j = 0;
+        newUncertainArrs.push(tempUncertainArr);
+        if (idx < imgArrs.length) {
+          limit = imgArrs[idx].width * imgArrs[idx].height;
+          tempUncertainArr = new Uint8ClampedArray(limit).fill(254);
+          idx += 1;
+        }
+      }
+      tempUncertainArr[j] = dataView.getUint8(i);
+      j += 1;
+    }
+    newUncertainArrs.push(tempUncertainArr);
+
+    let tempArr = new Uint8ClampedArray(limit).fill(0);
+    let newSegArrs: Array<Uint8ClampedArray> = [];
+    [idx, j, limit] = [1, 0, imgArrs[0].width * imgArrs[0].height];
+    for (let i = arrayLength / 2; i < arrayLength; i++) {
       if (j == limit) {
         j = 0;
         newSegArrs.push(tempArr);
@@ -500,7 +530,9 @@ const App = () => {
       j += 1;
     }
     newSegArrs.push(tempArr); //needed for the last one where j < limit
+
     setSegArrs(newSegArrs);
+    setUncertainArrs(newUncertainArrs);
     console.log("Finished segmenting");
   }
 
@@ -652,8 +684,15 @@ const App = () => {
 
   useEffect(() => {
     if (segArrs.length === 0) { return; }
+    console.log('segs set')
     setSegArr(segArrs[imgIdx]);
   }, [segArrs])
+
+  useEffect(() => {
+    if (uncertainArrs.length === 0) { return; }
+    console.log('uncertainty set')
+    setUncertainArr(uncertainArrs[imgIdx]);
+  }, [uncertainArrs])
 
   useEffect(() => {
     checkToSegment(featureFlag, segmentFlag, applyFlag)

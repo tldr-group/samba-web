@@ -6,7 +6,7 @@ import {
     getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage,
     imageDataToImage, erase, drawErase, drawPolygon, computeNewZoomOffset,
     computeCentreOffset, drawRect, getCropImg, drawCropCursor, drawDashedRect,
-    GreyscaleToImageData
+    GreyscaleToImageData, getMaxZoom
 } from "./helpers/canvasUtils"
 import * as _ from "underscore";
 import '../assets/scss/styles.css'
@@ -82,7 +82,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
 
     const uniqueLabels = useRef<Set<number>>(new Set()); // used to track when we can press segment 
 
-    const frame = useRef<number>(0);
+
 
     const updateSAM = () => {
         /* Called when user clicks using SAM labelling: gets natural (image) coordinates of click and 
@@ -274,7 +274,6 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         resetLabels();
         zoom.current = newZoom;
         setOffset(newOffset, newZoom);
-        //cameraOffset.current = newOffset;
     };
 
     const setOffset = (setOffset: Offset, newZoom: number) => {
@@ -286,17 +285,30 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         const ih = image.height
         const max_x = 0;
         const max_y = 0;
-        const min_x = cw - newZoom * iw;
-        const min_y = ch - newZoom * ih;
-        //console.log(max_x, max_y, min_x, min_y)
+
+        let min_x: number = 0
+        let min_y: number = 0
+        if (cw > newZoom * iw) {
+            min_x = (cw - newZoom * iw) / 2
+        } else {
+            min_x = (cw - newZoom * iw);
+        }
+
+        if (ch > newZoom * ih) {
+            min_y = (ch - newZoom * ih) / 2
+        } else {
+            min_y = (ch - newZoom * ih);
+        }
+
+        //const min_x = (cw - newZoom * iw);
+        //const min_y = (ch - newZoom * ih);
 
         const ub_x = Math.min(setOffset.x, max_x)
         const ub_lb_x = Math.max(ub_x, min_x)
         const ub_y = Math.min(setOffset.y, max_y)
         const ub_lb_y = Math.max(ub_y, min_y)
         const newOffset = { x: ub_lb_x, y: ub_lb_y }
-        //console.log(newOffset)
-
+        //console.log(setOffset, newOffset)
         resetLabels();
         drawAllCanvases(newZoom, newOffset);
         cameraOffset.current = newOffset;
@@ -340,7 +352,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         // Move image around with arrow keys
         let newOffset: Offset;
         const c = cameraOffset.current;
-        const delta = PAN_OFFSET / zoom.current;
+        const delta = PAN_OFFSET // zoom.current;
         if (e.key == "w" || e.key == "ArrowUp") {
             newOffset = { x: c.x, y: c.y - delta };
         }
@@ -403,18 +415,6 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
             const newOpacity = uncertaintyOpacity - 4
             setUncertaintyOpacity(newOpacity)
         }
-        /*
-        // box animation for least certain region post segmentation
-        if (uncertainArrs[imgIdx] != null) {
-            const coords = uncertainArrs[imgIdx]
-            if (coords.length > 1 && coords[0] > -1) {
-                frame.current = (frame.current + 1) % 510; //need to make this loop
-                const alpha = (frame.current > 255) ? 255 - (frame.current % 255) : frame.current
-                const newHex = rgbaToHex(0, 0, 0, alpha);
-                drawDashedRect(ctx, coords[0], coords[1], coords[2], coords[3], cameraOffset.current, zoom.current, newHex);
-            }
-        }
-        */
 
         animationRef.current = requestAnimationFrame(animation);
     }
@@ -475,9 +475,13 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         const newSegImg = new Image(image.width, image.height);
         setLabelImg(newLabelImg);
         setSegImg(newSegImg);
-        minZoom.current = image.width / ctx.canvas.width
+        const newZoom = getMaxZoom(image.height, image.width, ctx.canvas.width, ctx.canvas.height)
+        minZoom.current = newZoom //image.width / ctx.canvas.width
+        const centreOffset = computeCentreOffset(image, ctx.canvas.width, ctx.canvas.height)
+        const newOffset = computeNewZoomOffset(1, newZoom, mousePos.current, centreOffset);
+        setOffset(newOffset, newZoom)
 
-        if (ctx !== null) { drawImage(ctx, image, cameraOffset.current, zoom.current); }
+        //if (ctx !== null) { drawImage(ctx, image, newOffset, newZoom); }
         animation(); //start the animation loop
     }, [image])
 
@@ -513,6 +517,9 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         resetLabels();
     }, [labelType]) // clear animated canvas when switching
 
+    // every re render the ref to keypress event is updated
+    const keyPressRef = useRef(handleKeyPress);
+    useEffect(() => { keyPressRef.current = handleKeyPress })
 
     useEffect(() => {
         // Window resize listener
@@ -525,10 +532,11 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         }
         if (image === null) { return }
         const centreOffset = computeCentreOffset(image, canvSize.x, canvSize.y);
-        cameraOffset.current = centreOffset;
-        minZoom.current = image.width / canvSize.x
-        drawAllCanvases(zoom.current, centreOffset);
-
+        const newZoom = getMaxZoom(image.height, image.width, canvSize.x, canvSize.y)
+        const newOffset = computeNewZoomOffset(1, newZoom, mousePos.current, centreOffset);
+        setOffset(newOffset, newZoom)
+        minZoom.current = newZoom
+        zoom.current = newZoom
     }, [canvSize])
 
     useEffect(() => {
@@ -542,17 +550,20 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         }
         resizeCanvs();
         window.addEventListener('resize', resizeCanvs);
+        // we need to assign keypress as a ref because the code is state dependent and this won't be reflected otherwise (i.e labels detach)
+        const keyPress = (e: any) => keyPressRef.current(e)
+        window.addEventListener("keydown", keyPress)
     }, [])
 
-    useEffect(() => { resetAnimation() }, [labelType, brushWidth, labelClass, uncertaintyOpacity]);
 
+    useEffect(() => { resetAnimation() }, [labelType, brushWidth, labelClass, uncertaintyOpacity]);
+    //onKeyDown={e => handleKeyPress(e)}
     return (
         <div onMouseDown={handleClick}
             onMouseMove={handleClickMove}
             onMouseUp={handleClickEnd}
             onContextMenu={(e) => e.preventDefault()}
             onMouseLeave={e => resetLabels()}
-            onKeyDown={e => handleKeyPress(e)}
             tabIndex={0}
             onWheel={e => handleScroll(e)}
             style={{ height: '80vh', width: '75vw' }}

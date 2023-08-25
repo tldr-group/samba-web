@@ -285,15 +285,30 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         const ih = image.height
         const max_x = 0;
         const max_y = 0;
-        const min_x = (cw - newZoom * iw);
-        const min_y = (ch - newZoom * ih);
+        // maybe add check here if cw/ch > z * w/h and change this accordingly
+        let min_x: number = 0
+        let min_y: number = 0
+        if (cw > newZoom * iw) {
+            min_x = (cw - newZoom * iw) / 2
+        } else {
+            min_x = (cw - newZoom * iw);
+        }
+
+        if (ch > newZoom * ih) {
+            min_y = (ch - newZoom * ih) / 2
+        } else {
+            min_y = (ch - newZoom * ih);
+        }
+
+        //const min_x = (cw - newZoom * iw);
+        //const min_y = (ch - newZoom * ih);
 
         const ub_x = Math.min(setOffset.x, max_x)
         const ub_lb_x = Math.max(ub_x, min_x)
         const ub_y = Math.min(setOffset.y, max_y)
         const ub_lb_y = Math.max(ub_y, min_y)
         const newOffset = { x: ub_lb_x, y: ub_lb_y }
-
+        //console.log(setOffset, newOffset)
         resetLabels();
         drawAllCanvases(newZoom, newOffset);
         cameraOffset.current = newOffset;

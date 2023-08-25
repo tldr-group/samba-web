@@ -6,7 +6,7 @@ import {
     getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage,
     imageDataToImage, erase, drawErase, drawPolygon, computeNewZoomOffset,
     computeCentreOffset, drawRect, getCropImg, drawCropCursor, drawDashedRect,
-    GreyscaleToImageData
+    GreyscaleToImageData, getMaxZoom
 } from "./helpers/canvasUtils"
 import * as _ from "underscore";
 import '../assets/scss/styles.css'
@@ -273,6 +273,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         drawAllCanvases(newZoom, newOffset); //cameraOffset.current
         resetLabels();
         zoom.current = newZoom;
+        console.log(newZoom)
         setOffset(newOffset, newZoom);
         //cameraOffset.current = newOffset;
     };
@@ -289,6 +290,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         const min_x = cw - newZoom * iw;
         const min_y = ch - newZoom * ih;
         //console.log(max_x, max_y, min_x, min_y)
+        console.log(cameraOffset.current, min_x, min_y)
 
         const ub_x = Math.min(setOffset.x, max_x)
         const ub_lb_x = Math.max(ub_x, min_x)
@@ -475,9 +477,10 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         const newSegImg = new Image(image.width, image.height);
         setLabelImg(newLabelImg);
         setSegImg(newSegImg);
-        minZoom.current = image.width / ctx.canvas.width
+        const newZoom = getMaxZoom(image.height, image.width, ctx.canvas.width, ctx.canvas.height)
+        minZoom.current = newZoom //image.width / ctx.canvas.width
 
-        if (ctx !== null) { drawImage(ctx, image, cameraOffset.current, zoom.current); }
+        if (ctx !== null) { drawImage(ctx, image, cameraOffset.current, newZoom); }
         animation(); //start the animation loop
     }, [image])
 
@@ -526,8 +529,11 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         if (image === null) { return }
         const centreOffset = computeCentreOffset(image, canvSize.x, canvSize.y);
         cameraOffset.current = centreOffset;
-        minZoom.current = image.width / canvSize.x
-        drawAllCanvases(zoom.current, centreOffset);
+        const newZoom = getMaxZoom(image.height, image.width, canvSize.x, canvSize.y)
+        minZoom.current = newZoom
+        zoom.current = newZoom
+
+        drawAllCanvases(newZoom, centreOffset);
 
     }, [canvSize])
 

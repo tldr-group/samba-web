@@ -39,7 +39,7 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, featuresUpdated, tra
       const imgData = new ImageData(imgDataArr, tif.width, tif.height);
       hrefs.push(imageDataToImage(imgData).src);
     }
-    const isSmall = (tifs[0].width < 1024 && tifs[0].height < 1024)
+    const isSmall = (tifs[0].width <= 1024 && tifs[0].height <= 1024)
     if (tifs.length > 1 && isSmall) {
       loadImages(hrefs);
       setImgType("stack");

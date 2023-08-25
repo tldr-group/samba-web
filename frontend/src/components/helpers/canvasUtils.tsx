@@ -286,9 +286,17 @@ export const getZoomPanXY = (canvX: number, canvY: number, ctx: CanvasRenderingC
 export const computeCentreOffset = (image: HTMLImageElement, cx: number, cy: number): Offset => {
   // Get the offset with which to centre our image
   const [iw, ih] = [image.width, image.height];
-  const set_x = Math.min((cx - iw) / 2, 0)
-  const set_y = Math.min((cy - ih) / 2, 0)
+  //const set_x = Math.min((cx - iw) / 2, 0)
+  //const set_y = Math.min((cy - ih) / 2, 0)
+  const set_x = (cx - iw) / 2
+  const set_y = (cy - ih) / 2
   return { x: set_x, y: set_y }
+}
+
+export const getMaxZoom = (h: number, w: number, cx: number, cy: number): number => {
+  const x = cx / w
+  const y = cy / h
+  return Math.min(x, y)
 }
 
 const getZoomPanCoord = (offset: Offset, zoom: number, p: Offset) => {

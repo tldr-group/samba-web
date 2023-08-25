@@ -82,7 +82,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
 
     const uniqueLabels = useRef<Set<number>>(new Set()); // used to track when we can press segment 
 
-    const frame = useRef<number>(0);
+
 
     const updateSAM = () => {
         /* Called when user clicks using SAM labelling: gets natural (image) coordinates of click and 
@@ -285,8 +285,8 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         const ih = image.height
         const max_x = 0;
         const max_y = 0;
-        const min_x = (cw - newZoom * iw) / 2;
-        const min_y = (ch - newZoom * ih) / 2;
+        const min_x = (cw - newZoom * iw);
+        const min_y = (ch - newZoom * ih);
 
         const ub_x = Math.min(setOffset.x, max_x)
         const ub_lb_x = Math.max(ub_x, min_x)
@@ -502,6 +502,9 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         resetLabels();
     }, [labelType]) // clear animated canvas when switching
 
+    // every re render the ref to keypress event is updated
+    const keyPressRef = useRef(handleKeyPress);
+    useEffect(() => { keyPressRef.current = handleKeyPress })
 
     useEffect(() => {
         // Window resize listener
@@ -532,17 +535,20 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         }
         resizeCanvs();
         window.addEventListener('resize', resizeCanvs);
+        // we need to assign keypress as a ref because the code is state dependent and this won't be reflected otherwise (i.e labels detach)
+        const keyPress = (e: any) => keyPressRef.current(e)
+        window.addEventListener("keydown", keyPress)
     }, [])
 
-    useEffect(() => { resetAnimation() }, [labelType, brushWidth, labelClass, uncertaintyOpacity]);
 
+    useEffect(() => { resetAnimation() }, [labelType, brushWidth, labelClass, uncertaintyOpacity]);
+    //onKeyDown={e => handleKeyPress(e)}
     return (
         <div onMouseDown={handleClick}
             onMouseMove={handleClickMove}
             onMouseUp={handleClickEnd}
             onContextMenu={(e) => e.preventDefault()}
             onMouseLeave={e => resetLabels()}
-            onKeyDown={e => handleKeyPress(e)}
             tabIndex={0}
             onWheel={e => handleScroll(e)}
             style={{ height: '80vh', width: '75vw' }}

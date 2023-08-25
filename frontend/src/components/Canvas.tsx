@@ -273,9 +273,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         drawAllCanvases(newZoom, newOffset); //cameraOffset.current
         resetLabels();
         zoom.current = newZoom;
-        console.log(newZoom)
         setOffset(newOffset, newZoom);
-        //cameraOffset.current = newOffset;
     };
 
     const setOffset = (setOffset: Offset, newZoom: number) => {
@@ -287,17 +285,14 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         const ih = image.height
         const max_x = 0;
         const max_y = 0;
-        const min_x = cw - newZoom * iw;
-        const min_y = ch - newZoom * ih;
-        //console.log(max_x, max_y, min_x, min_y)
-        console.log(cameraOffset.current, min_x, min_y)
+        const min_x = (cw - newZoom * iw) / 2;
+        const min_y = (ch - newZoom * ih) / 2;
 
         const ub_x = Math.min(setOffset.x, max_x)
         const ub_lb_x = Math.max(ub_x, min_x)
         const ub_y = Math.min(setOffset.y, max_y)
         const ub_lb_y = Math.max(ub_y, min_y)
         const newOffset = { x: ub_lb_x, y: ub_lb_y }
-        //console.log(newOffset)
 
         resetLabels();
         drawAllCanvases(newZoom, newOffset);
@@ -342,7 +337,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         // Move image around with arrow keys
         let newOffset: Offset;
         const c = cameraOffset.current;
-        const delta = PAN_OFFSET / zoom.current;
+        const delta = PAN_OFFSET // zoom.current;
         if (e.key == "w" || e.key == "ArrowUp") {
             newOffset = { x: c.x, y: c.y - delta };
         }
@@ -405,18 +400,6 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
             const newOpacity = uncertaintyOpacity - 4
             setUncertaintyOpacity(newOpacity)
         }
-        /*
-        // box animation for least certain region post segmentation
-        if (uncertainArrs[imgIdx] != null) {
-            const coords = uncertainArrs[imgIdx]
-            if (coords.length > 1 && coords[0] > -1) {
-                frame.current = (frame.current + 1) % 510; //need to make this loop
-                const alpha = (frame.current > 255) ? 255 - (frame.current % 255) : frame.current
-                const newHex = rgbaToHex(0, 0, 0, alpha);
-                drawDashedRect(ctx, coords[0], coords[1], coords[2], coords[3], cameraOffset.current, zoom.current, newHex);
-            }
-        }
-        */
 
         animationRef.current = requestAnimationFrame(animation);
     }
@@ -479,8 +462,11 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         setSegImg(newSegImg);
         const newZoom = getMaxZoom(image.height, image.width, ctx.canvas.width, ctx.canvas.height)
         minZoom.current = newZoom //image.width / ctx.canvas.width
+        const centreOffset = computeCentreOffset(image, ctx.canvas.width, ctx.canvas.height)
+        const newOffset = computeNewZoomOffset(1, newZoom, mousePos.current, centreOffset);
+        setOffset(newOffset, newZoom)
 
-        if (ctx !== null) { drawImage(ctx, image, cameraOffset.current, newZoom); }
+        //if (ctx !== null) { drawImage(ctx, image, newOffset, newZoom); }
         animation(); //start the animation loop
     }, [image])
 
@@ -528,13 +514,11 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         }
         if (image === null) { return }
         const centreOffset = computeCentreOffset(image, canvSize.x, canvSize.y);
-        cameraOffset.current = centreOffset;
         const newZoom = getMaxZoom(image.height, image.width, canvSize.x, canvSize.y)
+        const newOffset = computeNewZoomOffset(1, newZoom, mousePos.current, centreOffset);
+        setOffset(newOffset, newZoom)
         minZoom.current = newZoom
         zoom.current = newZoom
-
-        drawAllCanvases(newZoom, centreOffset);
-
     }, [canvSize])
 
     useEffect(() => {

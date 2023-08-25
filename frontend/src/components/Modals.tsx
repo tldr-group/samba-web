@@ -53,8 +53,17 @@ const WelcomeModalContent = () => {
             </Modal.Header>
             <Modal.Body>
                 <p>SAMBA is a <b>web-based trainable segmentation app</b>. It has deep-learning powered label suggestions and a random-forest classifier backend.</p>
-                <p>Load an image, choose your brush on the sidebar and place some labels with <b>left click</b>. Zoom with the <b>scroll wheel</b> and pan with <b>arrow keys</b> or <b>WASD</b>. <b>Right click</b> to change the smart label focus size or to finish a polygon. </p>
-                <p>Once you've labelled an example of each class, press <b>"Train Classifier"</b> to segment the image. If you still need help, check out the <a href="https://github.com/tldr-group/samba-web/manual.md">manual</a> or watch a <a href="coming-soon">video tutorial</a>. Have fun!</p>
+                <p>Load an image, choose your brush on the sidebar and place some labels with <b>left click</b>. Zoom with the <b>scroll wheel</b> and pan with <b>arrow keys</b> or <b>WASD</b>. <b>Right click</b> to change the smart label focus size or to finish a polygon. Once you've labelled an example of each class, press <b>"Train Classifier"</b> to segment the image. If you still need help, check out the <a href="https://github.com/tldr-group/samba-web/manual.md">manual</a> or watch a <a href="coming-soon">video tutorial</a>. Have fun!</p>
+                <p>Hotkeys:</p>
+                <ul>
+                    <li><b>Left Click:</b> place label/polygon point. Hold to draw brush stroke, release to finish.</li>
+                    <li><b>Right Click:</b> switch smart label size, finish polygon.</li>
+                    <li><b>1 2 3 4 5 6 (NUM keys):</b> switch to that class for labelling.</li>
+                    <li><b>Scroll Wheel:</b> zoom in or out.</li>
+                    <li><b>WASD:</b> pan around a zoomed image.</li>
+                    <li><b>V:</b> toggle different overlay visibility (labels, segmentations, off).</li>
+                    <li><b>ESC:</b> cancel current label.</li>
+                </ul>
             </Modal.Body>
             <Modal.Footer>
                 <Form.Check type="checkbox" label="Do not show again" onChange={setNoShow} />

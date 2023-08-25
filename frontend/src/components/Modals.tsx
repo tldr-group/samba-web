@@ -84,7 +84,16 @@ const FeatureModalContent = ({ closeModal, requestFeatures }: FeatureModalProps)
 
     const updateFeatures = (prev: any, newKey: string, newVal: string) => {
         const newFeats = prev;
-        newFeats[newKey] = parseFloat(newVal);
+        let setVal: number;
+        if (newVal == "on") {
+            setVal = 1
+        } else if (newVal == "off") {
+            setVal = 0
+        } else {
+            setVal = parseFloat(newVal)
+        }
+        console.log(newVal, parseFloat(newVal), setVal)
+        newFeats[newKey] = setVal;
         setFeatures(newFeats as Features);
     }
 

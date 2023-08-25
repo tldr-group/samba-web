@@ -285,7 +285,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         const ih = image.height
         const max_x = 0;
         const max_y = 0;
-        // maybe add check here if cw/ch > z * w/h and change this accordingly
+
         let min_x: number = 0
         let min_y: number = 0
         if (cw > newZoom * iw) {

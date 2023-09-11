@@ -313,7 +313,12 @@ async def segment(
         max_certainty: np.ndarray = np.amax(probs[i], axis=0)
         uncertainties = 1 - max_certainty
         uncertainties = (np.rint(_norm(uncertainties)* 255)).astype(np.uint8)
-        classes = np.argmax(probs[i], axis=0).astype(np.uint8) + 1
+        # get one hot of where max prob is, index original class labels (stored in model.classes_) to get remapping
+        class_mask = np.argmax(probs[i], axis=0).astype(np.uint8) #+ 1
+        one_hot = np.eye(len(model.classes_))[class_mask]
+        classes = one_hot * np.array(model.classes_).astype(np.uint8)
+        classes = np.max(classes, axis=-1)
+
         remasked = np.where(label_arr == 0, classes, label_arr).astype(np.uint8)
         remasked_arrs_list.append(remasked)
         if i == 0:

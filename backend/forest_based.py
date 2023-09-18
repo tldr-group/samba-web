@@ -11,8 +11,9 @@ say a cloud function or as a smaller part of a threaded classifier object (which
 memoise things like feature computation) that is part of a GUI app.
 """
 import numpy as np
-from features import multiscale_advanced_features, N_ALLOWED_CPUS, DEAFAULT_FEATURES
+from features import multiscale_advanced_features, N_ALLOWED_CPUS, DEAFAULT_FEATURES, BACKEND
 from test_resources.call_weka import sep
+from sklearn.utils import parallel_backend
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import HistGradientBoostingClassifier
@@ -201,10 +202,11 @@ def fit(
     :return: trained ensemble model
     :rtype: EnsembleMethod
     """
-    if weights is None:
-        model.fit(train_data, target_data)
-    else:
-        model.fit(train_data, target_data, weights)
+    with parallel_backend(BACKEND, n_jobs=N_ALLOWED_CPUS):
+        if weights is None:
+            model.fit(train_data, target_data)
+        else:
+            model.fit(train_data, target_data, weights)
     return model
 
 
@@ -229,7 +231,8 @@ def apply_features_done(
         feature_stack = np.load(f"{UID}{sep}features_{i}.npz")["a"]
         h, w, feat = feature_stack.shape
         flat_apply_data = feature_stack.reshape((h * w, feat))
-        out_probs = model.predict_proba(flat_apply_data)
+        with parallel_backend(BACKEND, n_jobs=N_ALLOWED_CPUS):
+            out_probs = model.predict_proba(flat_apply_data)
         _, n_classes = out_probs.shape
         # gui expects arr in form (n_classes, h, w)
         if reorder:

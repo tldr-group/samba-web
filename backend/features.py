@@ -19,6 +19,7 @@ from skimage import filters, feature
 from skimage.util.dtype import img_as_float32
 from scipy.ndimage import rotate, convolve
 from skimage.draw import disk
+import os
 
 import os
 from itertools import combinations_with_replacement, chain
@@ -30,7 +31,17 @@ from typing import Tuple, List, Iterable
 # Gaussian blur seems to be 1 - the value in weka. Interesting. NB weka also adds original image as default
 
 # - 2 to allow for main & gui threads
+BACKEND = "loky"
 N_ALLOWED_CPUS = cpu_count() - 2
+try:
+    _ = os.environ["APP_PATH"]
+    N_ALLOWED_CPUS = 9
+    BACKEND = "threading"
+except KeyError:
+    pass
+
+print(f"N CPUS: {N_ALLOWED_CPUS}")
+
 DEAFAULT_FEATURES = {
     "Gaussian Blur": 1,
     "Sobel Filter": 1,

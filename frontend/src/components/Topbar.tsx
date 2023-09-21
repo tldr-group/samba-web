@@ -7,7 +7,8 @@ import React, { useRef, useContext } from "react";
 import AppContext from "./hooks/createContext";
 import { TopbarProps, ModalShow, themeBGs } from "./helpers/Interfaces";
 
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import Form from 'react-bootstrap/Form';
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
@@ -32,6 +33,7 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
         modalShow: [modalShow, setModalShow],
         labelType: [, setLabelType],
         theme: [theme,],
+        postProcess: [, setPostProcess],
     } = useContext(AppContext)!;
     const fileInputRef = useRef<HTMLInputElement>(null);
     const loadClassifierRef = useRef<HTMLInputElement>(null);
@@ -47,6 +49,10 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
         if (loadClassifierRef.current) {
             loadClassifierRef.current.click();
         }
+    }
+
+    const togglePostProcess = (e: any) => {
+        setPostProcess(e.target.checked)
     }
 
 
@@ -125,6 +131,17 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
                         </NavDropdown>
                         <Nav.Link onClick={saveLabels}>Save Labels</Nav.Link>
                         <Nav.Link onClick={saveSeg}>Save Segmentation</Nav.Link>
+                        <Navbar.Text>
+                            <Form >
+                                <Form.Check
+                                    type="switch"
+                                    label="&nbsp;&nbsp;&nbsp;&nbsp;Post-Process:"
+                                    id="post_process_switch"
+                                    reverse
+                                    onChange={togglePostProcess}
+                                />
+                            </Form>
+                        </Navbar.Text>
                     </Nav>
                 </Navbar.Collapse>
             </Container>

@@ -37,6 +37,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         processing: [, setProcessing],
         labelType: [labelType, setLabelType],
         labelClass: [labelClass, setLabelClass],
+        postProcess: [postProcess,],
         labelArr: [labelArr, setLabelArr],
         segArr: [segArr, setSegArr],
         uncertainArr: [uncertainArr, setUncertainArr],
@@ -109,7 +110,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         if (labelType == "Crop" && clicking.current) { cropStart.current = mousePos.current }
     };
 
-    const addCanvasToArr = (canvas: HTMLCanvasElement, img: HTMLImageElement, oldArr: Uint8ClampedArray, erase = false) => {
+    const addCanvasToArr = (canvas: HTMLCanvasElement, img: HTMLImageElement, oldArr: Uint8ClampedArray, erase = false, overwrite = false) => {
         /* Once label confirmed, transfer the data from the animation canvas to the label canvas. Start by drawing animated
         canvas to the right size (i.e natural coordinates), then get image data from that, then add that image data to
         to the labels arr by looping over every element and setting unset elements in labelArr to the class value of
@@ -125,8 +126,21 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
             set.add(labelClass);
             if (n_labels > 1) { setProcessing("None") }
         }
-        const arr = addImageDataToArray(imageData, oldArr, currentClass, erase);
+        const arr = addImageDataToArray(imageData, oldArr, currentClass, erase, overwrite);
         return arr
+    }
+
+    const addLabel = (ctx: CanvasRenderingContext2D, erase = false) => {
+        if (ctx === null || image === null || labelImg === null) {
+            return;
+        }
+        if (postProcess == false) {
+            const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr, erase);
+            if (arr !== undefined) { setLabelArr(arr); }
+        } else {
+            const arr = addCanvasToArr(ctx.canvas, labelImg, segArr, erase, true);
+            if (arr !== undefined) { setSegArr(arr); }
+        }
     }
 
     const finishPolygon = (polygon: Array<Offset>, labelIdx: number, labelImg: HTMLImageElement, ctx: CanvasRenderingContext2D) => {
@@ -134,8 +148,11 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         const c = colours[labelClass];
         const hex = rgbaToHex(c[0], c[1], c[2], 255);
         drawPolygon(ctx, polygon, hex, true);
+        /*
         const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr);
         if (arr !== undefined) { setLabelArr(arr); }
+        */
+        addLabel(ctx, false)
         polyPoints.current = [];
     }
 
@@ -186,8 +203,11 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         if (drawing && leftClick) { clicking.current = false; };
         if ((labelType == "Brush" || labelType == "Smart Labelling") && leftClick) {
             // Draw what was on our animated canvas (brush or SAM) onto the label canvas
+            /*
             const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr);
             if (arr !== undefined) { setLabelArr(arr); }
+            */
+            addLabel(ctx, false)
             clearctx(animatedCanvasRef);
         } else if (labelType == "Smart Labelling" && rightClick) {
             // Update SAM type when right clicking
@@ -198,8 +218,11 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
             // Erase directly on labels (so get real time preview).
             const labelctx = getctx(labelCanvasRef);
             if (labelctx === null) { return }
+            /*
             const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr, true);
             if (arr !== undefined) { setLabelArr(arr); }
+            */
+            addLabel(ctx, true)
             clearctx(animatedCanvasRef);
             //setLabelArr(arr);
         } else if (labelType === "Polygon" && leftClick) {
@@ -226,7 +249,6 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
                 const error = e as Error;
                 setErrorObject({ msg: "Failed to crop", stackTrace: error.toString() });
             }
-
         }
     };
 

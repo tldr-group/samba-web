@@ -35,7 +35,7 @@ BACKEND = "loky"
 N_ALLOWED_CPUS = cpu_count() - 2
 try:
     _ = os.environ["APP_PATH"]
-    N_ALLOWED_CPUS = 9
+    N_ALLOWED_CPUS = 12
     BACKEND = "threading"
 except KeyError:
     pass

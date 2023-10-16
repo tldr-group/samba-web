@@ -1,11 +1,5 @@
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-// All rights reserved.
-
-// This source code is licensed under the license found in the
-// LICENSE file in the root directory of this source tree.
-
 import React, { useState } from "react";
-import { modelInputProps, Label } from "../helpers/Interfaces";
+import { modelInputProps, Label, ErrorMessage, SegmentFeatureState, ModalShow, Features, defaultFeatures, Theme, themeBGs, Settings } from "../helpers/Interfaces";
 import AppContext from "./createContext";
 
 const AppContextProvider = (props: {
@@ -19,26 +13,47 @@ const AppContextProvider = (props: {
   const [labelArrs, setLabelArrs] = useState<Array<Uint8ClampedArray>>([]);
   const [segArrs, setSegArrs] = useState<Array<Uint8ClampedArray>>([]);
   const [tensorArrs, setTensorArrs] = useState<Array<any | null>>([]);
+  const [uncertainArrs, setUncertainArrs] = useState<Array<Uint8ClampedArray>>([]);
 
   // Current canvas states (i.e things corresponding to currently selected image)
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   // this why not work - should be null
   const [labelArr, setLabelArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(1));
-  const [segArr, setSegArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(1));
+  const [segArr, setSegArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(0));
+  const [uncertainArr, setUncertainArr] = useState<Uint8ClampedArray>(new Uint8ClampedArray(1));
 
   // Labelling stuff
   const [clicks, setClicks] = useState<Array<modelInputProps> | null>(null);
   const [maskImg, setMaskImg] = useState<HTMLImageElement | null>(null);
-  const [maskIdx, setMaskIdx] = useState<number>(1);
+  const [maskIdx, setMaskIdx] = useState<number>(3);
   const [labelClass, setLabelClass] = useState<number>(1);
   const [labelType, setLabelType] = useState<Label>("Brush");
-  const [brushWidth, setBrushWidth] = useState<number>(1);
+  const [brushWidth, setBrushWidth] = useState<number>(20);
+
+  const [postProcess, setPostProcess] = useState<boolean>(false);
 
   // Canvas display stuff
-  const [overlayType, setOverlayType] = useState<"Segmentation" | "Label">("Segmentation");
+  const [overlayType, setOverlayType] = useState<"Segmentation" | "Label" | "Uncertainty" | "None">("None");
   const [labelOpacity, setLabelOpacity] = useState<number>(0.6 * 255);
   const [segOpacity, setSegOpacity] = useState<number>(0.9 * 255);
-  const [processing, setProcessing] = useState<"None" | "Encoding" | "Segmenting">("None");
+  const [uncertaintyOpacity, setUncertaintyOpacity] = useState<number>(0);
+  const [processing, setProcessing] = useState<"None" | "Encoding" | "Segmenting" | "Applying" | "Inactive">("Inactive");
+
+  // Segment Feature stuff
+  const [features, setFeatures] = useState<Features>(defaultFeatures)
+
+  // Menus
+  const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "", stackTrace: "" })
+  const [showToast, setShowToast] = useState<boolean>(false);
+  const [modalShow, setModalShow] = useState<ModalShow>({ welcome: false, settings: false, features: false, contact: false })
+  const [theme, setTheme] = useState<Theme>("default")
+  const [settings, setSettings] = useState<Settings>({ nPoints: 50000, trainAll: false, rescale: true, format: ".skops", balance: true })
+
+  // Path to backend
+  const [path, setPath] = useState<string>("http://localhost:5000")
+  const [UID, setUID] = useState<string>("")
+
+  const [galleryID, setGalleryID] = useState<string>("")
 
   return (
     <AppContext.Provider
@@ -50,10 +65,12 @@ const AppContextProvider = (props: {
         labelArrs: [labelArrs, setLabelArrs],
         segArrs: [segArrs, setSegArrs],
         tensorArrs: [tensorArrs, setTensorArrs],
+        uncertainArrs: [uncertainArrs, setUncertainArrs],
 
         image: [image, setImage],
         labelArr: [labelArr, setLabelArr],
         segArr: [segArr, setSegArr],
+        uncertainArr: [uncertainArr, setUncertainArr],
 
         clicks: [clicks, setClicks],
         maskImg: [maskImg, setMaskImg],
@@ -62,10 +79,25 @@ const AppContextProvider = (props: {
         labelType: [labelType, setLabelType],
         brushWidth: [brushWidth, setBrushWidth],
 
+        postProcess: [postProcess, setPostProcess],
+
         overlayType: [overlayType, setOverlayType],
         labelOpacity: [labelOpacity, setLabelOpacity],
         segOpacity: [segOpacity, setSegOpacity],
+        uncertaintyOpacity: [uncertaintyOpacity, setUncertaintyOpacity],
         processing: [processing, setProcessing],
+
+        features: [features, setFeatures],
+
+        errorObject: [errorObject, setErrorObject],
+        showToast: [showToast, setShowToast],
+        modalShow: [modalShow, setModalShow],
+        theme: [theme, setTheme],
+        settings: [settings, setSettings],
+        path: [path, setPath],
+        UID: [UID, setUID],
+
+        galleryID: [galleryID, setGalleryID],
       }}
     >
       {props.children}

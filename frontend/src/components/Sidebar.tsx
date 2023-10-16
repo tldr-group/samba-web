@@ -8,10 +8,10 @@ of a large image which when clicked will change focus to that sub-image
 4) A spinny wheel in a box that appears when pinging the backed (segmenting or encoding).
 */
 
-import React, { useContext, useEffect, useRef } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import AppContext from "./hooks/createContext";
 import { colours, rgbaToHex, getSplitInds, getctx, getxy } from "./helpers/canvasUtils";
-import { Label, LabelFrameProps, NavigationProps, SidebarProps } from "./helpers/Interfaces";
+import { Label, LabelFrameProps, NavigationProps, SidebarProps, themeBGs, Theme } from "./helpers/Interfaces";
 
 import { ToolTip } from "./Topbar";
 import Card from 'react-bootstrap/Card';
@@ -23,16 +23,65 @@ import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import * as _ from "underscore";
 
 
+const _getCSSColour = (currentStateVal: any, targetStateVal: any, successPrefix: string, colourIdx: number, theme: Theme): string => {
+    // Boring function to map a success to current labelling colour. Used for GUI elements.
+    const c = colours[colourIdx];
+    const hex = rgbaToHex(c[0], c[1], c[2], 255);
+    const matches: boolean = (currentStateVal === targetStateVal);
+    const erase: boolean = (targetStateVal === "Erase" && matches);
+
+    let outlineStr: string;
+    /*
+    if (erase) {
+        outlineStr = successPrefix + "#ffffff";
+    } else */
+
+    if (matches) {
+        outlineStr = successPrefix + hex;
+    } else {
+        outlineStr = themeBGs[theme][2];
+    }
+    return outlineStr;
+}
+
+
 const Sidebar = ({ requestEmbedding, trainClassifier, changeToImage }: SidebarProps) => {
+    const {
+        labelClass: [labelClass,],
+        theme: [theme,],
+        processing: [processing,],
+    } = useContext(AppContext)!;
+
+    const _getTrainBtn = () => {
+        // Get state of the 'Train Classifier' button: either inactive as not enough classes labelled, active or inactive and spinny wheel
+        if (processing === "Segmenting" || processing === "Applying") {
+            return (<Button disabled variant={themeBGs[theme][0]} style={{
+                marginLeft: '28%',
+                boxShadow: "1px 1px  1px grey", outline: _getCSSColour("foo", "foo", "3px solid ", labelClass, theme),
+            }}>
+                <Spinner
+                    as="span"
+                    animation="border"
+                    size="sm"
+                    role="status"
+                />
+                &nbsp;{processing}
+            </Button>)
+        } else if (processing === "Inactive") {
+            return (<Button onClick={trainClassifier} disabled variant={themeBGs[theme][0]} style={{ marginLeft: '24%', boxShadow: "1px 1px  1px grey", color: "#ffffff" }}>Label more classes!</Button>)
+        } else {
+            return (<Button onClick={trainClassifier} variant={themeBGs[theme][0]} style={{ marginLeft: '28%', boxShadow: "1px 1px  1px grey", color: "#ffffff" }}>Train Classifier!</Button>)
+        }
+    }
+
     // holds all the stuff on the side of the screen: train button, label frame, overlay frame and a hidden spin wheel that displays when encoding or segmenting
     return (
         <div className="items-center" style={{ padding: '10px 10px', alignItems: 'center' }}>
-            <Button onClick={trainClassifier} variant="dark" style={{ marginLeft: '28%', boxShadow: "1px 1px  1px grey" }}>Train Classifier!</Button>{' '}
+            {_getTrainBtn()}
             <div className={`h-full w-[20%]`}>
                 <LabelFrame requestEmbedding={requestEmbedding} />
                 <OverlaysFrame />
                 <NavigationFrame changeToImage={changeToImage} />
-                <SpinWheel></SpinWheel>
             </div>
         </div>
     );
@@ -44,6 +93,8 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
         labelClass: [labelClass, setLabelClass],
         brushWidth: [brushWidth, setBrushWidth],
         maskIdx: [maskIdx, setMaskIdx],
+        processing: [processing,],
+        theme: [theme,],
     } = useContext(AppContext)!;
 
     const prefix = "../assets/icons/";
@@ -53,38 +104,62 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
     const erase = { "path": "erase.png", "name": "Erase" };
     const labels = [sam, poly, brush, erase]; // loop over these to generate icons
 
+    const eraseAllTicked = (labelClass == 0) ? 1 : 0;
+
     const regionSizes = ["Small", "Medium", "Large"] // text for button group
     const classes: number[] = [1, 2, 3, 4, 5, 6]
     const _setLabel = (e: any, name: string) => {
+        if (labelClass == 0 && name != 'Erase') { setLabelClass(1) } // if switching away from erase don't want to draw w/ 0
         setLabelType(name as Label);
         if (name == "Smart Labelling") { // if switching to SAM labelling, requestEmbedding from app (which returns early if it's already set)
             console.log('Smart Labelling')
             requestEmbedding();
-        };
-    };
-    const _setWidth = (e: any) => { setBrushWidth(e.target.value) }
-    const _getCSSColour = (currentStateVal: any, targetStateVal: any, successPrefix: string, colourIdx: number): string => {
-        // Boring function to map a success to current labelling colour. Used for GUI elements.
-        const c = colours[colourIdx];
-        const hex = rgbaToHex(c[0], c[1], c[2], 255);
-        const matches: boolean = (currentStateVal === targetStateVal);
-        const erase: boolean = (targetStateVal === "Erase" && matches);
-
-        let outlineStr: string;
-        if (erase) {
-            outlineStr = successPrefix + "#ffffff";
-        } else if (matches) {
-            outlineStr = successPrefix + hex;
-        } else {
-            outlineStr = "";
         }
-        return outlineStr;
+    };
+
+    const _eraseAllChecked = (e: any) => {
+        const checked = e.target.checked;
+        if (checked) {
+            setLabelClass(0); //erase all
+        } else {
+            setLabelClass(1);
+        }
     }
 
+    const _getImg = (l: any) => {
+        // Get image of label type. If SAM label icon and encoding, make it a spinny wheel instead.
+        if (l.name == "Smart Labelling" && processing === "Encoding") {
+            return (
+                <div style={{
+                    marginLeft: '7%', width: '40px', height: '40px', position: 'relative',
+                    outline: _getCSSColour(l.name, labelType, "3px solid ", labelClass, theme),
+                    backgroundColor: themeBGs[theme][2], borderRadius: '3px', boxShadow: '2px 2px 2px black',
+                }}>
+                    < Spinner as='span' animation="border" variant="secondary" style={{ position: "absolute", left: "5px", top: "5px", width: '30px', height: '30px' }} />
+                </div>
+            )
+        } else {
+            return (<img src={prefix + l.path} style={
+                {
+                    backgroundColor: themeBGs[theme][2], borderRadius: '3px',
+                    marginLeft: '7%', width: '40px', boxShadow: '2px 2px 2px black',
+                    outline: _getCSSColour(l.name, labelType, "3px solid ", labelClass, theme)
+                }
+            }
+                onClick={(e) => _setLabel(e, l.name)}></img>)
+        }
+    }
+
+    const _setWidth = (e: any) => {
+        const edgeLength: number = e.target.value;
+        setBrushWidth(edgeLength);
+    }
+
+
     return (
-        <Card className="bg-dark text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }}>
-            <Card.Header as="h5">Label</Card.Header>
-            <Card.Body className={`flex`}>
+        <Card className="text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }} bg={themeBGs[theme][0]}>
+            <Card.Header as="h5" style={{ marginTop: '-4px', marginBottom: '-4px' }}>Label</Card.Header>
+            <Card.Body className={`flex`} style={{ marginTop: '-5px', marginBottom: '-5px' }}>
                 <>
                     {labels.map(l =>
                         <OverlayTrigger
@@ -92,50 +167,49 @@ const LabelFrame = ({ requestEmbedding }: LabelFrameProps) => {
                             placement="top"
                             delay={{ show: 250, hide: 400 }}
                             overlay={ToolTip(l.name)}>
-                            <img src={prefix + l.path} style={
-                                {
-                                    backgroundColor: 'white', borderRadius: '3px',
-                                    marginLeft: '7%', width: '40px', boxShadow: '2px 2px 2px black',
-                                    outline: _getCSSColour(l.name, labelType, "3px solid ", labelClass)
-                                }
-                            }
-                                onClick={(e) => _setLabel(e, l.name)}></img>
+                            {_getImg(l)}
                         </OverlayTrigger>
 
                     )}
                 </>
             </Card.Body>
-            <Card.Body>
+            <Card.Body style={{ marginTop: '-5px', marginBottom: '-5px' }}>
                 Class <p style={{ margin: "0px" }}></p>
-                <ButtonGroup style={{ paddingLeft: "4%", marginLeft: '5%' }}>
+                <ButtonGroup style={{ paddingLeft: "3%", marginLeft: '0%' }}>
                     {classes.map(i => <Button key={i} variant="light" onClick={(e) => setLabelClass(i)} style={{
-                        backgroundColor: _getCSSColour(i, labelClass, "", labelClass),
-                        border: _getCSSColour(i, labelClass, "2px solid", labelClass),
+                        backgroundColor: _getCSSColour(i, labelClass, "", labelClass, theme),
+                        border: _getCSSColour(i, i, "2px solid", i, theme),
+                        margin: '1px 1px 1px 1px'
                     }}>{i}</Button>)}
                 </ButtonGroup>
             </Card.Body>
-            <Card.Body>
-                Brush Width
+            {(labelType == "Brush" || labelType == "Erase") && <Card.Body>
+                {labelType} Width
                 <Form.Range onChange={(e) => _setWidth(e)} min="1" max="100" value={brushWidth} />
-            </Card.Body>
-            <Card.Body>
+                {labelType == "Erase" &&
+                    <Form.Check label="Erase all classes" value={eraseAllTicked} onChange={(e) => _eraseAllChecked(e)}></Form.Check>}
+            </Card.Body>}
+            {labelType == "Smart Labelling" && <Card.Body style={{ marginTop: '-5px', marginBottom: '-5px' }}>
                 Smart Label Region
                 <ButtonGroup style={{ paddingLeft: "4%" }}>
                     {regionSizes.map((size, i) => <Button key={i} variant="light" onClick={(e) => setMaskIdx(3 - i)} style={{
-                        backgroundColor: _getCSSColour(3 - i, maskIdx, "", labelClass),
-                        borderColor: _getCSSColour(3 - i, maskIdx, "", labelClass)
+                        backgroundColor: _getCSSColour(3 - i, maskIdx, "", labelClass, theme),
+                        borderColor: _getCSSColour(3 - i, maskIdx, "", labelClass, theme)
                     }}>{size}</Button>)}
                 </ButtonGroup>
-            </Card.Body>
+            </Card.Body>}
         </Card >
     );
 }
 
 const OverlaysFrame = () => {
     const {
+        segArr: [segArr,],
         overlayType: [overlayType, setOverlayType],
         segOpacity: [, setSegOpacity],
         labelOpacity: [, setLabelOpacity],
+        uncertaintyOpacity: [, setUncertaintyOpacity],
+        theme: [theme,],
     } = useContext(AppContext)!;
     // Throttled to avoid over rendering and slowing down too much
     const changeOpacity = _.throttle((e: any) => {
@@ -143,6 +217,8 @@ const OverlaysFrame = () => {
             setLabelOpacity(e.target.value);
         } else if (overlayType == "Segmentation") {
             setSegOpacity(e.target.value);
+        } else if (overlayType == "Uncertainty") {
+            setUncertaintyOpacity(e.target.value);
         }
     }, 13);
     const _setOverlayType = (val: string) => {
@@ -150,62 +226,52 @@ const OverlaysFrame = () => {
             setOverlayType("Segmentation");
         } else if (val == "Label") {
             setOverlayType("Label");
+        } else if (val == "Uncertainty") {
+            setOverlayType("Uncertainty");
         };
     };
-
-    return (
-        <Card className="bg-dark text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }}>
-            <Card.Header as="h5">Overlay</Card.Header>
-            <Card.Body className="flex">
-                <Form.Select onChange={e => _setOverlayType(e.target.value)}>
-                    <option >Overlay type</option>
-                    <option value="Segmentation">Segmentation</option>
-                    <option value="Label">Labels</option>
-                </Form.Select>
-            </Card.Body>
-            <Card.Body>
-                Opacity
-                <Form.Range onChange={e => changeOpacity(e)} min="0" max="255" />
-            </Card.Body>
-        </Card>
-    );
-}
-
-const SpinWheel = () => {
-    // Spinny wheel and text that shows up when processing state is true. Has same bg colour as labelling colour.
-    const {
-        processing: [processing,],
-        labelClass: [labelClass,],
-    } = useContext(AppContext)!;
-
-    const c = colours[labelClass];
-    const hex = rgbaToHex(c[0], c[1], c[2], 255);
-
-    if (processing !== "None") {
-        return (<div>
-            <Button disabled style={{
-                backgroundColor: hex, borderColor: hex, width: '18rem', margin: '15%'
-            }}>
-                < Spinner as='span' animation="border" />
-                <p style={{ marginBottom: '-4px' }}>{processing}</p>
-            </Button>
-        </div >)
+    const maxUncertainty = () => {
+        setUncertaintyOpacity(255)
     }
 
     return (
-        <div></div >
-    )
+        <Card className="text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }} bg={themeBGs[theme][0]}>
+            <Card.Header as="h5" style={{ marginTop: '-4px', marginBottom: '-4px' }}>Overlay</Card.Header>
+            <Card.Body className="flex" style={{ marginTop: '-5px', marginBottom: '-5px' }}>
+                <Form.Select onChange={e => _setOverlayType(e.target.value)} value={overlayType} style={{ backgroundColor: themeBGs[theme][2] }}>
+                    <option value="None" >Overlay type</option>
+                    <option value="Segmentation">Segmentation</option>
+                    <option value="Label">Labels</option>
+                    <option value="Uncertainty">Uncertainty</option>
+                </Form.Select>
+            </Card.Body>
+            <Card.Body style={{ marginTop: '-5px', marginBottom: '-5px' }}>
+                Opacity
+                <Form.Range onChange={e => changeOpacity(e)} min="0" max="255" />
+                {
+                    (segArr[0] > 0) &&
+                    <Button variant="light" style={{ marginLeft: '8%' }} onClick={maxUncertainty}> Show Uncertain Regions!</Button>
+                }
+            </Card.Body>
+
+        </Card >
+    );
 }
 
+
 const NavigationFrame = ({ changeToImage }: NavigationProps) => {
-    const { imgType: [imgType,] } = useContext(AppContext)!;
+    // Parent of thumbnail navigation for large images
+    const {
+        imgType: [imgType,],
+        theme: [theme]
+    } = useContext(AppContext)!;
     const nImages = 2
 
     if (nImages > 1 && imgType != "single") {
         return (
-            <Card className="bg-dark text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }}>
-                <Card.Header as="h5">Navigation</Card.Header>
-                <Card.Body>
+            <Card className="text-white" style={{ width: '18rem', margin: '15%', boxShadow: "1px 1px  1px grey" }} bg={themeBGs[theme][0]}>
+                <Card.Header as="h5" style={{ marginTop: '-4px', marginBottom: '-4px' }}>Navigation</Card.Header>
+                <Card.Body style={{ marginTop: '-5px', marginBottom: '-5px' }}>
                     <ImgSelect changeToImage={changeToImage} />
                 </Card.Body>
             </Card>
@@ -218,42 +284,46 @@ const NavigationFrame = ({ changeToImage }: NavigationProps) => {
 }
 
 const ImgSelect = ({ changeToImage }: NavigationProps) => {
+    // Thumbnail where clicking on different demarcated regions will take you to that sub-image
     const {
         largeImg: [largeImg,],
         imgArrs: [imgArrs,],
         labelClass: [labelClass,],
         imgIdx: [imgIdx, setImgIdx],
         imgType: [imgType,],
+        theme: [theme,],
     } = useContext(AppContext)!;
     // Reference stord to update later.
     const canvRef = useRef<HTMLCanvasElement>(null);
+    const [canvSize, setCanvSize] = useState({ width: 0, height: 0 });
 
     const drawCanvas = (ctx: CanvasRenderingContext2D, selectedImg: number, largeImg: HTMLImageElement, x: number | null, y: number | null) => {
         /* Given canvas context, currently chosen image, the large image and a click x, click , split the image up with
         splitInds (largest even split that's less than 1024 in each dir), draw lines across the image corresponding to
         this splitting in canvas coordinates (shrunk relative to real image). Highlight the currently chosen sub image
         with the labelling and if hovering over the canvas, draw a grey square over where the mouse is. */
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         const c = colours[labelClass];
         const hex = rgbaToHex(c[0], c[1], c[2], 255);
         ctx.strokeStyle = hex;
         const splitInds = getSplitInds(largeImg);
-        const [dx, dy, nW] = [splitInds['dx'], splitInds['dy'], splitInds['nW']]
+        const [dx, dy, nW, nH] = [splitInds['dx'], splitInds['dy'], splitInds['nW'], splitInds['nH']];
         drawLines(ctx, splitInds['h'], largeImg.width, largeImg.height, 'h');
         drawLines(ctx, splitInds['w'], largeImg.width, largeImg.height, 'w');
         const selectedBox = rgbaToHex(c[0], c[1], c[2], 0.55 * 255);
         const sqX = Math.round(selectedImg % nW);
         const sqY = Math.floor(selectedImg / nW);
-        drawSquare(ctx, sqX, sqY, splitInds, largeImg.width, largeImg.height, selectedBox)
+        drawSquare(ctx, sqX, sqY, splitInds, largeImg.width, largeImg.height, selectedBox);
         if (x != null && y != null) {
             const hoverBox = rgbaToHex(182, 182, 182, 0.8 * 255);
-            const sqX = Math.round((x / ctx.canvas.width) * largeImg.width / dx) //n
-            const sqY = Math.floor((y / ctx.canvas.height) * largeImg.height / dy)
-            drawSquare(ctx, sqX, sqY, splitInds, largeImg.width, largeImg.height, hoverBox)
+            const sqX = Math.round((x / canvSize.width) * (nW - 1)); //n
+            const sqY = Math.round((y / canvSize.height) * (nH - 1));
+            drawSquare(ctx, sqX, sqY, splitInds, largeImg.width, largeImg.height, hoverBox);
         }
     }
 
     const drawLines = (ctx: CanvasRenderingContext2D, endpoints: number[], iw: number, ih: number, mode: 'h' | 'w') => {
+        // Draw lines at each sub-image boundary
         let sf: number;
         if (mode == 'w') {
             sf = ctx.canvas.width / iw;
@@ -272,7 +342,8 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
 
     const drawSquare = (ctx: CanvasRenderingContext2D, sqX: number, sqY: number, inds: any,
         iw: number, ih: number, color: string) => {
-        const [dx, dy] = [inds['dx'], inds['dy']]
+        // Draw square on selected sub-image
+        const [dx, dy] = [inds['dx'], inds['dy']];
         ctx.fillStyle = color;
         const sfW = ctx.canvas.width / iw;
         const sfH = ctx.canvas.height / ih;
@@ -281,32 +352,33 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
 
     // Throttled to avoid over drawing
     const drawOnHover = _.throttle((e: any) => {
-        const res = getxy(e)
+        // Draw square on hovered-over sub-image
+        const res = getxy(e);
         if (largeImg === null) { return; }
         const ctx = getctx(canvRef);
         if (ctx === null) { return; }
         drawCanvas(ctx, imgIdx, largeImg, res[0], res[1]);
-    }, 4)
+    }, 15)
 
     const onClick = (e: any) => {
         // On click, change sub image to the selected square
         const ctx = getctx(canvRef);
         if (largeImg === null || ctx === null) { return; }
-        const res = getxy(e)
-        const [x, y] = res
+        const res = getxy(e);
+        const [x, y] = res;
         const splitInds = getSplitInds(largeImg);
-        const [dx, dy, nW] = [splitInds['dx'], splitInds['dy'], splitInds['nW']]
-        const sqX = Math.round((x / ctx.canvas.width) * largeImg.width / dx)
-        const sqY = Math.floor((y / ctx.canvas.height) * largeImg.height / dy)
+        const [dx, dy, nW, nH] = [splitInds['dx'], splitInds['dy'], splitInds['nW'], splitInds['nH']];
+        const sqX = Math.round((x / canvSize.width) * (nW - 1)); //n
+        const sqY = Math.round((y / canvSize.height) * (nH - 1));
         // TODO: bug here. When click on bottom half of bottom row, rounds up and tries to index square outside range. Clamping as temporary solution
-        const sq = Math.min(sqX + nW * sqY, imgArrs.length - 1)
-        changeToImage(imgIdx, sq)
-        setImgIdx(sq)
+        const sq = Math.min(sqX + nW * sqY, imgArrs.length - 1);
+        changeToImage(imgIdx, sq);
+        setImgIdx(sq);
     }
 
     const changeImageIdx = (e: any) => {
-        changeToImage(imgIdx, e.target.value - 1)
-        setImgIdx(e.target.value - 1)
+        changeToImage(imgIdx, e.target.value - 1);
+        setImgIdx(e.target.value - 1);
     }
 
     useEffect(() => {
@@ -317,15 +389,33 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
         drawCanvas(ctx, imgIdx, largeImg, null, null);
     }, [largeImg, labelClass, imgIdx])
 
+    useEffect(() => {
+        const canvas = canvRef.current;
+        if (canvas === null) { return; }
+        canvas.width = canvSize.width;
+        canvas.height = canvSize.height;
+
+    }, [canvSize]);
+
+    useEffect(() => {
+        const canvasContainer = document.getElementById('container');
+        if (canvasContainer === null) { return }
+        setCanvSize({
+            width: canvasContainer.offsetWidth,
+            height: canvasContainer.offsetHeight
+        });
+    }, [])
+
     // Two different display modes: visual navigation for large images and slider for stacks
+    //width: "100%", height: "100%"
     if (imgType === "large") {
         return (
             <div>
                 <div className={`flex`}>Piece: <input type="number" min={1} max={imgArrs.length}
                     value={imgIdx + 1} onChange={e => changeImageIdx(e)}
-                    style={{ marginLeft: '8px', color: 'black', borderRadius: '4px', marginBottom: '10px' }} />
+                    style={{ marginLeft: '8px', color: 'black', borderRadius: '4px', marginBottom: '10px', backgroundColor: themeBGs[theme][2] }} />
                 </div>
-                <div style={{ display: 'grid' }}>
+                <div id="container" style={{ display: 'grid', width: "100%", height: "100%" }}>
                     {(largeImg !== null) ? <img src={largeImg.src} style={{ gridColumn: 1, gridRow: 1, width: "100%", height: "100%" }}></img> : <></>}
                     {(largeImg !== null) ? <canvas
                         onMouseMove={drawOnHover}
@@ -334,14 +424,14 @@ const ImgSelect = ({ changeToImage }: NavigationProps) => {
                         style={{ gridColumn: 1, gridRow: 1, width: "100%", height: "100%" }}
                     ></canvas> : <></>}
                 </div>
-            </div>
+            </div >
 
         )
     } else if (imgType === "stack" || imgType === "multi") {
         return (
             <div>
-                Image: <input type="number" min={1} max={imgArrs.length} value={imgIdx + 1} onChange={e => changeImageIdx(e)} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px' }} />
-                <Form.Range min={1} value={imgIdx} max={imgArrs.length} onChange={e => changeImageIdx(e)} />
+                Image: <input type="number" min={1} max={imgArrs.length} value={imgIdx + 1} onChange={e => changeImageIdx(e)} style={{ marginLeft: '8px', color: 'black', borderRadius: '4px', backgroundColor: themeBGs[theme][2] }} />
+                <Form.Range min={1} value={imgIdx + 1} max={imgArrs.length} onChange={e => changeImageIdx(e)} />
             </div>
         )
     } else {

@@ -1,9 +1,4 @@
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-// All rights reserved.
-
-// This source code is licensed under the license found in the
-// LICENSE file in the root directory of this source tree.
-
+// From Meta SAM demo
 // development config
 const { merge } = require("webpack-merge");
 const commonConfig = require("./common");
@@ -13,6 +8,7 @@ module.exports = merge(commonConfig, {
   devServer: {
     hot: true, // enable HMR on the server
     open: true,
+    historyApiFallback: true,
     // These headers enable the cross origin isolation state
     // needed to enable use of SharedArrayBuffer for ONNX 
     // multithreading. 

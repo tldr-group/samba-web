@@ -1,9 +1,4 @@
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-// All rights reserved.
-
-// This source code is licensed under the license found in the
-// LICENSE file in the root directory of this source tree.
-
+// From Meta SAM demo
 const { resolve } = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const FriendlyErrorsWebpackPlugin = require("friendly-errors-webpack-plugin");
@@ -17,6 +12,7 @@ module.exports = {
   },
   output: {
     path: resolve(__dirname, "dist"),
+    publicPath: "/",
   },
   module: {
     rules: [
@@ -75,10 +71,14 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       template: "./src/assets/index.html",
+      favicon: "./src/assets/icons/favicon.png"
     }),
     new FriendlyErrorsWebpackPlugin(),
     new webpack.ProvidePlugin({
       process: "process/browser",
     }),
   ],
+  experiments: {
+    topLevelAwait: true
+  }
 };

@@ -1,11 +1,5 @@
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-// All rights reserved.
-
-// This source code is licensed under the license found in the
-// LICENSE file in the root directory of this source tree.
-
 import { createContext } from "react";
-import { modelInputProps, Label, LabelFrameProps, Offset } from "../helpers/Interfaces";
+import { modelInputProps, Label, ErrorMessage, SegmentFeatureState, ModalShow, Features, Theme, Settings } from "../helpers/Interfaces";
 
 interface contextProps {
   largeImg: [
@@ -36,6 +30,10 @@ interface contextProps {
     labelArrs: Array<Uint8ClampedArray>,
     setLabelArrs: (e: Array<Uint8ClampedArray>) => void
   ];
+  uncertainArrs: [
+    uncertainArrs: Array<Uint8ClampedArray>,
+    setUncertainArrs: (e: Array<Uint8ClampedArray>) => void
+  ];
 
 
   image: [
@@ -49,6 +47,15 @@ interface contextProps {
   segArr: [
     segArr: Uint8ClampedArray,
     setSegArr: (e: Uint8ClampedArray) => void
+  ];
+  uncertainArr: [
+    uncertainArr: Uint8ClampedArray,
+    setUncertainArr: (e: Uint8ClampedArray) => void
+  ];
+
+  postProcess: [
+    postProcess: boolean,
+    setPostProcess: (e: boolean) => void
   ];
 
 
@@ -75,8 +82,8 @@ interface contextProps {
 
 
   overlayType: [
-    overlayType: "Segmentation" | "Label",
-    setOverlayType: (e: "Segmentation" | "Label") => void
+    overlayType: "Segmentation" | "Label" | "Uncertainty" | "None",
+    setOverlayType: (e: "Segmentation" | "Label" | "Uncertainty" | "None") => void
   ];
   labelOpacity: [
     labelOpacity: number,
@@ -86,13 +93,55 @@ interface contextProps {
     segOpacity: number,
     setSegOpacity: (e: number) => void
   ];
+  uncertaintyOpacity: [
+    segOpacity: number,
+    setSegOpacity: (e: number) => void
+  ];
   brushWidth: [
     brushWidth: number,
     setBrushWidth: (e: number) => void
   ];
   processing: [
-    processing: "None" | "Encoding" | "Segmenting",
-    setProcessing: (e: "None" | "Encoding" | "Segmenting") => void
+    processing: "None" | "Encoding" | "Segmenting" | "Applying" | "Inactive",
+    setProcessing: (e: "None" | "Encoding" | "Segmenting" | "Applying" | "Inactive") => void
+  ];
+
+  features: [
+    features: Features,
+    setFeatures: (e: Features) => void
+  ]
+
+  errorObject: [
+    errorObject: ErrorMessage,
+    setErrorObject: (e: ErrorMessage) => void
+  ];
+  showToast: [
+    showToast: boolean,
+    setShowToast: (e: boolean) => void,
+  ];
+  modalShow: [
+    modalShow: ModalShow,
+    setModalShow: (e: ModalShow) => void,
+  ];
+  theme: [
+    theme: Theme,
+    setTheme: (e: Theme) => void
+  ]
+  settings: [
+    settings: Settings,
+    setSettings: (e: Settings) => void
+  ];
+  path: [
+    path: string,
+    setPath: (e: string) => void
+  ];
+  UID: [
+    UID: string,
+    setUID: (e: string) => void
+  ];
+  galleryID: [
+    galleryID: string,
+    setGalleryID: (e: string) => void
   ];
 }
 

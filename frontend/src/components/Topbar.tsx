@@ -7,7 +7,8 @@ import React, { useRef, useContext } from "react";
 import AppContext from "./hooks/createContext";
 import { TopbarProps, ModalShow, themeBGs } from "./helpers/Interfaces";
 
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import Form from 'react-bootstrap/Form';
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
@@ -32,6 +33,7 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
         modalShow: [modalShow, setModalShow],
         labelType: [, setLabelType],
         theme: [theme,],
+        postProcess: [, setPostProcess],
     } = useContext(AppContext)!;
     const fileInputRef = useRef<HTMLInputElement>(null);
     const loadClassifierRef = useRef<HTMLInputElement>(null);
@@ -47,6 +49,10 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
         if (loadClassifierRef.current) {
             loadClassifierRef.current.click();
         }
+    }
+
+    const togglePostProcess = (e: any) => {
+        setPostProcess(e.target.checked)
     }
 
 
@@ -68,6 +74,7 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
         ["Gallery", "gallery.png", "", ''],
         ["Paper", "paper.png", "coming_soon", '_blank'],
         ["Help", "help.png", "https://github.com/tldr-group/samba-web/blob/development/MANUAL.md", '_blank'],
+        ["Contact", "mail.png", "", ""],
         ["TLDR Group", "tldr.png", "https://tldr-group.github.io/#/", '_blank']
     ]
 
@@ -76,14 +83,17 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
     const iconClick = (e: any, i: string) => {
         // For out link icon click, perform correct action
         if (i === "Settings") {
-            const newModalShow: ModalShow = { welcome: false, settings: true, features: false };
+            const newModalShow: ModalShow = { welcome: false, settings: true, features: false, contact: false };
             setModalShow(newModalShow);
         } else if (i === "Gallery") {
             navigate("/gallery");
         } else if (i === "Features") {
-            const newModalShow: ModalShow = { welcome: false, settings: false, features: true };
+            const newModalShow: ModalShow = { welcome: false, settings: false, features: true, contact: false };
             setModalShow(newModalShow);
-        }
+        } else if (i === "Contact") {
+            const newModalShow: ModalShow = { welcome: false, settings: false, features: false, contact: true }
+            setModalShow(newModalShow)
+        };
     };
 
     return (
@@ -125,6 +135,17 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
                         </NavDropdown>
                         <Nav.Link onClick={saveLabels}>Save Labels</Nav.Link>
                         <Nav.Link onClick={saveSeg}>Save Segmentation</Nav.Link>
+                        <Navbar.Text>
+                            <Form >
+                                <Form.Check
+                                    type="switch"
+                                    label="&nbsp;&nbsp;&nbsp;&nbsp;Post-Process:"
+                                    id="post_process_switch"
+                                    reverse
+                                    onChange={togglePostProcess}
+                                />
+                            </Form>
+                        </Navbar.Text>
                     </Nav>
                 </Navbar.Collapse>
             </Container>

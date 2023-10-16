@@ -53,6 +53,11 @@ interface contextProps {
     setUncertainArr: (e: Uint8ClampedArray) => void
   ];
 
+  postProcess: [
+    postProcess: boolean,
+    setPostProcess: (e: boolean) => void
+  ];
+
 
   clicks: [
     clicks: modelInputProps[] | null,

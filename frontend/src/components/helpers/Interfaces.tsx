@@ -106,6 +106,7 @@ export interface ModalShow {
   welcome: boolean;
   settings: boolean;
   features: boolean;
+  contact: boolean;
 }
 
 

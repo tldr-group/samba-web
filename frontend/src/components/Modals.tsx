@@ -24,13 +24,14 @@ const BigModal = ({ requestFeatures }: BigModalProps) => {
         theme: [theme,]
     } = useContext(AppContext)!;
 
-    const handleClose = () => { setModalShow({ welcome: false, settings: false, features: false }) };
+    const handleClose = () => { setModalShow({ welcome: false, settings: false, features: false, contact: false }) };
 
     return (
-        <Modal show={modalShow.welcome || modalShow.settings || modalShow.features} onHide={handleClose} size="lg" >
+        <Modal show={modalShow.welcome || modalShow.settings || modalShow.features || modalShow.contact} onHide={handleClose} size="lg" >
             {(modalShow.welcome && <WelcomeModalContent />)}
             {(modalShow.features) && <FeatureModalContent closeModal={handleClose} requestFeatures={requestFeatures} />}
             {(modalShow.settings) && <SettingsModalContent />}
+            {(modalShow.contact) && <ContactModalContent />}
         </Modal>
     )
 }
@@ -64,7 +65,8 @@ const WelcomeModalContent = () => {
                     <li><b>V:</b> toggle different overlay visibility (labels, segmentations, off).</li>
                     <li><b>ESC:</b> cancel current label.</li>
                 </ul>
-            </Modal.Body>
+                <p style={{ color: "red" }}>A desktop version (for heavier workloads) <b>is coming soon</b>. Contact ronan.docherty18@imperial.ac.uk </p>
+            </Modal.Body >
             <Modal.Footer>
                 <Form.Check type="checkbox" label="Do not show again" onChange={setNoShow} />
             </Modal.Footer>
@@ -245,8 +247,22 @@ const ErrorMessage = () => {
     );
 }
 
-const WarningModal = (text: string, closeFunction: CallableFunction) => {
 
+const ContactModalContent = () => {
+    return (
+        <>
+            <Modal.Header closeButton>
+                <Modal.Title>Contact</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <p>If you have a large dataset (.tiff stack or wide FoV) that needs segmenting or would like to share the data in an upcoming large dataset, please contact: </p>
+                <InputGroup className="mb-3">
+                    <InputGroup.Text id="basic-addon2">ronan.docherty18@imperial.ac.uk</InputGroup.Text>
+                </InputGroup>
+                <p>A desktop version is coming soon, for updates please follow the TLDR group <a href="https://github.com/tldr-group">github page</a> or <a href="https://twitter.com/tldr_group">twitter</a>.</p>
+            </Modal.Body >
+        </>
+    );
 }
 
 

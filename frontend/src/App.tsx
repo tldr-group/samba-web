@@ -38,6 +38,7 @@ const SAVE_ENDPOINT = PATH + "/saving";
 const LOAD_CLASSIFIER_ENDPOINT = PATH + "/lclassifier";
 const SAVE_LABEL_ENDPOINT = PATH + "/slabel";
 export const LOAD_GALLERY_IMAGE_ENDPOINT = PATH + "/lgallery";
+const SAVE_PROCESS_ENDPOINT = PATH + "/sprocess";
 
 
 const getb64Image = (img: HTMLImageElement): string => {
@@ -104,6 +105,7 @@ const App = () => {
     labelType: [, setLabelType],
     labelClass: [labelClass],
     overlayType: [, setOverlayType],
+    postProcess: [postProcess,],
     features: [features,],
     processing: [, setProcessing],
     errorObject: [errorObject, setErrorObject],
@@ -168,7 +170,7 @@ const App = () => {
     }
 
     if (showHelp === null || showHelp === "true") {
-      setModalShow({ welcome: true, settings: false, features: false });
+      setModalShow({ welcome: true, settings: false, features: false, contact: false });
     }
   }, []);
 
@@ -557,8 +559,40 @@ const App = () => {
   const onSaveClick = async () => {
     // Download segmentation tiff and show 'Share' toast popup
     if (image === null || segArr === null) { return; }
-    saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID, "rescale": settings.rescale, "type": "segmentation" }), "seg.tiff")
+    if (postProcess) {
+      savePostProcess()
+    } else {
+      saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID, "rescale": settings.rescale, "type": "segmentation" }), "seg.tiff")
+    }
     setShowToast(true);
+  }
+
+  const savePostProcess = async () => {
+    if (image === null) {
+      return;
+    }
+    const imgDims: string[] = imgArrs.map((img, i) => getHWstr(img));
+    const headers = new Headers();
+    headers.append('Content-Type', 'application/json;charset=utf-8');
+    console.log("Started Segementing");
+    let [largeW, largeH]: Array<number> = [0, 0];
+    if (imgType === "large" && largeImg !== null) {
+      largeW = largeImg.width;
+      largeH = largeImg.height;
+    }
+    const newSegArrs = updateArr(segArrs, imgIdx, segArr);
+    setSegArrs(newSegArrs);
+    const msg = {
+      "images": imgDims, "segs": newSegArrs, "id": UID, "save_mode": imgType,
+      "large_w": largeW, "large_h": largeH, "rescale": settings.rescale, "type": "segmentation",
+    };
+    let resp = await fetch(SAVE_PROCESS_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify(msg) });
+    const buffer = await resp.arrayBuffer();
+    const a = document.createElement("a");
+    a.download = "seg.tiff";
+    const file = new Blob([buffer], { type: "image/tiff" });
+    a.href = URL.createObjectURL(file);
+    a.click();
   }
 
   /*

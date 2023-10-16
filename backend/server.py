@@ -19,7 +19,7 @@ import zipfile
 
 from test_resources.call_weka import sep
 from encode import encode, featurise, imwrite
-from segment import segment, load_classifier_from_http, apply, save_labels
+from segment import segment, load_classifier_from_http, apply, save_labels, save_processed_segs
 from file_handling import delete_old_folders, delete_all_features, delete_feature_file
 
 # Very important: this environment variable is only present on webapp. If running locally, this fails and we use cwd instead.
@@ -279,6 +279,24 @@ async def save_labels_fn(request) -> Response:
 async def save_labels_respond():
     """Save route."""
     response = await generic_response(request, save_labels_fn)
+    return response
+
+
+async def save_post_process(request) -> Response:
+    img_dims = [_get_shape_tuple(i) for i in request.json["images"]]
+    segs_dicts = request.json["segs"]
+    UID: str = request.json["id"]
+    save_mode: str = request.json["save_mode"]
+    large_w, large_h = request.json["large_w"], request.json["large_h"]
+    rescale: bool = request.json["rescale"]
+    await save_processed_segs(img_dims, segs_dicts, UID, save_mode, large_w, large_h, rescale)
+    response = await save_fn(request)
+    return response
+
+@app.route("/sprocess", methods=["POST", "GET", "OPTIONS"])
+async def save_process_respond():
+    """Save route."""
+    response = await generic_response(request, save_post_process)
     return response
 
 # ================================= LOADING =================================

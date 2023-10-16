@@ -71,7 +71,7 @@ export function GreyscaleToImageData(input: Uint8ClampedArray, width: number, he
 
 function isPixelSet(p: number[]) { return (p[0] > 0 || p[1] > 0 || p[2] > 0) }
 
-export function addImageDataToArray(imageData: ImageData, arr: Uint8ClampedArray, classVal: number, erase: boolean = false): Uint8ClampedArray {
+export function addImageDataToArray(imageData: ImageData, arr: Uint8ClampedArray, classVal: number, erase: boolean = false, overwrite: boolean = false): Uint8ClampedArray {
   /* Given some $imageData (i.e a new label from animated canvas) and an $arr, loop through the image data, find pixels that
   have been set and set the corresponding pixel in $arr with the $classVal. This assumes the label class the animated canvas
   was set with is the same label class we're labelling with, but they're set in the same place so this is always true. If
@@ -81,7 +81,9 @@ export function addImageDataToArray(imageData: ImageData, arr: Uint8ClampedArray
   for (let i = 0; i < arr.length; i++) {
     const isSet = isPixelSet([data[4 * i], data[4 * i + 1], data[4 * i + 2]])
     // check if this pixel is set in the image and not set in the arr
-    if (!erase && isSet && arr[i] == 0) {
+    if (overwrite && isSet) {
+      newArr[i] = classVal;
+    } else if (!erase && isSet && arr[i] == 0) {
       newArr[i] = classVal;
     } else if (erase && isSet && classVal == arr[i]) {
       newArr[i] = 0;

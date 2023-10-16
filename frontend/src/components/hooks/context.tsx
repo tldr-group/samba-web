@@ -30,6 +30,8 @@ const AppContextProvider = (props: {
   const [labelType, setLabelType] = useState<Label>("Brush");
   const [brushWidth, setBrushWidth] = useState<number>(20);
 
+  const [postProcess, setPostProcess] = useState<boolean>(false);
+
   // Canvas display stuff
   const [overlayType, setOverlayType] = useState<"Segmentation" | "Label" | "Uncertainty" | "None">("None");
   const [labelOpacity, setLabelOpacity] = useState<number>(0.6 * 255);
@@ -43,7 +45,7 @@ const AppContextProvider = (props: {
   // Menus
   const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "", stackTrace: "" })
   const [showToast, setShowToast] = useState<boolean>(false);
-  const [modalShow, setModalShow] = useState<ModalShow>({ welcome: false, settings: false, features: false })
+  const [modalShow, setModalShow] = useState<ModalShow>({ welcome: false, settings: false, features: false, contact: false })
   const [theme, setTheme] = useState<Theme>("default")
   const [settings, setSettings] = useState<Settings>({ nPoints: 50000, trainAll: false, rescale: true, format: ".skops", balance: true })
 
@@ -76,6 +78,8 @@ const AppContextProvider = (props: {
         labelClass: [labelClass, setLabelClass],
         labelType: [labelType, setLabelType],
         brushWidth: [brushWidth, setBrushWidth],
+
+        postProcess: [postProcess, setPostProcess],
 
         overlayType: [overlayType, setOverlayType],
         labelOpacity: [labelOpacity, setLabelOpacity],

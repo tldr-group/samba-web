@@ -105,6 +105,49 @@ def _create_composite_tiff(
     return out
 
 
+async def save_processed_segs(
+    img_dims: List[Tuple[int, int]],
+    seg_dicts: List[dict],
+    UID: str,
+    save_mode: str,
+    large_w: int = 0,
+    large_h: int = 0,
+    rescale: bool = True,
+) -> None:
+    """Perform FRF segmentation.
+
+    Given list of label dicts, convert to arr, reshape to be same as corresponding image. Once
+    the background featurisation is complete, then generate training data for RF, train and apply.
+    Once result return, convert from probabilities to classes, flatten and return.
+
+    :param img_dims: list of image dimensions
+    :type img_dims: List[Tuple[int, int]]
+    :param labels_dicts: list of label dictionaries as sent over HTTP
+    :type labels_dicts: List[dict]
+    :param UID: user id
+    :type UID: str
+    :param save_mode: whether the image is large or a stack
+    :type save_mode: str
+    :param large_w: width of large image, defaults to 0
+    :type large_w: int, optional
+    :param large_h: height of large image, defaults to 0
+    :type large_h: int, optional
+    :type rescale: bool, optional
+    :param balance: whether to balance training points based on class frequency, defaults to True
+    :return: flattened segementations (class values) where labels overwrite predictions if different.
+    :rtype: np.ndarray
+    """
+    seg_arrs: List[np.ndarray] = []
+    for i in range(len(img_dims)):
+        h, w = img_dims[i]
+        seg_dict = seg_dicts[i]
+        seg_list = [item for keys, item in seg_dict.items()]
+        seg_arr = np.array(seg_list).reshape(h, w)
+        seg_arrs.append(seg_arr)
+    await _save_as_tiff(seg_arrs, save_mode, UID, large_w, large_h, None, rescale, True)
+    
+
+
 async def _save_as_tiff(
     arr_list: List[np.ndarray],
     mode: str,

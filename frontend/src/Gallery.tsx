@@ -172,15 +172,19 @@ const Gallery = () => {
         ["App", "app.png", "/", ''],
         ["Paper", "paper.png", "coming_soon", '_blank'],
         ["Help", "help.png", "https://github.com/tldr-group/samba-web/blob/development/MANUAL.md", '_blank'],
+        ["Contact", "mail.png", "", ""],
         ["TLDR Group", "tldr.png", "https://tldr-group.github.io/#/", '_blank']
     ]
 
     const iconClick = (e: any, i: string) => {
         if (i === "Settings") {
-            const newModalShow: ModalShow = { welcome: false, settings: true, features: false }
+            const newModalShow: ModalShow = { welcome: false, settings: true, features: false, contact: false }
             setModalShow(newModalShow)
         } else if (i === "Features") {
-            const newModalShow: ModalShow = { welcome: false, settings: false, features: true }
+            const newModalShow: ModalShow = { welcome: false, settings: false, features: true, contact: false }
+            setModalShow(newModalShow)
+        } else if (i === "Features") {
+            const newModalShow: ModalShow = { welcome: false, settings: false, features: true, contact: false }
             setModalShow(newModalShow)
         }
     };

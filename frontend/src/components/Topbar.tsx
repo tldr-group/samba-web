@@ -74,6 +74,7 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
         ["Gallery", "gallery.png", "", ''],
         ["Paper", "paper.png", "coming_soon", '_blank'],
         ["Help", "help.png", "https://github.com/tldr-group/samba-web/blob/development/MANUAL.md", '_blank'],
+        ["Contact", "mail.png", "", ""],
         ["TLDR Group", "tldr.png", "https://tldr-group.github.io/#/", '_blank']
     ]
 
@@ -82,14 +83,17 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
     const iconClick = (e: any, i: string) => {
         // For out link icon click, perform correct action
         if (i === "Settings") {
-            const newModalShow: ModalShow = { welcome: false, settings: true, features: false };
+            const newModalShow: ModalShow = { welcome: false, settings: true, features: false, contact: false };
             setModalShow(newModalShow);
         } else if (i === "Gallery") {
             navigate("/gallery");
         } else if (i === "Features") {
-            const newModalShow: ModalShow = { welcome: false, settings: false, features: true };
+            const newModalShow: ModalShow = { welcome: false, settings: false, features: true, contact: false };
             setModalShow(newModalShow);
-        }
+        } else if (i === "Contact") {
+            const newModalShow: ModalShow = { welcome: false, settings: false, features: false, contact: true }
+            setModalShow(newModalShow)
+        };
     };
 
     return (

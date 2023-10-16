@@ -170,7 +170,7 @@ const App = () => {
     }
 
     if (showHelp === null || showHelp === "true") {
-      setModalShow({ welcome: true, settings: false, features: false });
+      setModalShow({ welcome: true, settings: false, features: false, contact: false });
     }
   }, []);
 

@@ -42,6 +42,7 @@ python -m flask --app server run
 
 The server is now setup and listening for requests from our frontend!
 
+
 ### Install & run the frontend
 
 0. Install the JS libraries needed to build and run the frontend. Install Yarn (and npm first if needed)

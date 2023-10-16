@@ -148,10 +148,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         const c = colours[labelClass];
         const hex = rgbaToHex(c[0], c[1], c[2], 255);
         drawPolygon(ctx, polygon, hex, true);
-        /*
-        const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr);
-        if (arr !== undefined) { setLabelArr(arr); }
-        */
+
         addLabel(ctx, false)
         polyPoints.current = [];
     }
@@ -203,10 +200,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
         if (drawing && leftClick) { clicking.current = false; };
         if ((labelType == "Brush" || labelType == "Smart Labelling") && leftClick) {
             // Draw what was on our animated canvas (brush or SAM) onto the label canvas
-            /*
-            const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr);
-            if (arr !== undefined) { setLabelArr(arr); }
-            */
+
             addLabel(ctx, false)
             clearctx(animatedCanvasRef);
         } else if (labelType == "Smart Labelling" && rightClick) {
@@ -218,10 +212,7 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
             // Erase directly on labels (so get real time preview).
             const labelctx = getctx(labelCanvasRef);
             if (labelctx === null) { return }
-            /*
-            const arr = addCanvasToArr(ctx.canvas, labelImg, labelArr, true);
-            if (arr !== undefined) { setLabelArr(arr); }
-            */
+
             addLabel(ctx, true)
             clearctx(animatedCanvasRef);
             //setLabelArr(arr);
@@ -360,8 +351,8 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
             setLabelOpacity(200);
             setOverlayType("Label");
         } else if (overlayType === "Label") {
-            setSegOpacity(0);
-            setLabelOpacity(0);
+            setSegOpacity(200);
+            setLabelOpacity(200);
             setOverlayType("None");
         } else if (overlayType === "None") {
             setSegOpacity(200);

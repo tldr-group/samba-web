@@ -43,7 +43,9 @@ Once this is pressed, the app will request a SAM embedding from the server (this
 #### Zoom/Pan
 Use **WASD** or the **arrow keys** to move the image around the canvas. Use the **scroll wheel** to zoom in or out of the image. Everything works as expected with pans and zooms. 
 #### Overlays
-Labels (and later, segmentations) exist as a variable opacity overlay, which can be increased or decreased using the slider in the 'Overlay' tab. The 'Overlay Type' dropdown can be used to choose which overlay the slider will change the opacity of. Use the **V** key to quickly cycle opacities of the overlays: labels only -> segmentation only -> no overlays -> labels only. The overlay system allows you to add more labels where the segmentation may be incorrect.
+Labels (and later, segmentations) exist as a variable opacity overlay, which can be increased or decreased using the slider in the 'Overlay' tab. The 'Overlay Type' dropdown can be used to choose which overlay the slider will change the opacity of. Use the **V** key to quickly cycle opacities of the overlays: labels only -> segmentation only -> both overlays -> labels only. The overlay system allows you to add more labels where the segmentation may be incorrect.
+#### Show Uncertain Regions!
+This button will temporarily highlight the regions the classifier is least certain about (1 - maximum class prediction probability), which are good starting points for additional labels.
 #### Themes
 Different colour schemes can be chosen in the 'Settings' tab, including a dark mode.
 
@@ -75,6 +77,9 @@ Once a segmentation is saved, a popup will appear asking you to share the segmen
 The added labels will be downloaded. Unlabelled pixels will have a class of 0, **this will affect the rescaling** relative to the saved segmentation. This option can be useful if you want to use SAMBA as a labelling platform to generate manual labels for training a different segmentation algorithm, like a CNN.
 #### Save Classifier
 This option in the 'Classifier' tab allows you to download the trained classifier, for use on later datasets either in Python or SAMBA. The available formats are `.skops` (a secure scikit-learn storage format) and `.pkl` (a more common format, but unsecure). Note that `.pkl` classifiers can't be loaded into SAMBA, for security reasons.
+
+#### Post-Process
+When the 'post-process' toggle is active, any labels added (with brush, polygons, smart labels *etc.*) will **edit the saved segmentation**, rather than the labels. This can be useful for correcting errors in the segmentation, without needing to re-run the training process.
 
 ## Gallery
 The gallery page lets you view shared micrographs and their associated segmentations. The toggle switch in the top left lets you view the segmentations. Clicking on a micrograph opens a popup with data descriptions, allowing you to download the data (image, segmentation, labels) associated with that micrograph.

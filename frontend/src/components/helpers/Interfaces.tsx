@@ -102,6 +102,7 @@ export interface SegmentFeatureState {
   segment: boolean;
 }
 
+// refactor this to just be a literal - custom type is weird
 export interface ModalShow {
   welcome: boolean;
   settings: boolean;

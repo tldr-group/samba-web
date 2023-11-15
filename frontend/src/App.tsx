@@ -536,6 +536,7 @@ const App = () => {
     setSegArrs(newSegArrs);
     setUncertainArrs(newUncertainArrs);
     console.log("Finished segmenting");
+    setShowToast("Metric")
   }
 
   const saveArrAsTIFF = async (ENDPOINT: string, body_text: any, fname: string) => {
@@ -564,7 +565,7 @@ const App = () => {
     } else {
       saveArrAsTIFF(SAVE_ENDPOINT, JSON.stringify({ "id": UID, "rescale": settings.rescale, "type": "segmentation" }), "seg.tiff")
     }
-    setShowToast(true);
+    setShowToast("Share");
   }
 
   const savePostProcess = async () => {

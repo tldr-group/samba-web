@@ -326,12 +326,12 @@ const PostSegToast = () => {
         }
     }
 
-    const toggleToast = () => { setShowToast(!showToast) }
+    const toggleToast = () => { setShowToast("None") }
     const toggleMetaToast = () => { setShowMetaToast(!showMetaToast) }
 
     const handleShareSend = (e: any) => {
         if (shareSeg) {
-            setShowToast(false);
+            setShowToast("None");
             setShowMetaToast(true);
         }
         toggleToast();
@@ -347,7 +347,7 @@ const PostSegToast = () => {
     return (
         <>
             <ToastContainer className="p-5" position="bottom-end">
-                <Toast show={showToast} onClose={toggleToast}>
+                <Toast show={showToast == "Share"} onClose={toggleToast}>
                     <Toast.Header className="roundedme-2"><strong className="me-auto">Share Segmentation?</strong></Toast.Header>
                     <Toast.Body>
                         <InputGroup>
@@ -402,4 +402,37 @@ const PostSegToast = () => {
     )
 }
 
-export { BigModal, PostSegToast, ErrorMessage }
+
+const MetricsToast = () => {
+    const {
+        showToast: [showToast, setShowToast],
+    } = useContext(AppContext)!;
+
+    const toggleToast = () => { setShowToast("None") }
+
+    return (
+        <>
+            <ToastContainer className="p-5" position="bottom-end">
+                <Toast show={showToast == "Metric"} onClose={toggleToast}>
+                    <Toast.Header className="roundedme-2"><strong className="me-auto">View Metrics?</strong></Toast.Header>
+                    <Toast.Body>
+
+                        <Button variant="dark" onClick={toggleToast} style={{ marginLeft: '6rem', marginBottom: '1rem' }} >Phase Fractions</Button>
+                        <p>
+                            For more advanced analysis, save segmentation and load into a program
+                            like <a href="https://imagej.net/software/fiji/">FIJI</a> with a plugin
+                            like <a href="https://github.com/NREL/MATBOX_Microstructure_analysis_toolbox">MATBOX</a>.
+                        </p>
+                        <p>
+                            For fast calculation of tortuosity of 3D segmentations,
+                            consider <a href="https://github.com/tldr-group/taufactor">TauFactor</a>.
+                        </p>
+                    </Toast.Body>
+                </Toast>
+            </ToastContainer >
+        </>
+    )
+}
+
+
+export { BigModal, PostSegToast, MetricsToast, ErrorMessage }

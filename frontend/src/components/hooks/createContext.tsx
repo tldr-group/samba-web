@@ -116,8 +116,8 @@ interface contextProps {
     setErrorObject: (e: ErrorMessage) => void
   ];
   showToast: [
-    showToast: boolean,
-    setShowToast: (e: boolean) => void,
+    showToast: "None" | "Share" | "Metric",
+    setShowToast: (e: "None" | "Share" | "Metric") => void,
   ];
   modalShow: [
     modalShow: ModalShow,

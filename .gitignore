@@ -20,3 +20,4 @@ yarn.lock
 *backend/test_resources/test_outputs/*.png
 *.env*
 samba_logo/*
+backend/17*

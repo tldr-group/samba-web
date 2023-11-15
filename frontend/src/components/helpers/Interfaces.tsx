@@ -103,13 +103,7 @@ export interface SegmentFeatureState {
 }
 
 // refactor this to just be a literal - custom type is weird
-export interface ModalShow {
-  welcome: boolean;
-  settings: boolean;
-  features: boolean;
-  contact: boolean;
-}
-
+export type ModalShow = "None" | "Welcome" | "Settings" | "Features" | "Contact" | "Metrics"
 
 export interface closeModal {
   closeModal: () => void;

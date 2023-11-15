@@ -45,7 +45,7 @@ const AppContextProvider = (props: {
   // Menus
   const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "", stackTrace: "" })
   const [showToast, setShowToast] = useState<"None" | "Share" | "Metric">("None");
-  const [modalShow, setModalShow] = useState<ModalShow>({ welcome: false, settings: false, features: false, contact: false })
+  const [modalShow, setModalShow] = useState<ModalShow>("None")
   const [theme, setTheme] = useState<Theme>("default")
   const [settings, setSettings] = useState<Settings>({ nPoints: 50000, trainAll: false, rescale: true, format: ".skops", balance: true })
 

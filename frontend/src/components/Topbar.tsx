@@ -69,6 +69,10 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
         };
     }
 
+    const showMetrics = () => {
+        setModalShow("Metrics")
+    }
+
     const icons: string[][] = [
         ["Settings", "settings.png", "", ''],
         ["Gallery", "gallery.png", "", ''],
@@ -82,18 +86,11 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
 
     const iconClick = (e: any, i: string) => {
         // For out link icon click, perform correct action
-        if (i === "Settings") {
-            const newModalShow: ModalShow = { welcome: false, settings: true, features: false, contact: false };
-            setModalShow(newModalShow);
+        if (i === "Settings" || i === "Features" || i === "Contact") {
+            setModalShow(i);
         } else if (i === "Gallery") {
             navigate("/gallery");
-        } else if (i === "Features") {
-            const newModalShow: ModalShow = { welcome: false, settings: false, features: true, contact: false };
-            setModalShow(newModalShow);
-        } else if (i === "Contact") {
-            const newModalShow: ModalShow = { welcome: false, settings: false, features: false, contact: true }
-            setModalShow(newModalShow)
-        };
+        }
     };
 
     return (
@@ -118,7 +115,7 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
                             <NavDropdown.Divider />
                             <NavDropdown.Item onClick={deleteAll}>Clear All</NavDropdown.Item>
                         </NavDropdown>
-                        <NavDropdown title="Classifier" id="data-dropdown">
+                        <NavDropdown title="Classifier" id="class-dropdown">
                             <NavDropdown.Item onClick={saveClassifier}>Save</NavDropdown.Item>
                             <NavDropdown.Item onClick={loadClassifierClick} >Load</NavDropdown.Item>
                             <input
@@ -133,8 +130,12 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
                                 Features
                             </NavDropdown.Item>
                         </NavDropdown>
-                        <Nav.Link onClick={saveLabels}>Save Labels</Nav.Link>
-                        <Nav.Link onClick={saveSeg}>Save Segmentation</Nav.Link>
+                        <NavDropdown title="Save" id="save-dropdown">
+                            <NavDropdown.Item onClick={saveLabels}>Save Labels</NavDropdown.Item>
+                            <NavDropdown.Item onClick={saveSeg}>Save Segmentation</NavDropdown.Item>
+                        </NavDropdown>
+
+                        <Nav.Link onClick={showMetrics}>Metrics</Nav.Link>
                         <Navbar.Text>
                             <Form >
                                 <Form.Check
@@ -146,6 +147,7 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
                                 />
                             </Form>
                         </Navbar.Text>
+
                     </Nav>
                 </Navbar.Collapse>
             </Container>

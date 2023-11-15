@@ -24,14 +24,15 @@ const BigModal = ({ requestFeatures }: BigModalProps) => {
         theme: [theme,]
     } = useContext(AppContext)!;
 
-    const handleClose = () => { setModalShow({ welcome: false, settings: false, features: false, contact: false }) };
+    const handleClose = () => { setModalShow("None") };
 
     return (
-        <Modal show={modalShow.welcome || modalShow.settings || modalShow.features || modalShow.contact} onHide={handleClose} size="lg" >
-            {(modalShow.welcome && <WelcomeModalContent />)}
-            {(modalShow.features) && <FeatureModalContent closeModal={handleClose} requestFeatures={requestFeatures} />}
-            {(modalShow.settings) && <SettingsModalContent />}
-            {(modalShow.contact) && <ContactModalContent />}
+        <Modal show={modalShow !== "None"} onHide={handleClose} size="lg" >
+            {(modalShow == "Welcome" && <WelcomeModalContent />)}
+            {(modalShow == "Features") && <FeatureModalContent closeModal={handleClose} requestFeatures={requestFeatures} />}
+            {(modalShow == "Settings") && <SettingsModalContent />}
+            {(modalShow == "Contact") && <ContactModalContent />}
+            {(modalShow == "Metrics") && <MetricsModalContent />}
         </Modal>
     )
 }
@@ -265,6 +266,19 @@ const ContactModalContent = () => {
     );
 }
 
+const MetricsModalContent = () => {
+    return (
+        <>
+            <Modal.Header closeButton>
+                <Modal.Title>Metrics</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <p>Phase fractions (i.e % of pixels of phase i in segmentations):</p>
+            </Modal.Body >
+        </>
+    )
+}
+
 
 const PostSegToast = () => {
     const {
@@ -406,9 +420,14 @@ const PostSegToast = () => {
 const MetricsToast = () => {
     const {
         showToast: [showToast, setShowToast],
+        modalShow: [, setModalShow]
     } = useContext(AppContext)!;
 
     const toggleToast = () => { setShowToast("None") }
+    const showMetrics = () => {
+        setShowToast("None")
+        setModalShow("Metrics")
+    }
 
     return (
         <>

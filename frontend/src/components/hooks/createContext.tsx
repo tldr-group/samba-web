@@ -110,6 +110,10 @@ interface contextProps {
     features: Features,
     setFeatures: (e: Features) => void
   ]
+  phaseFractions: [
+    phaseFractions: number[],
+    setPhaseFractions: (e: number[]) => void
+  ]
 
   errorObject: [
     errorObject: ErrorMessage,

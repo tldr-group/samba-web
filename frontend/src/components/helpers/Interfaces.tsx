@@ -109,6 +109,10 @@ export interface closeModal {
   closeModal: () => void;
 }
 
+export interface MetricsModalProps {
+  phaseFractions: number[]
+}
+
 export interface FeatureModalProps {
   closeModal: () => void;
   requestFeatures: () => void;

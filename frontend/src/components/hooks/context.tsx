@@ -42,6 +42,8 @@ const AppContextProvider = (props: {
   // Segment Feature stuff
   const [features, setFeatures] = useState<Features>(defaultFeatures)
 
+  const [phaseFractions, setPhaseFractions] = useState<number[]>([0, 0, 0, 0, 0, 0, 0])
+
   // Menus
   const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "", stackTrace: "" })
   const [showToast, setShowToast] = useState<"None" | "Share" | "Metric">("None");
@@ -88,6 +90,7 @@ const AppContextProvider = (props: {
         processing: [processing, setProcessing],
 
         features: [features, setFeatures],
+        phaseFractions: [phaseFractions, setPhaseFractions],
 
         errorObject: [errorObject, setErrorObject],
         showToast: [showToast, setShowToast],

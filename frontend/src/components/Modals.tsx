@@ -4,7 +4,8 @@ The three large modals: Welcome, Settings, Features, the smaller error modal and
 
 import React, { useContext, useEffect, useRef, useState } from "react";
 import AppContext from "./hooks/createContext";
-import { Features, LabelFrameProps, FeatureModalProps, themeBGs, Theme, BigModalProps } from "./helpers/Interfaces"
+import { Features, FeatureModalProps, themeBGs, Theme, BigModalProps, } from "./helpers/Interfaces"
+import { colours, rgbaToHex } from "./helpers/canvasUtils";
 
 
 import Accordion from 'react-bootstrap/Accordion';
@@ -21,17 +22,59 @@ import { BlobServiceClient } from "@azure/storage-blob";
 const BigModal = ({ requestFeatures }: BigModalProps) => {
     const {
         modalShow: [modalShow, setModalShow],
-        theme: [theme,]
+        theme: [theme,],
+        segArrs: [segArrs,],
+        segArr: [segArr],
+        imgIdx: [imgIdx],
+        phaseFractions: [, setPhaseFractions],
     } = useContext(AppContext)!;
 
-    const handleClose = () => { setModalShow({ welcome: false, settings: false, features: false, contact: false }) };
+
+    const getPhaseFractions = (arrs: Uint8ClampedArray[]) => {
+        console.log("computing phase fracs")
+        let n_pix = 0
+        let classCounts = [0, 0, 0, 0, 0, 0, 0]
+        for (let j = 0; j < arrs.length; j++) {
+            let arr
+            // need to check this in case current seg arr has been post-processed
+            if (j == imgIdx) {
+                arr = segArr
+            } else {
+                arr = arrs[j]
+            }
+
+            for (let val of arr) {
+                n_pix += 1
+                classCounts[val] += 1
+            }
+        }
+        if (n_pix == 0) {
+            n_pix = 1
+        }
+        for (let i = 0; i < classCounts.length; i++) {
+            const val = classCounts[i]
+            classCounts[i] = val / n_pix
+        }
+        return classCounts
+    }
+
+    const onShow = () => {
+        if (modalShow == "Metrics") {
+            const newFractions = getPhaseFractions(segArrs)
+            console.log(newFractions)
+            setPhaseFractions(newFractions)
+        }
+    }
+
+    const handleClose = () => { setModalShow("None") };
 
     return (
-        <Modal show={modalShow.welcome || modalShow.settings || modalShow.features || modalShow.contact} onHide={handleClose} size="lg" >
-            {(modalShow.welcome && <WelcomeModalContent />)}
-            {(modalShow.features) && <FeatureModalContent closeModal={handleClose} requestFeatures={requestFeatures} />}
-            {(modalShow.settings) && <SettingsModalContent />}
-            {(modalShow.contact) && <ContactModalContent />}
+        <Modal show={modalShow !== "None"} onHide={handleClose} size="lg" onShow={onShow} >
+            {(modalShow == "Welcome" && <WelcomeModalContent />)}
+            {(modalShow == "Features") && <FeatureModalContent closeModal={handleClose} requestFeatures={requestFeatures} />}
+            {(modalShow == "Settings") && <SettingsModalContent />}
+            {(modalShow == "Contact") && <ContactModalContent />}
+            {(modalShow == "Metrics") && <MetricsModalContent />}
         </Modal>
     )
 }
@@ -265,6 +308,43 @@ const ContactModalContent = () => {
     );
 }
 
+const MetricsModalContent = () => {
+    // loop over all classes in all segmentations
+    const {
+        phaseFractions: [phaseFractions,]
+    } = useContext(AppContext)!;
+
+    const getClassText = (frac: number, i: number) => {
+        const hex = rgbaToHex(colours[i][0], colours[i][1], colours[i][2], colours[i][3])
+        if (frac === 0) {
+            return <span key={i}></span>
+        } else {
+            return (
+                <p style={{ marginBottom: '0.7em', marginLeft: '0.7em' }} key={i}><b style={{ color: hex }}>Class {i}:</b> {frac.toPrecision(3)}</p >
+            )
+        }
+    }
+
+    return (
+        <>
+            <Modal.Header closeButton>
+                <Modal.Title>Metrics</Modal.Title>
+            </Modal.Header>
+            <Modal.Body >
+                <p><b>Phase fractions:</b></p>
+                {phaseFractions.map((i, idx) => getClassText(i, idx))}
+                <p>
+                    For more advanced analysis, save the segmentation and load into a program
+                    like <a href="https://imagej.net/software/fiji/">FIJI</a> with a plugin
+                    like <a href="https://github.com/NREL/MATBOX_Microstructure_analysis_toolbox">MATBOX</a>. For
+                    fast calculation of the tortuosity factor of 3D segmentations,
+                    consider <a href="https://github.com/tldr-group/taufactor">TauFactor</a>.
+                </p>
+            </Modal.Body >
+        </>
+    )
+}
+
 
 const PostSegToast = () => {
     const {
@@ -326,12 +406,12 @@ const PostSegToast = () => {
         }
     }
 
-    const toggleToast = () => { setShowToast(!showToast) }
+    const toggleToast = () => { setShowToast("None") }
     const toggleMetaToast = () => { setShowMetaToast(!showMetaToast) }
 
     const handleShareSend = (e: any) => {
         if (shareSeg) {
-            setShowToast(false);
+            setShowToast("None");
             setShowMetaToast(true);
         }
         toggleToast();
@@ -347,7 +427,7 @@ const PostSegToast = () => {
     return (
         <>
             <ToastContainer className="p-5" position="bottom-end">
-                <Toast show={showToast} onClose={toggleToast}>
+                <Toast show={showToast == "Share"} onClose={toggleToast}>
                     <Toast.Header className="roundedme-2"><strong className="me-auto">Share Segmentation?</strong></Toast.Header>
                     <Toast.Body>
                         <InputGroup>
@@ -402,4 +482,33 @@ const PostSegToast = () => {
     )
 }
 
-export { BigModal, PostSegToast, ErrorMessage }
+
+const MetricsToast = () => {
+    const {
+        showToast: [showToast, setShowToast],
+        modalShow: [, setModalShow]
+    } = useContext(AppContext)!;
+
+    const toggleToast = () => { setShowToast("None") }
+    const showMetrics = () => {
+        setShowToast("None")
+        setModalShow("Metrics")
+    }
+
+    return (
+        <>
+            <ToastContainer className="p-5" position="bottom-end">
+                <Toast show={showToast == "Metric"} onClose={toggleToast}>
+                    <Toast.Header className="roundedme-2"><strong className="me-auto">View Metrics?</strong></Toast.Header>
+                    <Toast.Body>
+
+                        <Button variant="dark" onClick={showMetrics} style={{ marginLeft: '6rem', marginBottom: '1rem' }} >Phase Fractions</Button>
+                    </Toast.Body>
+                </Toast>
+            </ToastContainer >
+        </>
+    )
+}
+
+
+export { BigModal, PostSegToast, MetricsToast, ErrorMessage }

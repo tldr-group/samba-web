@@ -2,7 +2,7 @@ import React, { useContext, useEffect } from "react";
 import Topbar from "./Topbar";
 import Sidebar from "./Sidebar";
 import Canvas from "./Canvas"
-import { BigModal, PostSegToast, ErrorMessage } from "./Modals"
+import { BigModal, PostSegToast, MetricsToast, ErrorMessage } from "./Modals"
 import AppContext from "./hooks/createContext";
 import { DragDropProps, StageProps, themeBGs } from "./helpers/Interfaces";
 import { imageDataToImage, getSplitInds } from "./helpers/canvasUtils";
@@ -173,6 +173,7 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, featuresUpdated, tra
       </div>
       <ErrorMessage />
       <PostSegToast />
+      <MetricsToast />
       <BigModal requestFeatures={featuresUpdated} />
     </div >
   );

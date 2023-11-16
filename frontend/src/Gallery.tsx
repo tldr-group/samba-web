@@ -177,15 +177,8 @@ const Gallery = () => {
     ]
 
     const iconClick = (e: any, i: string) => {
-        if (i === "Settings") {
-            const newModalShow: ModalShow = { welcome: false, settings: true, features: false, contact: false }
-            setModalShow(newModalShow)
-        } else if (i === "Features") {
-            const newModalShow: ModalShow = { welcome: false, settings: false, features: true, contact: false }
-            setModalShow(newModalShow)
-        } else if (i === "Features") {
-            const newModalShow: ModalShow = { welcome: false, settings: false, features: true, contact: false }
-            setModalShow(newModalShow)
+        if (i == "Settings" || i === "Contact") {
+            setModalShow(i)
         }
     };
 

@@ -42,10 +42,12 @@ const AppContextProvider = (props: {
   // Segment Feature stuff
   const [features, setFeatures] = useState<Features>(defaultFeatures)
 
+  const [phaseFractions, setPhaseFractions] = useState<number[]>([0, 0, 0, 0, 0, 0, 0])
+
   // Menus
   const [errorObject, setErrorObject] = useState<ErrorMessage>({ msg: "", stackTrace: "" })
-  const [showToast, setShowToast] = useState<boolean>(false);
-  const [modalShow, setModalShow] = useState<ModalShow>({ welcome: false, settings: false, features: false, contact: false })
+  const [showToast, setShowToast] = useState<"None" | "Share" | "Metric">("None");
+  const [modalShow, setModalShow] = useState<ModalShow>("None")
   const [theme, setTheme] = useState<Theme>("default")
   const [settings, setSettings] = useState<Settings>({ nPoints: 50000, trainAll: false, rescale: true, format: ".skops", balance: true })
 
@@ -88,6 +90,7 @@ const AppContextProvider = (props: {
         processing: [processing, setProcessing],
 
         features: [features, setFeatures],
+        phaseFractions: [phaseFractions, setPhaseFractions],
 
         errorObject: [errorObject, setErrorObject],
         showToast: [showToast, setShowToast],

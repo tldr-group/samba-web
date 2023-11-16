@@ -110,14 +110,18 @@ interface contextProps {
     features: Features,
     setFeatures: (e: Features) => void
   ]
+  phaseFractions: [
+    phaseFractions: number[],
+    setPhaseFractions: (e: number[]) => void
+  ]
 
   errorObject: [
     errorObject: ErrorMessage,
     setErrorObject: (e: ErrorMessage) => void
   ];
   showToast: [
-    showToast: boolean,
-    setShowToast: (e: boolean) => void,
+    showToast: "None" | "Share" | "Metric",
+    setShowToast: (e: "None" | "Share" | "Metric") => void,
   ];
   modalShow: [
     modalShow: ModalShow,

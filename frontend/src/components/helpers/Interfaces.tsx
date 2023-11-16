@@ -102,16 +102,15 @@ export interface SegmentFeatureState {
   segment: boolean;
 }
 
-export interface ModalShow {
-  welcome: boolean;
-  settings: boolean;
-  features: boolean;
-  contact: boolean;
-}
-
+// refactor this to just be a literal - custom type is weird
+export type ModalShow = "None" | "Welcome" | "Settings" | "Features" | "Contact" | "Metrics"
 
 export interface closeModal {
   closeModal: () => void;
+}
+
+export interface MetricsModalProps {
+  phaseFractions: number[]
 }
 
 export interface FeatureModalProps {
@@ -157,7 +156,7 @@ export const defaultFeatures = {
   "Neighbours": 0,
   "Membrane Thickness": 1,
   "Membrane Patch Size": 19,
-  "Minimum Sigma": 1,
+  "Minimum Sigma": 0,
   "Maximum Sigma": 16,
 }
 

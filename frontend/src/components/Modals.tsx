@@ -6,6 +6,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import AppContext from "./hooks/createContext";
 import { Features, FeatureModalProps, themeBGs, Theme, BigModalProps, } from "./helpers/Interfaces"
 import { colours, rgbaToHex } from "./helpers/canvasUtils";
+import { ToolTip } from "./Topbar";
 
 
 import Accordion from 'react-bootstrap/Accordion';
@@ -16,6 +17,8 @@ import Toast from 'react-bootstrap/Toast'
 import ToastContainer from "react-bootstrap/ToastContainer";
 import InputGroup from "react-bootstrap/InputGroup";
 import Form from "react-bootstrap/Form"
+import Tooltip from "react-bootstrap/Tooltip";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import { BlobServiceClient } from "@azure/storage-blob";
 
 
@@ -151,16 +154,32 @@ const FeatureModalContent = ({ closeModal, requestFeatures }: FeatureModalProps)
         const numeric = ["Membrane Thickness", "Membrane Patch Size", "Minimum Sigma", "Maximum Sigma"];
         const startVal = 14;
         const vals: number[][] = [[1, 5, 1, 1], [5, 25, 17, 2], [0, 64, 0.5, 0.5], [0, 64, 16, 0.5]];
+        const tips = ["Gaussian blur around each pixel with standard deviation σ", "Blur of σ followed by Sobel edge detection", "Blur of σ followed by Hessian texture filter", "Difference of Gaussian blurs over various σ", "Convolution of image with line kernel to detect lines", "Mean intensity over radius of σ pixels around each pixel", "Minimum intensity over radius of σ pixels around each pixel", "Maximum intensity over radius of σ pixels around each pixel", "Median intensity over radius of σ pixels around each pixel", "Mean intensity of pixels of similar values over radius around each pixel", "Higher order intensity derivatives around each pixel", "Eigenvalues of structure tensor with scale σ", "Entropy in a radius of σ pixels around each pixel", "Intensity values σ pixels away in each of the 8 directions around each pixel"]
+        let innerJSX
         if (numeric.includes(key)) {
             let [a, b, c, d] = vals[i - startVal];
-            return (<InputGroup key={i}>
+            innerJSX = (<InputGroup key={i}>
                 <InputGroup.Text>{key}</InputGroup.Text>
                 <Form.Control type="number" width={3}
                     key={key} min={a} max={b} defaultValue={parseFloat(value)} step={d} onChange={(e) => change(e, features, key, e.target.value)}>
                 </Form.Control >
             </InputGroup>)
         } else {
-            return <Form.Check type="checkbox" label={key} key={key} onChange={(e) => change(e, features, key, e.target.value)} style={{ gridColumn: (i % 2) + 1 }} defaultChecked={parseInt(value) as unknown as boolean} />
+            innerJSX = <Form.Check type="checkbox" label={key} key={key} onChange={(e) => change(e, features, key, e.target.value)} style={{}} defaultChecked={parseInt(value) as unknown as boolean} />
+        }
+
+        if (i < tips.length) {
+            return (
+                <OverlayTrigger key={i} placement="left" delay={{ show: 250, hide: 400 }} overlay={ToolTip(tips[i])} >
+                    <div style={{ gridColumn: (i % 2) + 1 }}>
+                        {innerJSX}
+                    </div>
+                </OverlayTrigger >
+            )
+        } else {
+            return (
+                innerJSX
+            )
         }
     }
 

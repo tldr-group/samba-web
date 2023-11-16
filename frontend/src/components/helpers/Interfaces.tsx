@@ -156,7 +156,7 @@ export const defaultFeatures = {
   "Neighbours": 0,
   "Membrane Thickness": 1,
   "Membrane Patch Size": 19,
-  "Minimum Sigma": 1,
+  "Minimum Sigma": 0,
   "Maximum Sigma": 16,
 }
 

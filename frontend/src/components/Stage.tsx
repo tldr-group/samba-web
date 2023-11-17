@@ -21,6 +21,8 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, featuresUpdated, tra
     image: [image,],
     imgArrs: [imgArrs,],
     imgType: [imgType, setImgType],
+    labelArr: [, setLabelArr],
+    labelArrs: [, setLabelArrs],
     largeImg: [, setLargeImg],
     errorObject: [, setErrorObject],
     theme: [theme,],
@@ -56,6 +58,10 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, featuresUpdated, tra
       }
     }
   }
+
+  // load tif, check if big or not
+  // if small and/or stack, loop through through each tiff and add as label by floor(255/val) = label
+  // if large, loop through, track whe
 
   const loadPNGJPEG = (href: string) => {
     // Load PNG or JPEF image via href.
@@ -104,6 +110,52 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, featuresUpdated, tra
     setLargeImg(img);
   }
 
+  const findDelta = (tifs: any) => {
+    const uniqueValues: number[] = []
+    for (let tif of tifs) {
+      const imgDataArr = new Uint8ClampedArray(UTIF.toRGBA8(tif));
+      for (let i = 0; i < imgDataArr.length; i += 4) {
+        const val = imgDataArr[i]
+        if (!uniqueValues.includes(val) && val > 0) {
+          uniqueValues.push(val)
+        }
+      }
+    }
+    console.log(uniqueValues)
+    const delta = Math.min(...uniqueValues)
+    return delta
+  }
+
+  const loadLabelTIFF = (result: ArrayBuffer) => {
+    const tifs = UTIF.decode(result);
+
+    for (let tif of tifs) {
+      UTIF.decodeImage(result, tif);
+      //
+    }
+    const isSmall = (tifs[0].width <= 1024 && tifs[0].height <= 1024)
+    console.log(isSmall, tifs[0].width)
+
+    const delta = findDelta(tifs)
+    console.log(delta)
+    const newLabelArrs: Uint8ClampedArray[] = []
+    for (let tif of tifs) {
+      const imgDataArr = new Uint8ClampedArray(UTIF.toRGBA8(tif));
+      const newLabelArr = new Uint8ClampedArray(imgDataArr.length / 4).fill(0);
+      console.log(imgDataArr.length)
+      for (let i = 0; i < imgDataArr.length; i += 4) {
+        const val = Math.round(imgDataArr[i] / delta)
+        newLabelArr[i / 4] = val
+      }
+      newLabelArrs.push(newLabelArr)
+      if (newLabelArrs.length == 1) {
+        setLabelArr(newLabelArr)
+      }
+    }
+    console.log('Setting')
+    setLabelArrs(newLabelArrs)
+  }
+
   const loadFromFile = (file: File) => {
     // Load a file: reject if too large or not a JPG/PNG/TIFF then call correct function.
     const reader = new FileReader();
@@ -141,6 +193,36 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, featuresUpdated, tra
     };
   }
 
+  const loadLabelFile = (file: File) => {
+    if (image === null) {
+      setErrorObject({ msg: `Must load image before loading labels!`, stackTrace: `No image` });
+      return
+    }
+    const reader = new FileReader();
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    const isTIF = (extension === "tif" || extension === "tiff");
+    reader.onload = () => {
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        setErrorObject({ msg: `File size too large, please upload smaller image (<50MB).`, stackTrace: `File size ${file.size} > ${MAX_FILE_SIZE_BYTES}` });
+        return
+      }
+      try {
+        if (isTIF) {
+          loadLabelTIFF(reader.result as ArrayBuffer);
+        } else {
+          throw `Unsupported file format .${extension}`;
+        };
+      }
+      catch (e) {
+        const error = e as Error;
+        setErrorObject({ msg: "Label file must be .tif or .tiff", stackTrace: error.toString() });
+      }
+    }
+    if (isTIF) {
+      reader.readAsArrayBuffer(file); //array buffer for tif
+    }
+  }
+
   const loadImageFromGallery = async (gallery_id: string) => {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json;charset=utf-8');
@@ -161,7 +243,7 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, featuresUpdated, tra
 
   return (
     <div className={`w-full h-full`} style={{ background: themeBGs[theme][1] }}>
-      <Topbar loadFromFile={loadFromFile} deleteAll={deleteAll} deleteCurrent={deleteCurrent}
+      <Topbar loadFromFile={loadFromFile} loadLabelFile={loadLabelFile} deleteAll={deleteAll} deleteCurrent={deleteCurrent}
         saveSeg={saveSeg} saveLabels={saveLabels} saveClassifier={saveClassifier}
         loadClassifier={loadClassifier} applyClassifier={applyClassifier} />
       <div className={`flex`} style={{ margin: '1.5%', background: themeBGs[theme][1] }} > {/*Canvas div on left, sidebar on right*/}

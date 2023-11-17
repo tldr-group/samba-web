@@ -107,6 +107,7 @@ const App = () => {
     overlayType: [, setOverlayType],
     postProcess: [postProcess,],
     features: [features,],
+    featureFlag: [featureFlag, setFeatureFlag],
     processing: [, setProcessing],
     errorObject: [errorObject, setErrorObject],
     showToast: [, setShowToast],
@@ -128,7 +129,7 @@ const App = () => {
 
   // Flags to check if featurising done (to block segmentation request on frontend)
   const [segmentFlag, setSegmentFlag] = useState<boolean>(false);
-  const [featureFlag, setFeatureFlag] = useState<boolean>(false);
+
   const [applyFlag, setApplyFlag] = useState<boolean>(false);
 
   const { state } = useLocation();

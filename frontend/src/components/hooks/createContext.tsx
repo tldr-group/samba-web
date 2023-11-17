@@ -110,6 +110,10 @@ interface contextProps {
     features: Features,
     setFeatures: (e: Features) => void
   ]
+  featureFlag: [
+    featureFlag: boolean,
+    setFeatureFlag: (e: boolean) => void
+  ]
   phaseFractions: [
     phaseFractions: number[],
     setPhaseFractions: (e: number[]) => void

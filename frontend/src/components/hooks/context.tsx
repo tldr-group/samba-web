@@ -41,7 +41,7 @@ const AppContextProvider = (props: {
 
   // Segment Feature stuff
   const [features, setFeatures] = useState<Features>(defaultFeatures)
-
+  const [featureFlag, setFeatureFlag] = useState<boolean>(false)
   const [phaseFractions, setPhaseFractions] = useState<number[]>([0, 0, 0, 0, 0, 0, 0])
 
   // Menus
@@ -90,6 +90,7 @@ const AppContextProvider = (props: {
         processing: [processing, setProcessing],
 
         features: [features, setFeatures],
+        featureFlag: [featureFlag, setFeatureFlag],
         phaseFractions: [phaseFractions, setPhaseFractions],
 
         errorObject: [errorObject, setErrorObject],

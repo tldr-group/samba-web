@@ -5,7 +5,7 @@ import Canvas from "./Canvas"
 import { BigModal, PostSegToast, MetricsToast, ErrorMessage } from "./Modals"
 import AppContext from "./hooks/createContext";
 import { DragDropProps, StageProps, themeBGs } from "./helpers/Interfaces";
-import { imageDataToImage, getSplitInds } from "./helpers/canvasUtils";
+import { imageDataToImage, getSplitInds, getSplitIndsHW } from "./helpers/canvasUtils";
 import { LOAD_GALLERY_IMAGE_ENDPOINT } from "../App"
 
 const UTIF = require("./UTIF.js")
@@ -111,19 +111,19 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, featuresUpdated, tra
   }
 
   const findDelta = (tifs: any) => {
-    const uniqueValues: number[] = []
+    const uniqueValues: number[] = [];
     for (let tif of tifs) {
       const imgDataArr = new Uint8ClampedArray(UTIF.toRGBA8(tif));
       for (let i = 0; i < imgDataArr.length; i += 4) {
-        const val = imgDataArr[i]
+        const val = imgDataArr[i];
         if (!uniqueValues.includes(val) && val > 0) {
-          uniqueValues.push(val)
+          uniqueValues.push(val);
         }
       }
     }
-    console.log(uniqueValues)
-    const delta = Math.min(...uniqueValues)
-    return delta
+    console.log(uniqueValues);
+    const delta = Math.min(...uniqueValues);
+    return delta;
   }
 
   const loadLabelTIFF = (result: ArrayBuffer) => {
@@ -131,29 +131,63 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, featuresUpdated, tra
 
     for (let tif of tifs) {
       UTIF.decodeImage(result, tif);
-      //
     }
-    const isSmall = (tifs[0].width <= 1024 && tifs[0].height <= 1024)
-    console.log(isSmall, tifs[0].width)
+    const tif_0 = tifs[0];
+    const h: number = tif_0.height;
+    const w: number = tif_0.width;
+    const isSmall = (w <= 1024 && h <= 1024);
 
-    const delta = findDelta(tifs)
-    console.log(delta)
-    const newLabelArrs: Uint8ClampedArray[] = []
+    const delta = findDelta(tifs);
+
+    let newLabelArrs: Uint8ClampedArray[] = []
+    if (isSmall) {
+      newLabelArrs = loadSmallLabelTIFF(tifs, delta);
+    } else {
+      newLabelArrs = loadLargeLabelTIFF(tif_0, delta, h, w);
+    }
+    setLabelArr(newLabelArrs[0]);
+    setLabelArrs(newLabelArrs);
+  }
+
+  const loadSmallLabelTIFF = (tifs: any, delta: number) => {
+    const newLabelArrs: Uint8ClampedArray[] = [];
     for (let tif of tifs) {
       const imgDataArr = new Uint8ClampedArray(UTIF.toRGBA8(tif));
       const newLabelArr = new Uint8ClampedArray(imgDataArr.length / 4).fill(0);
-      console.log(imgDataArr.length)
       for (let i = 0; i < imgDataArr.length; i += 4) {
-        const val = Math.round(imgDataArr[i] / delta)
-        newLabelArr[i / 4] = val
+        const val = Math.round(imgDataArr[i] / delta);
+        newLabelArr[i / 4] = val;
       }
-      newLabelArrs.push(newLabelArr)
-      if (newLabelArrs.length == 1) {
-        setLabelArr(newLabelArr)
-      }
+      newLabelArrs.push(newLabelArr);
     }
-    console.log('Setting')
-    setLabelArrs(newLabelArrs)
+    return newLabelArrs
+  }
+
+  const loadLargeLabelTIFF = (tif: any, delta: number, h: number, w: number) => {
+    const newLabelArrs: Uint8ClampedArray[] = [];
+    const inds = getSplitIndsHW(h, w);
+    const [lw, lh] = [inds.dx, inds.dy]
+    const [nw, nh] = [inds.nW, inds.nH]
+    const imgDataArr = new Uint8ClampedArray(UTIF.toRGBA8(tif));
+    console.log(inds.h.length, nw * nh)
+    for (let j = 0; j < nw * nh; j++) {
+      const tempLabelArr = new Uint8ClampedArray(lw * lh).fill(0)
+      newLabelArrs.push(tempLabelArr)
+    }
+
+    for (let i_full = 0; i_full < imgDataArr.length; i_full += 4) {
+      const i = Math.floor(i_full / 4)
+      const x = i % w
+      const y = Math.floor(i / w)
+      const x_l = x % lw
+      const y_l = y % lh
+      const arr_n = Math.floor(x / lw) + nw * Math.floor(y / lh)
+      const new_i = x_l + lw * y_l
+      const val = Math.round(imgDataArr[i_full] / delta);
+      newLabelArrs[arr_n][new_i] = val
+    }
+
+    return newLabelArrs
   }
 
   const loadFromFile = (file: File) => {

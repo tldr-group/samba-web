@@ -113,9 +113,9 @@ const Topbar = ({ loadFromFile, loadLabelFile, deleteAll, deleteCurrent, saveSeg
                                 ref={fileInputRef}
                                 style={{ display: 'none' }}
                                 onChange={e => handleFileUpload(e, "image")} />
+                            <NavDropdown.Item onClick={addData}>Load Labels</NavDropdown.Item>
                             <NavDropdown.Item onClick={deleteCurrent}>Remove Image</NavDropdown.Item>
                             <NavDropdown.Item onClick={e => setLabelType("Crop")}>Crop</NavDropdown.Item>
-                            <NavDropdown.Item onClick={addData}>Load Labels</NavDropdown.Item>
                             <input
                                 type='file'
                                 id='file'

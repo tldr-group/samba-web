@@ -44,6 +44,7 @@ export interface StageProps {
 
 export interface TopbarProps {
   loadFromFile: (file: File) => void;
+  loadLabelFile: (file: File) => void;
   deleteAll: () => void;
   deleteCurrent: () => void;
   saveSeg: () => void;

@@ -122,7 +122,8 @@ const WelcomeModalContent = () => {
 
 const FeatureModalContent = ({ closeModal, requestFeatures }: FeatureModalProps) => {
     const {
-        features: [features, setFeatures]
+        features: [features, setFeatures],
+        featureFlag: [, setFeatureFlag],
     } = useContext(AppContext)!;
 
     const updateClose = () => {
@@ -146,6 +147,7 @@ const FeatureModalContent = ({ closeModal, requestFeatures }: FeatureModalProps)
     }
 
     const change = (e: any, feats: Features, newKey: string, newVal: string) => {
+        setFeatureFlag(false)
         updateFeatures(feats, newKey, newVal);
     }
 

@@ -321,10 +321,14 @@ export const drawImage = (ctx: CanvasRenderingContext2D, image: HTMLImageElement
 
 // Methods to map our large image into a smaller one
 export const getSplitInds = (image: HTMLImageElement) => {
-  const nW = Math.ceil(image.width / 1024);
-  const nH = Math.ceil(image.height / 1024);
-  const dx = image.width / nW;
-  const dy = image.height / nH;
+  return getSplitIndsHW(image.height, image.width)
+}
+
+export const getSplitIndsHW = (h: number, w: number) => {
+  const nW = Math.ceil(w / 1024);
+  const nH = Math.ceil(h / 1024);
+  const dx = w / nW;
+  const dy = h / nH;
   const wInds = Array.from({ length: nW }, (x, i) => dx * i);
   const hInds = Array.from({ length: nH }, (x, i) => dy * i);
   const inds = { 'w': wInds, 'h': hInds, 'dx': dx, 'dy': dy, 'nW': nW, 'nH': nH };

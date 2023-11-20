@@ -28,7 +28,7 @@ export const ToolTip = (str: string) => {
 
 
 
-const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, saveClassifier, loadClassifier, applyClassifier }: TopbarProps) => {
+const Topbar = ({ loadFromFile, loadLabelFile, deleteAll, deleteCurrent, saveSeg, saveLabels, saveClassifier, loadClassifier, applyClassifier }: TopbarProps) => {
     const {
         modalShow: [modalShow, setModalShow],
         labelType: [, setLabelType],
@@ -52,17 +52,20 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
     }
 
     const togglePostProcess = (e: any) => {
-        setPostProcess(e.target.checked)
+        setPostProcess(e.target.checked);
     }
 
 
-    const handleFileUpload = (e: any, type: "image" | "classifier") => {
+    const handleFileUpload = (e: any, type: "image" | "classifier" | "label") => {
         // Open file dialog and load file.
         const file: File | null = e.target.files?.[0] || null;
         if (file != null) {
             if (type === "image") {
                 loadFromFile(file);
-            } else {
+            } else if (type === "label") {
+                loadLabelFile(file);
+            }
+            else {
                 console.log("classifier");
                 loadClassifier(file);
             }
@@ -103,15 +106,22 @@ const Topbar = ({ loadFromFile, deleteAll, deleteCurrent, saveSeg, saveLabels, s
                 <Navbar.Collapse id="basic-navbar-nav">
                     <Nav className="me-auto">
                         <NavDropdown title="Data" id="data-dropdown">
-                            <NavDropdown.Item onClick={addData}>Add</NavDropdown.Item>
+                            <NavDropdown.Item onClick={addData}>Load Image(s)</NavDropdown.Item>
                             <input
                                 type='file'
                                 id='file'
                                 ref={fileInputRef}
                                 style={{ display: 'none' }}
                                 onChange={e => handleFileUpload(e, "image")} />
-                            <NavDropdown.Item onClick={deleteCurrent}>Remove</NavDropdown.Item>
+                            <NavDropdown.Item onClick={addData}>Load Labels</NavDropdown.Item>
+                            <NavDropdown.Item onClick={deleteCurrent}>Remove Image</NavDropdown.Item>
                             <NavDropdown.Item onClick={e => setLabelType("Crop")}>Crop</NavDropdown.Item>
+                            <input
+                                type='file'
+                                id='file'
+                                ref={fileInputRef}
+                                style={{ display: 'none' }}
+                                onChange={e => handleFileUpload(e, "label")} />
                             <NavDropdown.Divider />
                             <NavDropdown.Item onClick={deleteAll}>Clear All</NavDropdown.Item>
                         </NavDropdown>

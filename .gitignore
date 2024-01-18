@@ -21,3 +21,4 @@ yarn.lock
 *.env*
 samba_logo/*
 backend/17*
+scripts/*

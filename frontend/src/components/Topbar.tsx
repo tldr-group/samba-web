@@ -36,12 +36,19 @@ const Topbar = ({ loadFromFile, loadLabelFile, deleteAll, deleteCurrent, saveSeg
         postProcess: [, setPostProcess],
     } = useContext(AppContext)!;
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const labelInputRef = useRef<HTMLInputElement>(null);
     const loadClassifierRef = useRef<HTMLInputElement>(null);
 
     // Common pattern for opening file dialog w/ button: hidden <input> who is clicked when button is clicked.
     const addData = () => {
         if (fileInputRef.current) {
             fileInputRef.current.click();
+        }
+    }
+
+    const addLabel = () => {
+        if (labelInputRef.current) {
+            labelInputRef.current.click();
         }
     }
 
@@ -80,7 +87,7 @@ const Topbar = ({ loadFromFile, loadLabelFile, deleteAll, deleteCurrent, saveSeg
         ["Settings", "settings.png", "", ''],
         ["Gallery", "gallery.png", "", ''],
         ["Paper", "paper.png", "coming_soon", '_blank'],
-        ["Help", "help.png", "https://github.com/tldr-group/samba-web/blob/development/MANUAL.md", '_blank'],
+        ["Help", "help.png", "https://github.com/tldr-group/samba-web/blob/main/MANUAL.md", '_blank'],
         ["Contact", "mail.png", "", ""],
         ["TLDR Group", "tldr.png", "https://tldr-group.github.io/#/", '_blank']
     ]
@@ -109,19 +116,19 @@ const Topbar = ({ loadFromFile, loadLabelFile, deleteAll, deleteCurrent, saveSeg
                             <NavDropdown.Item onClick={addData}>Load Image(s)</NavDropdown.Item>
                             <input
                                 type='file'
-                                id='file'
+                                id='file_load'
                                 ref={fileInputRef}
                                 style={{ display: 'none' }}
                                 onChange={e => handleFileUpload(e, "image")} />
-                            <NavDropdown.Item onClick={addData}>Load Labels</NavDropdown.Item>
-                            <NavDropdown.Item onClick={deleteCurrent}>Remove Image</NavDropdown.Item>
-                            <NavDropdown.Item onClick={e => setLabelType("Crop")}>Crop</NavDropdown.Item>
+                            <NavDropdown.Item onClick={addLabel}>Load Labels</NavDropdown.Item>
                             <input
                                 type='file'
-                                id='file'
-                                ref={fileInputRef}
+                                id='file_load'
+                                ref={labelInputRef}
                                 style={{ display: 'none' }}
                                 onChange={e => handleFileUpload(e, "label")} />
+                            <NavDropdown.Item onClick={deleteCurrent}>Remove Image</NavDropdown.Item>
+                            <NavDropdown.Item onClick={e => setLabelType("Crop")}>Crop</NavDropdown.Item>
                             <NavDropdown.Divider />
                             <NavDropdown.Item onClick={deleteAll}>Clear All</NavDropdown.Item>
                         </NavDropdown>

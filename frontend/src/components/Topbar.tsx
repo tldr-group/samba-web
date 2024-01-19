@@ -87,7 +87,7 @@ const Topbar = ({ loadFromFile, loadLabelFile, deleteAll, deleteCurrent, saveSeg
         ["Settings", "settings.png", "", ''],
         ["Gallery", "gallery.png", "", ''],
         ["Paper", "paper.png", "coming_soon", '_blank'],
-        ["Help", "help.png", "https://github.com/tldr-group/samba-web/blob/development/MANUAL.md", '_blank'],
+        ["Help", "help.png", "https://github.com/tldr-group/samba-web/blob/main/MANUAL.md", '_blank'],
         ["Contact", "mail.png", "", ""],
         ["TLDR Group", "tldr.png", "https://tldr-group.github.io/#/", '_blank']
     ]

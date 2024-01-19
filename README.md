@@ -4,7 +4,6 @@
 
 ![Tests](https://github.com/tldr-group/samba-web/actions/workflows/tests.yml/badge.svg)
 
-<!-- ![Diagram showing (a) different labelling types in SAMBA, (b) impact of scale parameter on smart labelling and (c) output segmentation ](docs/gui.png) --> 
 
 
 `SAMBA` (Segment Anything Model Based App) is a trainable segmentation tool for materials science that uses [deep learning](https://github.com/facebookresearch/segment-anything) for fast, high-quality labels and random forests for robust, generalizable segmentations. It is accessible in the browser ([https://www.sambasegment.com](https://www.sambasegment.com)), without the need to download any external dependencies. This repo is a local version of the website which contains the frontend for the website (React + TSX) and the backend (Python + Flask). The frontend handles labelling and the backend sends back SAM embeddings (if requested) and segmentations.

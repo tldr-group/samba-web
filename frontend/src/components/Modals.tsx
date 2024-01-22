@@ -100,7 +100,7 @@ const WelcomeModalContent = () => {
             </Modal.Header>
             <Modal.Body>
                 <p>SAMBA is a <b>web-based trainable segmentation app</b>. It has deep-learning powered label suggestions and a random-forest classifier backend.</p>
-                <p>Load an image, choose your brush on the sidebar and place some labels with <b>left click</b>. Zoom with the <b>scroll wheel</b> and pan with <b>arrow keys</b> or <b>WASD</b>. <b>Right click</b> to change the smart label focus size or to finish a polygon. Once you've labelled an example of each class, press <b>"Train Classifier"</b> to segment the image. If you still need help, check out the <a href="https://github.com/tldr-group/samba-web/blob/main/MANUAL.md" target="_blank">manual</a> or watch a <a href="coming-soon">video tutorial</a>. Have fun!</p>
+                <p>Load an image, choose your brush on the sidebar and place some labels with <b>left click</b>. Zoom with the <b>scroll wheel</b> and pan with <b>arrow keys</b> or <b>WASD</b>. <b>Right click</b> to change the smart label focus size or to finish a polygon. Once you've labelled an example of each class, press <b>"Train Classifier"</b> to segment the image. If you still need help, check out the <a href="https://github.com/tldr-group/samba-web/blob/main/MANUAL.md" target="_blank">manual</a> or watch a <a href="https://www.youtube.com/watch?v=BEvI9gtGbCs" target="_blank">video tutorial</a>. Have fun!</p>
                 <p>Hotkeys:</p>
                 <ul>
                     <li><b>Left Click:</b> place label/polygon point. Hold to draw brush stroke, release to finish.</li>

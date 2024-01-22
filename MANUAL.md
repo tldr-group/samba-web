@@ -1,5 +1,7 @@
 # SAMBA Tutorial
 
+[A video tutorial is also available.](https://www.youtube.com/watch?v=BEvI9gtGbCs)
+
 ## Handling data
 <p align="center">
     <img src="https://sambasegment.blob.core.windows.net/resources/data.gif">

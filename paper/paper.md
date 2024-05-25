@@ -9,12 +9,15 @@ tags:
 authors:
   - name: Ronan Docherty
     orcid: 0000-0002-7332-0924
-    affiliation: 1 # (Multiple affiliations must be quoted)
+    affiliation: "1, 2" # (Multiple affiliations must be quoted)
   - name: Isaac Squires
+    orcid: 0000-0003-1919-061X
     affiliation: 2
   - name: Antonis Vamvakeros
+    orcid: 0000-0002-4745-0602
     affiliation: 2
   - name: Samuel J. Cooper
+    orcid: 0000-0003-4055-6903
     affiliation: 2
     corresponding: true
     equal-contrib: false

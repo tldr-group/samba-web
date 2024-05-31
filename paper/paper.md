@@ -22,9 +22,9 @@ authors:
     corresponding: true
     equal-contrib: false
 affiliations:
-  - name: Department of Materials, Imperial College London, London SW7 2AZ
+  - name: Department of Materials, Imperial College London, London SW7 2AZ, United Kingdom
     index: 1
-  - name: Dyson School of Design Engineering, Imperial College London, London SW7 2DB
+  - name: Dyson School of Design Engineering, Imperial College London, London SW7 2DB, United Kingdom
     index: 2
 date: 18 October 2023
 bibliography: paper.bib
@@ -32,7 +32,7 @@ bibliography: paper.bib
 
 # Summary
 
-Segmentation is the assigning of a semantic class to every pixel in an image and is a prerequisite for various statistical analysis tasks in materials science, like phase quantification, physics simulations or morphological characterization. The wide range of length scales, imaging techniques and materials studied in materials science means any segmentation algorithm must generalise to unseen data and support abstract, user-defined semantic classes. Trainable segmentation is a popular interactive segmentation paradigm where a classifier is trained to map from image features to user drawn labels. `SAMBA` is a trainable segmentation tool that uses Meta's Segment Anything Model (SAM) for fast, high-quality label suggestions and a random forest classifier for robust, generalizable segmentations. It is accessible in the browser ([https://www.sambasegment.com/](https://www.sambasegment.com/)), without the need to download any external dependencies. The segmentation backend is run in the cloud, so does not require the user to have powerful hardware.
+Segmentation is the assigning of a semantic class to every pixel in an image and is a prerequisite for various statistical analysis tasks in materials science, like phase quantification, physics simulations or morphological characterisation. The wide range of length scales, imaging techniques and materials studied in materials science means any segmentation algorithm must generalise to unseen data and support abstract, user-defined semantic classes. Trainable segmentation is a popular interactive segmentation paradigm where a classifier is trained to map from image features to user drawn labels. `SAMBA` is a trainable segmentation tool that uses Meta's Segment Anything Model (SAM) for fast, high-quality label suggestions and a random forest classifier for robust, generalisable segmentations. It is accessible in the browser ([https://www.sambasegment.com/](https://www.sambasegment.com/)), without the need to download any external dependencies. The segmentation backend is run in the cloud, so does not require the user to have powerful hardware.
 
 # Statement of need
 

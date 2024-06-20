@@ -70,7 +70,7 @@ where `$FIJI_PATH` is the absolute path to your [FIJI](https://imagej.net/softwa
 
 ## Citing
 
-If you use SAMBA in one your works, please cite its [JOSS publication](https://joss.theoj.org/papers/10.21105/joss.06159) via [`CITATION.cff`](CITATION.cff):
+If you use SAMBA in one your works, please cite its [JOSS publication](https://joss.theoj.org/papers/10.21105/joss.06159) via [`CITATION.cff`](CITATION.cff) or clicking the 'cite this repository' button at the top of the page:
 ```
 Docherty et al., (2024). SAMBA: A Trainable Segmentation Web-App with Smart Labelling. Journal of Open Source Software, 9(98), 6159, https://doi.org/10.21105/joss.06159
 ```

@@ -86,7 +86,7 @@ const Topbar = ({ loadFromFile, loadLabelFile, deleteAll, deleteCurrent, saveSeg
     const icons: string[][] = [
         ["Settings", "settings.png", "", ''],
         ["Gallery", "gallery.png", "", ''],
-        ["Paper", "paper.png", "coming_soon", '_blank'],
+        ["Paper", "paper.png", "https://joss.theoj.org/papers/10.21105/joss.06159#", '_blank'],
         ["Help", "help.png", "https://github.com/tldr-group/samba-web/blob/main/MANUAL.md", '_blank'],
         ["Contact", "mail.png", "", ""],
         ["TLDR Group", "tldr.png", "https://tldr-group.github.io/#/", '_blank']

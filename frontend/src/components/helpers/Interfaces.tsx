@@ -176,3 +176,6 @@ export interface Settings {
   format: ".skops" | ".pkl";
   balance: boolean;
 }
+
+export const DEFAULT_LABEL_ALPHA = 100
+export const DEFAULT_SEG_ALPHA = 200

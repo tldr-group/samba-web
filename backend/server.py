@@ -1,4 +1,5 @@
 """Backend flask server. Has 2 endpoints: encoding and segmenting, both handled in different scripts."""
+
 from flask import (
     Flask,
     request,
@@ -19,8 +20,20 @@ import zipfile
 
 from test_resources.call_weka import sep
 from encode import encode, featurise, imwrite
-from segment import segment, load_classifier_from_http, apply, save_labels, save_processed_segs
-from file_handling import delete_old_folders, delete_all_features, delete_feature_file
+from segment import (
+    segment,
+    load_classifier_from_http,
+    apply,
+    save_labels,
+    save_processed_segs,
+)
+from file_handling import (
+    delete_old_folders,
+    delete_all_features,
+    delete_feature_file,
+    _make_activity_log,
+    _update_log,
+)
 
 # Very important: this environment variable is only present on webapp. If running locally, this fails and we use cwd instead.
 server = False
@@ -38,7 +51,9 @@ if server:
 credential: str | None
 try:
     credential = os.environ["BLOB_KEY"]
-except Exception:  # do this bc server can't find dotenv even if python-dotenv in requirements
+except (
+    Exception
+):  # do this bc server can't find dotenv even if python-dotenv in requirements
     import dotenv
 
     credential = dotenv.get_key(dotenv.find_dotenv(), "AZURE_STORAGE_KEY")
@@ -94,6 +109,7 @@ async def generic_response(request, fn: Callable):
     elif "POST" in request.method:
         try:
             response = await fn(request)
+            _generic_log_update(request)
             return add_cors_headers(response)  # _corsify_actual_response(response)
         except Exception as e:
             print(e)
@@ -102,6 +118,15 @@ async def generic_response(request, fn: Callable):
     else:
         response = jsonify(success=False)
         return add_cors_headers(response)  # _corsify_actual_response(response)
+
+
+def _generic_log_update(request) -> None:
+    try:
+        uid = request.json["id"]
+        _update_log(uid)
+    except:
+        pass
+    return
 
 
 @app.route("/")
@@ -118,6 +143,7 @@ async def init_fn(request) -> Response:
         os.mkdir(f"{CWD}{sep}{UID}")
     except FileExistsError:
         pass
+    _make_activity_log(UID)
     delete_old_folders(UID)
     return jsonify(success=True)
 
@@ -198,7 +224,11 @@ async def segment_fn(request) -> Response:
     rescale: bool = request.json["rescale"]
     if segment_type == "segment":
         labels_dicts = request.json["labels"]
-        n_points, train_all, balance = request.json["n_points"], request.json["train_all"], request.json["balance"]
+        n_points, train_all, balance = (
+            request.json["n_points"],
+            request.json["train_all"],
+            request.json["balance"],
+        )
         segmentation, uncertainties = await segment(
             img_dims,
             labels_dicts,
@@ -209,10 +239,12 @@ async def segment_fn(request) -> Response:
             n_points,
             train_all,
             rescale,
-            balance
+            balance,
         )
     elif segment_type == "apply":
-        segmentation, uncertainties = await apply(img_dims, UID, save_mode, large_w, large_h, rescale=rescale)
+        segmentation, uncertainties = await apply(
+            img_dims, UID, save_mode, large_w, large_h, rescale=rescale
+        )
     response = Response(uncertainties.tobytes() + segmentation.tobytes())
     response.headers.add("Content-Type", "application/octet-stream")
     return response
@@ -267,13 +299,16 @@ async def save_labels_fn(request) -> Response:
     large_w, large_h = request.json["large_w"], request.json["large_h"]
     labels_dicts = request.json["labels"]
     rescale: bool = request.json["rescale"]
-    arr = await save_labels(img_dims, labels_dicts, UID, save_mode, large_w, large_h, rescale)
+    arr = await save_labels(
+        img_dims, labels_dicts, UID, save_mode, large_w, large_h, rescale
+    )
     response = send_file(
-            f"{CWD}{sep}{UID}{sep}labels.tiff",
-            mimetype="image/tiff",
-            download_name="labels.tiff",
-        )
+        f"{CWD}{sep}{UID}{sep}labels.tiff",
+        mimetype="image/tiff",
+        download_name="labels.tiff",
+    )
     return response
+
 
 @app.route("/slabel", methods=["POST", "GET", "OPTIONS"])
 async def save_labels_respond():
@@ -289,15 +324,19 @@ async def save_post_process(request) -> Response:
     save_mode: str = request.json["save_mode"]
     large_w, large_h = request.json["large_w"], request.json["large_h"]
     rescale: bool = request.json["rescale"]
-    await save_processed_segs(img_dims, segs_dicts, UID, save_mode, large_w, large_h, rescale)
+    await save_processed_segs(
+        img_dims, segs_dicts, UID, save_mode, large_w, large_h, rescale
+    )
     response = await save_fn(request)
     return response
+
 
 @app.route("/sprocess", methods=["POST", "GET", "OPTIONS"])
 async def save_process_respond():
     """Save route."""
     response = await generic_response(request, save_post_process)
     return response
+
 
 # ================================= LOADING =================================
 async def load_classifier_fn(request):
@@ -332,7 +371,9 @@ def get_blob_service_client():
 
 
 def upload_blob_file(fn, UID, blob_service_client: BlobServiceClient):
-    container_client = blob_service_client.get_container_client(container="gallery-submission")
+    container_client = blob_service_client.get_container_client(
+        container="gallery-submission"
+    )
     with open(file=fn, mode="rb") as data:
         container_client.upload_blob(name=f"{UID}", data=data, overwrite=True)
 
@@ -357,7 +398,9 @@ async def save_to_gallery_fn(request) -> Response:
             fname, extension = fn.split(".")
             zip_name = _map_fname_to_zip_fname(fname)
             if extension in ["png", "jpg", "json", "tiff"]:
-                zipf.write(f"{CWD}{sep}{UID}{sep}{fn}", arcname=f"{UID}_{zip_name}.{extension}")
+                zipf.write(
+                    f"{CWD}{sep}{UID}{sep}{fn}", arcname=f"{UID}_{zip_name}.{extension}"
+                )
     try:
         upload_blob_file(
             f"{CWD}{sep}{UID}{sep}{UID}.zip",
@@ -415,7 +458,9 @@ async def load_image(request) -> Response:
     gallery_ID = request.json["gallery_id"]
     print(gallery_ID)
     blob_service_client = get_blob_service_client()
-    container_client = blob_service_client.get_blob_client(container="gallery", blob=f"{gallery_ID}.zip")
+    container_client = blob_service_client.get_blob_client(
+        container="gallery", blob=f"{gallery_ID}.zip"
+    )
     with open(f"{CWD}{sep}{UID}{sep}temp.zip", "wb") as f:
         download_stream = container_client.download_blob()
         f.write(download_stream.readall())
@@ -425,8 +470,9 @@ async def load_image(request) -> Response:
         img_file,
         mimetype="image/png",
         download_name="img.png",
-    )   
+    )
     return response
+
 
 @app.route("/lgallery", methods=["POST", "GET", "OPTIONS"])
 async def load_gallery_img_respond():

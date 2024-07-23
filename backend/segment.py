@@ -443,6 +443,7 @@ def _cmap_uncertainties_return_flat_arr(uncertainties: np.ndarray) -> np.ndarray
 
 
 def _norm(arr: np.ndarray) -> np.ndarray:
+    # norm
     scaled = arr - np.amin(arr)
     normed = scaled / np.amax(scaled)
     return normed

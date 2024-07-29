@@ -1,5 +1,7 @@
 """File handling that works for either a local server or on the web app."""
+
 import os
+from time import time_ns
 from shutil import rmtree
 
 try:
@@ -7,7 +9,34 @@ try:
 except KeyError:
     CWD = os.getcwd()
 
-DELETE_TIME_MS = 2 * 60 * 60 * 1000
+DELETE_TIME_MS = 4 * 60 * 60 * 1000
+
+
+def _make_activity_log(folder_name: str) -> None:
+    UID = folder_name.split("/")[-1]
+    current_timestamp = UID[:-5]
+    with open(f"{folder_name}/log.txt", "w+") as f:
+        f.write(current_timestamp + "\n")
+    return
+
+
+def _get_last_timestamp_from_log(folder_name: str) -> str:
+    old_timestamp: str = "0000000000000"
+    try:
+        with open(f"{folder_name}/log.txt", "r") as f:
+            old_timestamp = f.readlines()[-1]
+    except FileNotFoundError:
+        pass
+    return old_timestamp
+
+
+def _update_log(folder_name: str) -> None:
+    time_ms = int(time_ns() / 1e6)
+    try:
+        with open(f"{folder_name}/log.txt", "a+") as f:
+            f.writelines(str(time_ms) + "\n")
+    except FileNotFoundError:
+        pass
 
 
 def _check_data_folder(folder_name: str) -> str:
@@ -56,7 +85,9 @@ def delete_old_folders(UID: str) -> None:
     for folder in subfolders:
         old_timestamp = _check_data_folder(folder)
         if old_timestamp != "":
-            delete = _check_to_delete(old_timestamp, current_timestamp)
+            last_activity_timestamp = _get_last_timestamp_from_log(folder)
+            print(f"Last activity: {last_activity_timestamp}")
+            delete = _check_to_delete(last_activity_timestamp, current_timestamp)
             if delete:
                 rmtree(folder)  # rmtree needed for proper delete
                 n_delete += 1

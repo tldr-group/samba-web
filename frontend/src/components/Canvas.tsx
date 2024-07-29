@@ -1,6 +1,6 @@
 import React, { RefObject, useRef, useContext, useEffect, useState } from "react";
 import AppContext from "./hooks/createContext";
-import { modelInputProps, Offset, MultiCanvasProps } from "./helpers/Interfaces";
+import { modelInputProps, Offset, MultiCanvasProps, DEFAULT_SEG_ALPHA, DEFAULT_LABEL_ALPHA } from "./helpers/Interfaces";
 import {
     getctx, transferLabels, addImageDataToArray, clearctx, getxy, getZoomPanXY,
     getZoomPanCoords, rgbaToHex, colours, arrayToImageData, draw, drawImage,
@@ -17,6 +17,7 @@ const MIN_ZOOM = 0.4
 const SCROLL_SENSITIVITY = 0.0005
 const SCROLL_SPEED = 1
 const PAN_OFFSET = 20
+
 
 const UA = navigator.userAgent
 const firefox = (UA.search("Firefox") == -1) ? false : true
@@ -82,6 +83,9 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
     const clicking = useRef<boolean>(false);
 
     const uniqueLabels = useRef<Set<number>>(new Set()); // used to track when we can press segment 
+
+    const prevLabelAlpha = useRef<number>(DEFAULT_LABEL_ALPHA);
+    const prevSegAlpha = useRef<number>(DEFAULT_SEG_ALPHA);
 
 
 
@@ -347,15 +351,17 @@ const MultiCanvas = ({ updateAll }: MultiCanvasProps) => {
     const toggleVisibility = () => {
         // Cycle through overlay visibilities
         if (overlayType === "Segmentation") {
+            prevSegAlpha.current! = segOpacity;
             setSegOpacity(0);
-            setLabelOpacity(200);
+            setLabelOpacity(prevLabelAlpha.current);
             setOverlayType("Label");
         } else if (overlayType === "Label") {
-            setSegOpacity(200);
-            setLabelOpacity(200);
+            prevLabelAlpha.current! = labelOpacity;
+            setSegOpacity(0);
+            setLabelOpacity(0);
             setOverlayType("None");
         } else if (overlayType === "None") {
-            setSegOpacity(200);
+            setSegOpacity(prevSegAlpha.current);
             setLabelOpacity(0);
             setOverlayType("Segmentation");
         }

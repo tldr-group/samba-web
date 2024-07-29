@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - name: Ronan Docherty
+    orcid: 0000-0002-7332-0924
+  - name: Isaac Squires
+    orcid: 0000-0003-1919-061X
+  - name: Antonis Vamvakeros
+    orcid: 0000-0002-4745-0602
+  - name: Samuel J. Cooper
+    orcid: 0000-0003-4055-6903
+title: "SAMBA: A Trainable Segmentation Web-App with Smart Labelling"
+doi: 10.21105/joss.06159
+url: "https://github.com/tldr-group/samba-web"
+preferred-citation:
+  type: article
+  authors:
+  - name: Ronan Docherty
+    orcid: 0000-0002-7332-0924
+  - name: Isaac Squires
+    orcid: 0000-0003-1919-061X
+  - name: Antonis Vamvakeros
+    orcid: 0000-0002-4745-0602
+  - name: Samuel J. Cooper
+    orcid: 0000-0003-4055-6903
+  doi: "10.21105/joss.06159"
+  journal: "Journal of Open Source Software"
+  month: 6
+  title: "SAMBA: A Trainable Segmentation Web-App with Smart Labelling"
+  issue: 98
+  volume: 9
+  year: 2024

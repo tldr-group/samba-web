@@ -27,8 +27,8 @@ const DEFAULT_IMAGE = "/assets/data/default_image.png";
 const DEFAULT_EMBEDDING = "/assets/data/default_encoding.npy";
 
 // URLS of our API endpoints - change when live
-//const PATH = "https://samba-segment.azurewebsites.net/"
-const PATH = "http://127.0.0.1:5000";
+const PATH = "https://samba-segment.azurewebsites.net/"
+//const PATH = "http://127.0.0.1:5000";
 const INIT_ENDPOINT = PATH + "/init";
 const ENCODE_ENDPOINT = PATH + "/encoding";
 const FEATURISE_ENDPOINT = PATH + "/featurising";

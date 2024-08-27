@@ -1,4 +1,5 @@
 """Given an image and some labels, featurise then segment with random forest classiier."""
+
 from zipfile import ZIP_DEFLATED
 import numpy as np
 from PIL import Image
@@ -34,8 +35,8 @@ def _get_split_inds(w: int, h: int) -> dict:
     """
     nW = ceil(w / 1024)
     nH = ceil(h / 1024)
-    dx = w / nW
-    dy = h / nH
+    dx = floor(w / nW)
+    dy = floor(h / nH)
     wInds = [floor(dx * i) for i in range(nW)]
     hInds = [floor(dy * i) for i in range(nH)]
     inds = {"w": wInds, "h": hInds, "dx": dx, "dy": dy, "nW": nW, "nH": nH}
@@ -81,12 +82,16 @@ def _create_composite_tiff(
         rescaled = ((remasked_arrs) * delta).astype(np.uint8)
         out = rescaled
     elif mode == "large":
-        large_seg = np.zeros((large_h, large_w), dtype=np.uint8)
+
         inds = _get_split_inds(large_w, large_h)
         img_count = 0
         w_inds, h_inds = inds["w"], inds["h"]
-        w_inds.append(int(large_w) - 1)
-        h_inds.append(int(large_h) - 1)
+        new_w, new_h = w_inds[-1] + inds["dx"], h_inds[-1] + inds["dy"]
+        large_seg = np.zeros((new_h, new_w), dtype=np.uint8)
+        # w_inds.append(int(large_w) - 1)
+        # h_inds.append(int(large_h) - 1)
+        w_inds.append(new_w - 1)
+        h_inds.append(new_h - 1)
         for j in range(0, len(h_inds) - 1):
             for i in range(0, len(w_inds) - 1):
                 seg = arr_list[img_count]
@@ -145,7 +150,6 @@ async def save_processed_segs(
         seg_arr = np.array(seg_list).reshape(h, w)
         seg_arrs.append(seg_arr)
     await _save_as_tiff(seg_arrs, save_mode, UID, large_w, large_h, None, rescale, True)
-    
 
 
 async def _save_as_tiff(
@@ -179,7 +183,9 @@ async def _save_as_tiff(
     :return: 0 if successful
     :rtype: int
     """
-    out = _create_composite_tiff(arr_list, mode, large_w=large_w, large_h=large_h, rescale=rescale)
+    out = _create_composite_tiff(
+        arr_list, mode, large_w=large_w, large_h=large_h, rescale=rescale
+    )
     sw_name: str = "SAMBA"
     if score is not None:
         sw_name = f"SAMBA, val. score={score:.3f}"
@@ -348,16 +354,18 @@ async def segment(
     remasked_arrs_list: List[np.ndarray] = []
     remasked_flattened_arrs: np.ndarray = np.array([])
     uncertainty_flattened_arrs: np.ndarray = np.array([])
-    probs, model, score = segment_with_features(label_arrs, UID, n_points=n_points, train_all=train_all, balance_classes=balance)
+    probs, model, score = segment_with_features(
+        label_arrs, UID, n_points=n_points, train_all=train_all, balance_classes=balance
+    )
     N_imgs = len(probs)
 
     for i in range(N_imgs):
         label_arr = label_arrs[i]
         max_certainty: np.ndarray = np.amax(probs[i], axis=0)
         uncertainties = 1 - max_certainty
-        uncertainties = (np.rint(_norm(uncertainties)* 255)).astype(np.uint8)
+        uncertainties = (np.rint(_norm(uncertainties) * 255)).astype(np.uint8)
         # get one hot of where max prob is, index original class labels (stored in model.classes_) to get remapping
-        class_mask = np.argmax(probs[i], axis=0).astype(np.uint8) #+ 1
+        class_mask = np.argmax(probs[i], axis=0).astype(np.uint8)  # + 1
         one_hot = np.eye(len(model.classes_))[class_mask]
         classes = one_hot * np.array(model.classes_).astype(np.uint8)
         classes = np.max(classes, axis=-1)
@@ -368,16 +376,32 @@ async def segment(
             remasked_flattened_arrs = remasked.flatten()
             uncertainty_flattened_arrs = uncertainties.flatten()
         else:
-            remasked_flattened_arrs = np.concatenate((remasked_flattened_arrs, remasked.flatten()), axis=0, dtype=np.uint8)
-            uncertainty_flattened_arrs = np.concatenate((uncertainty_flattened_arrs, uncertainties.flatten()), axis=0, dtype=np.uint8)
-    await _save_as_tiff(remasked_arrs_list, save_mode, UID, large_w, large_h, score, rescale=rescale)
+            remasked_flattened_arrs = np.concatenate(
+                (remasked_flattened_arrs, remasked.flatten()), axis=0, dtype=np.uint8
+            )
+            uncertainty_flattened_arrs = np.concatenate(
+                (uncertainty_flattened_arrs, uncertainties.flatten()),
+                axis=0,
+                dtype=np.uint8,
+            )
+    await _save_as_tiff(
+        remasked_arrs_list, save_mode, UID, large_w, large_h, score, rescale=rescale
+    )
     await save_labels(img_dims, labels_dicts, UID, save_mode, large_w, large_h, rescale)
     await _save_classifier(model, CWD, UID)
-    #print(remasked_flattened_arrs.shape, label_arrs[0].shape)
-    #cmapped_flat = _cmap_uncertainties_return_flat_arr(uncertainty_flattened_arrs)
-    print(np.amax(uncertainty_flattened_arrs), np.mean(uncertainty_flattened_arrs), np.median(uncertainty_flattened_arrs), np.mean(remasked_flattened_arrs))
+    # print(remasked_flattened_arrs.shape, label_arrs[0].shape)
+    # cmapped_flat = _cmap_uncertainties_return_flat_arr(uncertainty_flattened_arrs)
+    print(
+        np.amax(uncertainty_flattened_arrs),
+        np.mean(uncertainty_flattened_arrs),
+        np.median(uncertainty_flattened_arrs),
+        np.mean(remasked_flattened_arrs),
+    )
     print(remasked_flattened_arrs.shape, uncertainty_flattened_arrs.shape)
-    return remasked_flattened_arrs, uncertainty_flattened_arrs #, least_certain_regions
+    return (
+        remasked_flattened_arrs,
+        uncertainty_flattened_arrs,
+    )  # , least_certain_regions
 
 
 async def apply(
@@ -409,7 +433,7 @@ async def apply(
     probs = apply_features_done(model, UID, len(img_dims))
     N_imgs = len(probs)
     # array to store coords of least certain region
-    #least_certain_regions = np.zeros((N_imgs * 4), dtype=np.int32) - 1
+    # least_certain_regions = np.zeros((N_imgs * 4), dtype=np.int32) - 1
 
     arrs_list: List[np.ndarray] = []
     flattened_arrs: np.ndarray = np.ndarray([])
@@ -424,19 +448,23 @@ async def apply(
             flattened_arrs = classes.flatten()
             uncertainty_flattened_arrs = uncertainties.flatten()
         else:
-            flattened_arrs = np.concatenate((flattened_arrs, classes.flatten()), axis=0, dtype=np.uint8)
-            uncertainty_flattened_arrs = np.concatenate((uncertainty_flattened_arrs, uncertainties.flatten()))
+            flattened_arrs = np.concatenate(
+                (flattened_arrs, classes.flatten()), axis=0, dtype=np.uint8
+            )
+            uncertainty_flattened_arrs = np.concatenate(
+                (uncertainty_flattened_arrs, uncertainties.flatten())
+            )
     await _save_as_tiff(arrs_list, save_mode, UID, large_w, large_h, rescale=rescale)
-    #cmapped_flat = _cmap_uncertainties_return_flat_arr(uncertainty_flattened_arrs)
+    # cmapped_flat = _cmap_uncertainties_return_flat_arr(uncertainty_flattened_arrs)
     uncertainties_out = (uncertainty_flattened_arrs * 255).astype(np.uint8)
-    return flattened_arrs, uncertainties_out #, least_certain_regions
+    return flattened_arrs, uncertainties_out  # , least_certain_regions
 
 
 def _cmap_uncertainties_return_flat_arr(uncertainties: np.ndarray) -> np.ndarray:
-    cmap = cm.get_cmap('plasma')
+    cmap = cm.get_cmap("plasma")
     cmapped: np.ndarray = cmap(uncertainties)
-    
-    sliced = cmapped[:, :3] # ignore alpha channel
+
+    sliced = cmapped[:, :3]  # ignore alpha channel
     scaled = (sliced * 255).astype(np.uint8)
     print(cmapped.shape, np.amax(scaled), sliced.shape)
     return scaled.flatten()

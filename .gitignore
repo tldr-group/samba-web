@@ -22,3 +22,4 @@ yarn.lock
 samba_logo/*
 backend/17*
 scripts/*
+backend/apply/*

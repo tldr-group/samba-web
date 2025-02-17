@@ -494,7 +494,7 @@ def get_arr_from_file(form_data_file) -> np.ndarray:
     if ".tif" in user_filename:
         arr = imread(file_object)
     else:
-        img = Image.open(file_object).convert("L")
+        img = Image.open(file_object)
         arr = np.asarray(img)
     arr = preprocess_arr(arr)
     return arr
@@ -526,15 +526,19 @@ async def phase_fraction_app():
 
 
 def preprocess_arr(arr: np.ndarray) -> np.ndarray:
+    print(f"Arr shape before processing: {arr.shape}")
+    is_rgb = len(arr.shape) == 3 and (arr.shape[-1] == 3 or arr.shape[0] == 3)
+    is_rgba = len(arr.shape) == 3 and (arr.shape[-1] == 4 or arr.shape[0] == 4)
+
     if len(arr.shape) == 3 and arr.shape[0] == 1:
         # weird (1, H, W) tiffs
         arr = arr[0, :, :]
-    if len(arr.shape) == 3 and arr.shape[-1] == 3:
-        # weird (H, W, 3) tiffs
-        arr = np.transpose(arr, (-1, 0, 1))
-    if len(arr.shape) == 3 and arr.shape[0] == 3:
+    if len(arr.shape) == 3 and (is_rgba or is_rgb):
+        arr = arr[:, :, 0]  # take only R channel of RGB(A) arrays, like on frontend
+    if len(arr.shape) == 3 and (is_rgba or is_rgb):
         # any (3, H, W) tiffs -> (H, W)
         arr = arr[0, :, :]
+    print(f"Arr shape after processing: {arr.shape}")
     return arr
 
 
@@ -563,6 +567,9 @@ async def representativity(request) -> Response:
         "pf_1d": result["pf_1d"],
         "cum_sum_sum": result["cum_sum_sum"],
     }
+    print(
+        f"abs_err for {selected_phase}: {out['abs_err']} \n percent err: {out['percent_err']}"
+    )
 
     response = Response(json.dumps(out), status=200)
     return response

@@ -486,6 +486,8 @@ async def load_gallery_img_respond():
 
 
 # ================================= NUMPY =================================
+
+
 def get_arr_from_file(form_data_file) -> np.ndarray:
     user_filename = form_data_file.filename
 
@@ -543,19 +545,23 @@ def preprocess_arr(arr: np.ndarray) -> np.ndarray:
 
 
 async def representativity(request) -> Response:
-    user_file = request.files["userFile"]
-    arr = get_arr_from_file(user_file)
-
+    file_list: list = request.files.getlist("userFile")
+    print(file_list)
     selected_phase = int(request.values["selected_phase"])
     selected_conf: float = float(request.values["selected_conf"]) / 100
     selected_err: float = float(request.values["selected_err"]) / 100
 
     print(f"Phase: {selected_phase}, Conf: {selected_conf}, Err: {selected_err}")
 
-    binary_img = np.where(arr == selected_phase, 1, 0)
+    arrs = []
+    for file in file_list:
+        arr = get_arr_from_file(file)
+        binary_img = np.where(arr == selected_phase, 1, 0)
+        arrs.append(binary_img)
+    is_stack = len(arrs) > 1
 
     result = make_error_prediction(
-        binary_img, selected_conf, selected_err, model_error=True
+        arrs, selected_conf, selected_err, model_error=True, image_stack=is_stack
     )  # make_error_prediction(binary_img, selected_conf, selected_err)
     # this can get stuck sometimes in the optimisation step (usually cls > 1)
     out = {

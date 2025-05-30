@@ -14,6 +14,7 @@ General approach is:
 Singlescale feature computation is mapped over multiple threads as in (1).
 Every feature computes a value for *every pixel* in the image.
 """
+
 import numpy as np
 from skimage import filters, feature
 from skimage.util.dtype import img_as_float32
@@ -153,7 +154,9 @@ def singlescale_hessian(gaussian_filtered: np.ndarray) -> Tuple[np.ndarray, ...]
     return (mod, trace, det, eig1 / 2.0, eig2 / 2.0)
 
 
-def singlescale_mean(byte_img: np.ndarray, sigma_rad_footprint: np.ndarray) -> np.ndarray:
+def singlescale_mean(
+    byte_img: np.ndarray, sigma_rad_footprint: np.ndarray
+) -> np.ndarray:
     """Mean pixel intensity over footprint $sigma_rad_footprint. Needs img in np.uint8 format.
 
     :param byte_img: img arr in uint8 format
@@ -166,7 +169,9 @@ def singlescale_mean(byte_img: np.ndarray, sigma_rad_footprint: np.ndarray) -> n
     return filters.rank.mean(byte_img, sigma_rad_footprint)
 
 
-def singlescale_median(byte_img: np.ndarray, sigma_rad_footprint: np.ndarray) -> np.ndarray:
+def singlescale_median(
+    byte_img: np.ndarray, sigma_rad_footprint: np.ndarray
+) -> np.ndarray:
     """Median pixel intensity over footprint $sigma_rad_footprint. Needs img in np.uint8 format.
 
     :param byte_img: img arr in uint8 format
@@ -179,7 +184,9 @@ def singlescale_median(byte_img: np.ndarray, sigma_rad_footprint: np.ndarray) ->
     return filters.rank.median(byte_img, sigma_rad_footprint)
 
 
-def singlescale_maximum(byte_img: np.ndarray, sigma_rad_footprint: np.ndarray) -> np.ndarray:
+def singlescale_maximum(
+    byte_img: np.ndarray, sigma_rad_footprint: np.ndarray
+) -> np.ndarray:
     """Maximum pixel intensity over footprint $sigma_rad_footprint. Needs img in np.uint8 format.
 
     :param byte_img: img arr in uint8 format
@@ -192,7 +199,9 @@ def singlescale_maximum(byte_img: np.ndarray, sigma_rad_footprint: np.ndarray) -
     return filters.rank.maximum(byte_img, sigma_rad_footprint)
 
 
-def singlescale_minimum(byte_img: np.ndarray, sigma_rad_footprint: np.ndarray) -> np.ndarray:
+def singlescale_minimum(
+    byte_img: np.ndarray, sigma_rad_footprint: np.ndarray
+) -> np.ndarray:
     """Minimum pixel intensity over footprint $sigma_rad_footprint. Needs img in np.uint8 format.
 
     :param byte_img: img arr in uint8 format
@@ -205,7 +214,9 @@ def singlescale_minimum(byte_img: np.ndarray, sigma_rad_footprint: np.ndarray) -
     return filters.rank.minimum(byte_img, sigma_rad_footprint)
 
 
-def singlescale_entropy(byte_img: np.ndarray, sigma_rad_footprint: np.ndarray) -> np.ndarray:
+def singlescale_entropy(
+    byte_img: np.ndarray, sigma_rad_footprint: np.ndarray
+) -> np.ndarray:
     """Compute entropy of $n_bins histogram of $img in $sigma_rad_footprint. Memory intensive.
 
     :param byte_img: img arr in uint8 format
@@ -218,7 +229,9 @@ def singlescale_entropy(byte_img: np.ndarray, sigma_rad_footprint: np.ndarray) -
     # lots of nans here because of np.divide
     entropies = []
     for n_bins in [32, 64, 128]:  # was 32, 64, 128, 256
-        histogram = filters.rank.windowed_histogram(byte_img, sigma_rad_footprint, n_bins=n_bins)  # -> (H, W, N) array
+        histogram = filters.rank.windowed_histogram(
+            byte_img, sigma_rad_footprint, n_bins=n_bins
+        )  # -> (H, W, N) array
         probs = np.divide(histogram, np.amax(histogram, axis=-1, keepdims=True))
         entropy = np.sum(-probs * np.log2(probs, where=(probs > 0)), axis=-1)
         entropies.append(entropy)
@@ -269,7 +282,9 @@ def singlescale_neighbours(img: np.ndarray, sigma: int) -> List[np.ndarray]:
     return out_convs
 
 
-def singlescale_higher_order_derivatives(img: np.ndarray, sigma_rad_footprint: np.ndarray) -> List[np.ndarray]:
+def singlescale_higher_order_derivatives(
+    img: np.ndarray, sigma_rad_footprint: np.ndarray
+) -> List[np.ndarray]:
     """Compute d^n intensity gradients, n in [4, 6, 8, 10] of $img in $simga radius.
 
     :param img: img arr
@@ -317,7 +332,9 @@ def bilateral(img: np.ndarray) -> np.ndarray:
     for spatial_radius in [5, 10]:
         footprint = make_footprint(spatial_radius)
         for value_range in [50, 100]:  # check your pixels are [0, 255]
-            bilateral = filters.rank.mean_bilateral(img, footprint, s0=value_range, s1=value_range)
+            bilateral = filters.rank.mean_bilateral(
+                img, footprint, s0=value_range, s1=value_range
+            )
             bilaterals.append(bilateral)
     return np.stack(bilaterals, axis=0)
 
@@ -479,7 +496,9 @@ def singlescale_advanced_features_singlechannel(
     return results
 
 
-def zero_scale_filters(img: np.ndarray, edges=True, hess=True) -> Tuple[np.ndarray, ...]:
+def zero_scale_filters(
+    img: np.ndarray, edges=True, hess=True
+) -> Tuple[np.ndarray, ...]:
     """Weka *always* adds the original image, and if computing edgees and/or hessian,
     adds those for sigma=0. This function does that."""
     out_filtered: Tuple[np.ndarray, ...] = (img,)
@@ -518,20 +537,27 @@ def multiscale_advanced_features(
         sigma_min = 0.5
     elif feature_dict["Minimum Sigma"] == 0:
         # if 0 scale included, compute 0 scale features a la weka then switch to 1 scale
-        features = zero_scale_filters(img, edges=feature_dict["Sobel Filter"], hess=feature_dict["Hessian"])
+        features = zero_scale_filters(
+            img, edges=feature_dict["Sobel Filter"], hess=feature_dict["Hessian"]
+        )
         sigma_min = 1.0
     else:
         sigma_min = float(feature_dict["Minimum Sigma"])
 
     sigma_max = float(feature_dict["Maximum Sigma"])
-    num_sigma = int(np.log2(sigma_max) - np.log2(sigma_min) + 1)
-    sigmas = np.logspace(
-        np.log2(sigma_min),
-        np.log2(sigma_max),
-        num=num_sigma,
-        base=2,
-        endpoint=True,
-    )
+    # num_sigma = int(np.log2(sigma_max) - np.log2(sigma_min) + 1)
+    # sigmas = np.logspace(
+    #     np.log2(sigma_min),
+    #     np.log2(sigma_max),
+    #     num=num_sigma,
+    #     base=2,
+    #     endpoint=True,
+    # )
+
+    b2_min, b2_max = np.log2(sigma_min), np.log2(sigma_max)
+    num_sigma = int(b2_max - b2_min) + 1
+    sigmas: list[float] = [(2**i) * sigma_min for i in range(num_sigma)]
+    print(sigmas)
 
     singlescale_requested = 0
     for filter in [

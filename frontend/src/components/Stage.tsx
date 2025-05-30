@@ -86,16 +86,23 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, featuresUpdated, tra
     smaller than 1024. Load each sub image.*/
     const hrefs: string[] = [];
     const inds = getSplitInds(img);
+    console.log("img inds", inds)
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (ctx === null) { return; }
-    canvas.width = img.width;
-    canvas.height = img.height;
-    ctx.drawImage(img, 0, 0);
+
     const [widths, heights] = [inds.w, inds.h];
-    // need to add the ends of the image
-    widths.push(img.width);
-    heights.push(img.height);
+    // need to add the ends of the image (up to the patch size)
+    const [last_w, last_h] = [widths[widths.length - 1], heights[heights.length - 1]]
+    const [new_img_w, new_img_h] = [last_w + inds.dx, last_h + inds.dy]
+    widths.push(new_img_w);
+    heights.push(new_img_h);
+
+    canvas.width = new_img_w;
+    canvas.height = new_img_h;
+    ctx.drawImage(img, 0, 0, new_img_w, new_img_h);
+
+
     for (let y = 0; y < heights.length - 1; y++) {
       const [h0, h1] = [heights[y], heights[y + 1]];
       for (let x = 0; x < widths.length - 1; x++) {
@@ -169,7 +176,8 @@ const Stage = ({ loadImages, loadDefault, requestEmbedding, featuresUpdated, tra
     const [lw, lh] = [inds.dx, inds.dy]
     const [nw, nh] = [inds.nW, inds.nH]
     const imgDataArr = new Uint8ClampedArray(UTIF.toRGBA8(tif));
-    console.log(inds.h.length, nw * nh)
+    //console.log(inds.h.length, nw * nh)
+    console.log("label inds", inds)
     for (let j = 0; j < nw * nh; j++) {
       const tempLabelArr = new Uint8ClampedArray(lw * lh).fill(0)
       newLabelArrs.push(tempLabelArr)
